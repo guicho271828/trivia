@@ -167,12 +167,3 @@ License
 -------
 
 LLGPL
------
-
-* Tomohiro Matsuyama
-
-License
--------
-
-LLGPL
-
