@@ -8,8 +8,8 @@ programming world. See the following references for more detail:
 * [Optimizing Pattern Matching](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.6.5507) by Fabrice Le Fessant, Luc Maranget
 * [The Implementation of Functional Programming Languages](http://research.microsoft.com/en-us/um/people/simonpj/papers/slpj-book-1987/) by Simon Peyton Jones
 
-Pattern Specifier
------------------
+Pattern Language
+----------------
 
 A pattern specifier, or a pattern for short unless ambiguous, is an
 expression that describes how a value matches the pattern. Pattern
@@ -30,7 +30,10 @@ specifiers are defined as follows:
     
     guard-pattern ::= (guard PATTERN TEST-FORM)
 
-Constant patterns match the constant itself.
+Constant Pattern
+~~~~~~~~~~~~~~~~
+
+A constant pattern matches the constant itself.
 
 Examples:
 
@@ -38,23 +41,29 @@ Examples:
     (match "foo" ("foo" "bar")) => "bar"
     (match '(1) ('(1) 2)) => 2
 
-Variable patterns match any value and bind the value to the
-variable. _ is a wildcard pattern which matches any value but doesn't
-bind.
+Variable Pattern
+~~~~~~~~~~~~~~~~
+
+A variable pattern matches any value and bind the value to the
+variable. _ is a special variable pattern which matches any value but
+doesn't bind.
 
 Examples:
 
     (match 1 (x x)) => 1
     (match 1 (_ 2)) => 2
 
-Constructor patterns match not a value itself but a structure of the
-value. The following constructors are available:
+Constructor Pattern
+~~~~~~~~~~~~~~~~~~~
 
-* `(cons car cdr)
-* `(sequence &rest elements)
-* `(array &rest elements)
-* `(vector &rest elements)
-* `(simple-vector &rest elements)
+A constructor pattern matches not a value itself but a structure of
+the value. The following constructors are available:
+
+* (cons car cdr)
+* (sequence &rest elements)
+* (array &rest elements)
+* (vector &rest elements)
+* (simple-vector &rest elements)
 
 Examples:
 
@@ -72,14 +81,14 @@ then we expand it into
 
 See DEFPATTERN for more detail.
 
-In addition to above constructor patterns, there is one special
+In addition to constructor patterns above, there is one special
 constructor pattern which matches any value of type of STANDARD-CLASS.
 The form of the pattern looks like
 
     (class-name &rest slots)
 
-where CLASS-NAME is a class name of the value and SLOTS is a list of
-the form of (SLOT-NAME PATTERN). You can also specify the element as
+where CLASS-NAME is a class name of the value, and SLOTS is a list of
+the form of (SLOT-NAME PATTERN). You can also specify the element like
 SLOT-NAME, which is a shorthand for (SLOT-NAME SLOT-NAME).
 
 Examples:
@@ -94,8 +103,11 @@ Examples:
       (_ 'not-matched))
     => NOT-MATCHED
 
-Guard patterns restrict a matching of PATTERN with a post condition
-TEST-FORM.  Note that a symbol GUARD is not exported.
+Guard Pattern
+~~~~~~~~~~~~~
+
+A guard pattern restricts a matching of PATTERN with a post condition
+TEST-FORM.  Note that a symbol GUARD is not (yet) exported.
 
 Examples:
 
@@ -159,3 +171,4 @@ License
 -------
 
 LLGPL
+
