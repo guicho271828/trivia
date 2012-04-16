@@ -30,8 +30,7 @@ specifiers are defined as follows:
     
     guard-pattern ::= (guard PATTERN TEST-FORM)
 
-Constant Pattern
-~~~~~~~~~~~~~~~~
+### Constant Pattern
 
 A constant pattern matches the constant itself.
 
@@ -41,8 +40,7 @@ Examples:
     (match "foo" ("foo" "bar")) => "bar"
     (match '(1) ('(1) 2)) => 2
 
-Variable Pattern
-~~~~~~~~~~~~~~~~
+### Variable Pattern
 
 A variable pattern matches any value and bind the value to the
 variable. _ is a special variable pattern which matches any value but
@@ -53,8 +51,7 @@ Examples:
     (match 1 (x x)) => 1
     (match 1 (_ 2)) => 2
 
-Constructor Pattern
-~~~~~~~~~~~~~~~~~~~
+### Constructor Pattern
 
 A constructor pattern matches not a value itself but a structure of
 the value. The following constructors are available:
@@ -103,8 +100,7 @@ Examples:
       (_ 'not-matched))
     => NOT-MATCHED
 
-Guard Pattern
-~~~~~~~~~~~~~
+### Guard Pattern
 
 A guard pattern restricts a matching of PATTERN with a post condition
 TEST-FORM.  Note that a symbol GUARD is not (yet) exported.
@@ -164,6 +160,14 @@ matched.
 
 Authors
 -------
+
+* Tomohiro Matsuyama
+
+License
+-------
+
+LLGPL
+-----
 
 * Tomohiro Matsuyama
 
