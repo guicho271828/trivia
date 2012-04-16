@@ -1,6 +1,7 @@
-(asdf:defsystem :fivepm
-  :description "Very Fast Pattern Matching Library"
-  :long-description "fivepm is a very fast pattern matching library
+fivepm - Very Fast Pattern Matching Library
+===========================================
+
+fivepm is a very fast pattern matching library
 which uses optimizing techniques widely used in a functional
 programming world. See the following references for more detail:
 
@@ -19,11 +20,11 @@ specifiers are defined as follows:
                         | constructor-pattern
                         | guard-pattern
     
-    constant-pattern ::= T | NIL
+    constant-pattern ::= t | nil
                        | atom-except-symbol
                        | (quote VALUE)
     
-    variable-pattern ::= symbol
+    variable-pattern ::= SYMBOL
     
     constructor-pattern ::= (NAME PATTERN*)
     
@@ -34,7 +35,7 @@ Constant patterns match the constant itself.
 Examples:
 
     (match 1 (1 2)) => 2
-    (match \"foo\" (\"foo\" \"bar\")) => \"bar\"
+    (match "foo" ("foo" "bar")) => "bar"
     (match '(1) ('(1) 2)) => 2
 
 Variable patterns match any value and bind the value to the
@@ -84,12 +85,12 @@ SLOT-NAME, which is a shorthand for (SLOT-NAME SLOT-NAME).
 Examples:
 
     (defstruct person name age)
-    (defvar foo (make-person :name \"foo\" :age 30))
+    (defvar foo (make-person :name "foo" :age 30))
     (match foo
       ((person name age) (list name age)))
-    => (\"foo\" 30)
+    => ("foo" 30)
     (match foo
-      ((person (name \"bar\")) 'matched)
+      ((person (name "bar")) 'matched)
       (_ 'not-matched))
     => NOT-MATCHED
 
@@ -99,18 +100,62 @@ TEST-FORM.  Note that a symbol GUARD is not exported.
 Examples:
 
     (match 1 ((fivepm::guard x (evenp x)) 'even))
-    => NIL"
-  :version "0.1"
-  :author "Tomohiro Matsuyama"
-  :license "LLGPL"
-  :depends-on (:alexandria
-               :anaphora
-               :closer-mop)
-  :components ((:module "src"
-                :serial t
-                :components ((:file "package")
-                             (:file "util")
-                             (:file "equal")
-                             (:file "pattern")
-                             (:file "compiler")
-                             (:file "match")))))
+    => NIL
+
+[Package] fivepm
+----------------
+
+## [Macro] defpattern
+
+    defpattern name lambda-list &body body
+
+Defines a derived pattern specifier named NAME. This is analogous
+to DEFTYPE.
+
+Examples:
+
+    ;; Defines a LIST pattern.
+    (defpattern list (&rest args)
+      (when args
+        `(cons ,(car args) (list ,@(cdr args)))))
+
+## [Macro] match
+
+    match arg &body clauses
+
+Matches ARG with CLAUSES. CLAUSES is a list of the form
+of (PATTERN . BODY) where PATTERN is a pattern specifier and BODY is
+an implicit progn. If ARG is matched with some PATTERN, then evaluates
+BODY and returns the evaluated value. Otherwise, returns NIL.
+
+If BODY starts with a symbol WHEN, then the next form will be used to
+introduce a guard for PATTERN. That is,
+
+    (match list ((list x) when (oddp x) x))
+
+will be translated to
+
+    (match list ((guard (list x) (oddpx)) x))
+
+## [Macro] ematch
+
+    ematch arg &body clauses
+
+Same as MATCH, except MATCH-ERROR will be raised if not matched.
+
+## [Macro] cmatch
+
+    cmatch arg &body clauses
+
+Same as MATCH, except continuable MATCH-ERROR will be raised if not
+matched.
+
+Authors
+-------
+
+* Tomohiro Matsuyama
+
+License
+-------
+
+LLGPL

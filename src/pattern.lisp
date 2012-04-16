@@ -24,7 +24,7 @@
   test-form)
 
 ;;;
-;;; Pattern Expression
+;;; Pattern Specifier
 ;;;
 
 (defun pattern-expand-function (name)
@@ -54,6 +54,15 @@
       pattern))
 
 (defmacro defpattern (name lambda-list &body body)
+  "Defines a derived pattern specifier named NAME. This is analogous
+to DEFTYPE.
+
+Examples:
+
+    ;; Defines a LIST pattern.
+    (defpattern list (&rest args)
+      (when args
+        `(cons ,(car args) (list ,@(cdr args)))))"
   `(setf (pattern-expand-function ',name) (lambda ,lambda-list ,@body)))
 
 (defpattern list (&rest args)
@@ -61,7 +70,7 @@
     `(cons ,(car args) (list ,@(cdr args)))))
 
 ;;;
-;;; Pattern Expression Parser
+;;; Pattern Specifier Parser
 ;;;
 
 (defun parse-pattern (pattern)
@@ -72,7 +81,7 @@
     ((or (eql t) null keyword)
      (make-constant-pattern :value pattern))
     (symbol
-     (make-variable-pattern :name pattern))
+     (make-variable-pattern :name (unless (string= pattern "_") pattern)))
     (cons
      (case (first pattern)
        (quote
