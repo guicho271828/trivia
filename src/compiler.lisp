@@ -118,7 +118,8 @@
           :from-end t))
 
 (defgeneric same-group-p (pattern1 pattern2)
-  (:method (pattern1 pattern2) t))
+  (:method (pattern1 pattern2)
+    (eq (type-of pattern1) (type-of pattern2))))
 
 (defmethod same-group-p ((pattern1 constant-pattern) (pattern2 constant-pattern))
   (%equal (constant-pattern-value pattern1)
