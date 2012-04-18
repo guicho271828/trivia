@@ -57,8 +57,6 @@ A constructor pattern matches not a value itself but a structure of
 the value. The following constructors are available:
 
 * (cons car cdr)
-* (sequence &rest elements)
-* (array &rest elements)
 * (vector &rest elements)
 * (simple-vector &rest elements)
 
@@ -103,7 +101,8 @@ Examples:
 ### Guard Pattern
 
 A guard pattern restricts a matching of PATTERN with a post condition
-TEST-FORM.  Note that a symbol GUARD is not (yet) exported.
+TEST-FORM. Note that a symbol GUARD is not (yet) exported. See also
+MATCH documentation.
 
 Examples:
 
@@ -131,10 +130,11 @@ Examples:
 
     match arg &body clauses
 
-Matches ARG with CLAUSES. CLAUSES is a list of the form
-of (PATTERN . BODY) where PATTERN is a pattern specifier and BODY is
-an implicit progn. If ARG is matched with some PATTERN, then evaluates
-BODY and returns the evaluated value. Otherwise, returns NIL.
+Matches ARG with CLAUSES. CLAUSES is a list of the form of (PATTERN
+. BODY) where PATTERN is a pattern specifier and BODY is an implicit
+progn. If ARG is matched with some PATTERN, then evaluates
+corresponding BODY and returns the evaluated value. Otherwise, returns
+NIL.
 
 If BODY starts with a symbol WHEN, then the next form will be used to
 introduce a guard for PATTERN. That is,
@@ -143,7 +143,7 @@ introduce a guard for PATTERN. That is,
 
 will be translated to
 
-    (match list ((guard (list x) (oddpx)) x))
+    (match list ((guard (list x) (oddp x)) x))
 
 ## [Macro] ematch
 
@@ -157,6 +157,19 @@ Same as MATCH, except MATCH-ERROR will be raised if not matched.
 
 Same as MATCH, except continuable MATCH-ERROR will be raised if not
 matched.
+
+## [Macro] xmatch
+
+    xmatch arg &body clauses
+
+Same as MATCH, except XMATCH does exhaustiveness analysis over
+CLAUSES with a type of ARG. If the type is not covered by CLAUSES, in
+other words, if the type is not a subtype of an union type of CLAUSES,
+then a compile-time error will be raised.
+
+You need to specify the type of ARG with THE special operator like:
+
+    (xmatch (the type arg) ...)
 
 Authors
 -------
