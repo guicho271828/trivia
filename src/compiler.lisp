@@ -219,7 +219,7 @@
 (defun compile-ematch (vars clauses)
   (let ((else `(error 'match-error
                       :values (list ,@vars)
-                      :patterns ',@(mapcar #'car clauses))))
+                      :patterns ',(mapcar #'car clauses))))
     (compile-match vars clauses else)))
 
 (defun compile-ematch-1 (form clauses)
@@ -237,9 +237,9 @@
        ,(compile-ematch vars clauses))))
 
 (defun compile-cmatch (vars clauses)
-  (let ((else `(crror 'match-error
-                      :values (list ,@vars)
-                      :patterns ',@(mapcar #'car clauses))))
+  (let ((else `(cerror 'match-error
+                       :values (list ,@vars)
+                       :patterns ',(mapcar #'car clauses))))
     (compile-match vars clauses else)))
 
 (defun compile-cmatch-1 (form clauses)
