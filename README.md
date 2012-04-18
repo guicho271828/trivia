@@ -43,8 +43,8 @@ Examples:
 ### Variable Pattern
 
 A variable pattern matches any value and bind the value to the
-variable. _ is a special variable pattern which matches any value but
-doesn't bind.
+variable. _ is a special variable pattern (a.k.a wildcard pattern)
+which matches any value but doesn't bind.
 
 Examples:
 
@@ -144,11 +144,35 @@ will be translated to
 
     (match list ((guard (list x) (oddp x)) x))
 
+## [Macro] match-values
+
+    match-values values-form &body clauses
+
+Matches the multiple values of VALUES-FORM with CLAUSES. Unlike
+MATCH, CLAUSES has to be have the form of (PATTERNS . BODY), where
+PATTERNS is a list of patterns. The number of values that will be used
+to match is determined by the maximum arity of PATTERNS among
+CLAUSES.
+
+Examples:
+
+    (match-values (values 1 2)
+     ((2) 1)
+     ((1 y) y))
+    => 2
+
 ## [Macro] ematch
 
     ematch arg &body clauses
 
 Same as MATCH, except MATCH-ERROR will be raised if not matched.
+
+## [Macro] ematch-values
+
+    ematch-values values-form &body clauses
+
+Same as MATCH-VALUES, except MATCH-ERROR will be raised if not
+matched.
 
 ## [Macro] cmatch
 
@@ -156,6 +180,13 @@ Same as MATCH, except MATCH-ERROR will be raised if not matched.
 
 Same as MATCH, except continuable MATCH-ERROR will be raised if not
 matched.
+
+## [Macro] cmatch-values
+
+    cmatch-values values-form &body clauses
+
+Same as MATCH-VALUES, except continuable MATCH-ERROR will be raised
+if not matched.
 
 ## [Macro] xmatch
 

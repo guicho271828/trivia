@@ -37,15 +37,15 @@
 ;;; Pattern Typing
 ;;;
 
-(defgeneric type-of-pattern (pattern))
+(defgeneric pattern-type (pattern))
 
-(defmethod type-of-pattern ((pattern variable-pattern))
+(defmethod pattern-type ((pattern variable-pattern))
   t)
 
-(defmethod type-of-pattern ((pattern constant-pattern))
+(defmethod pattern-type ((pattern constant-pattern))
   `(eql ,(constant-pattern-value pattern)))
 
-(defmethod type-of-pattern ((pattern constructor-pattern))
+(defmethod pattern-type ((pattern constructor-pattern))
   (constructor-pattern-type pattern))
 
 ;;;
@@ -129,14 +129,14 @@ Examples:
     (make-constructor-pattern
      :name 'cons
      :arity 2
-     :type `(cons ,(type-of-pattern car-pattern) ,(type-of-pattern cdr-pattern))
+     :type `(cons ,(pattern-type car-pattern) ,(pattern-type cdr-pattern))
      :arguments (list car-pattern cdr-pattern)
      :predicate (lambda (var) `(consp ,var))
      :accessor (lambda (var i) `(,(ecase i (0 'car) (1 'cdr)) ,var)))))
 
 (defmethod parse-constructor-pattern ((name (eql 'vector)) &rest args)
   (let* ((args (mapcar #'parse-pattern args))
-         (element-type `(or ,@(mapcar #'type-of-pattern args)))
+         (element-type `(or ,@(mapcar #'pattern-type args)))
          (arity (length args)))
     (make-constructor-pattern
      :name 'vector

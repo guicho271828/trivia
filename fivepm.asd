@@ -42,8 +42,8 @@ Examples:
 ### Variable Pattern
 
 A variable pattern matches any value and bind the value to the
-variable. _ is a special variable pattern which matches any value but
-doesn't bind.
+variable. _ is a special variable pattern (a.k.a wildcard pattern)
+which matches any value but doesn't bind.
 
 Examples:
 

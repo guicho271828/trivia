@@ -1,16 +1,16 @@
 (in-package :fivepm)
 
 (define-condition match-error (error)
-  ((argument :initarg :argument
+  ((argument :initarg :values
              :initform nil
-             :reader match-argument)
+             :reader match-error-values)
    (patterns :initarg :patterns
              :initform nil
-             :reader match-patterns))
+             :reader match-error-patterns))
   (:report (lambda (condition stream)
-             (format stream "Can't match ~A with ~{~S~^ or ~}."
-                     (match-argument condition)
-                     (match-patterns condition)))))
+             (format stream "Can't match ~S with ~{~S~^ or ~}."
+                     (match-error-values condition)
+                     (match-error-patterns condition)))))
 
 (defmacro match (arg &body clauses)
   "Matches ARG with CLAUSES. CLAUSES is a list of the form of (PATTERN
@@ -27,29 +27,38 @@ introduce a guard for PATTERN. That is,
 will be translated to
 
     (match list ((guard (list x) (oddp x)) x))"
-  (once-only (arg)
-    (compile-match-1 arg clauses nil)))
+  (compile-match-1 arg clauses nil))
 
-(defun %ematch-else (&optional arg patterns)
-  (error 'match-error
-         :argument arg
-         :patterns patterns))
+(defmacro match-values (values-form &body clauses)
+  "Matches the multiple values of VALUES-FORM with CLAUSES. Unlike
+MATCH, CLAUSES has to be have the form of (PATTERNS . BODY), where
+PATTERNS is a list of patterns. The number of values that will be used
+to match is determined by the maximum arity of PATTERNS among
+CLAUSES.
+
+Examples:
+
+    (match-values (values 1 2)
+     ((2) 1)
+     ((1 y) y))
+    => 2"
+  (compile-match-values values-form clauses nil))
 
 (defmacro ematch (arg &body clauses)
   "Same as MATCH, except MATCH-ERROR will be raised if not matched."
-  (once-only (arg)
-    (let ((else `(%ematch-else ,arg ',(mapcar #'car clauses))))
-      (compile-match-1 arg clauses else))))
+  (compile-ematch-1 arg clauses))
 
-(defun %cmatch-else (&optional arg patterns)
-  (cerror "Continue."
-         'match-error
-         :argument arg
-         :patterns patterns))
+(defmacro ematch-values (values-form &body clauses)
+  "Same as MATCH-VALUES, except MATCH-ERROR will be raised if not
+matched."
+  (compile-ematch-values values-form clauses))
 
 (defmacro cmatch (arg &body clauses)
   "Same as MATCH, except continuable MATCH-ERROR will be raised if not
 matched."
-  (once-only (arg)
-    (let ((else `(%cmatch-else ,arg ',(mapcar #'car clauses))))
-      (compile-match-1 arg clauses else))))
+  (compile-cmatch-1 arg clauses))
+
+(defmacro cmatch-values (values-form &body clauses)
+  "Same as MATCH-VALUES, except continuable MATCH-ERROR will be raised
+if not matched."
+  (compile-cmatch-values values-form clauses))

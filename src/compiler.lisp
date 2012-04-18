@@ -11,6 +11,25 @@
         (t
          `(progn . ,body))))
 
+(defun compile-match-fail (fail form else)
+  (let ((fail-count (count-occurrences form fail)))
+    (cond
+      ((or (eq else fail)
+           (zerop fail-count))
+       form)
+      ((or (literalp else)
+           (= fail-count 1))
+       (subst else fail form :test #'equal))
+      (t
+       (let ((block (gensym "MATCH"))
+             (tag (gensym "MATCH-FAIL")))
+         `(block ,block
+            (tagbody
+               (return-from ,block
+                 ,(subst `(go ,tag) fail form))
+               ,tag
+               (return-from ,block ,else))))))))
+
 (defun compile-match-variable-group (vars clauses else)
   (compile-match
    (cdr vars)
@@ -149,13 +168,73 @@
           `((,pattern . ,rest) . ,then)))
       clause))
 
+(define-condition match-error (error)
+  ((argument :initarg :values
+             :initform nil
+             :reader match-error-values)
+   (patterns :initarg :patterns
+             :initform nil
+             :reader match-error-patterns))
+  (:report (lambda (condition stream)
+             (format stream "Can't match ~S with ~{~S~^ or ~}."
+                     (match-error-values condition)
+                     (match-error-patterns condition)))))
+
 (defun compile-match (vars clauses else)
   (let* ((clauses (mapcar #'parse-match-clause clauses))
          (groups (group-match-clauses clauses)))
     (compile-match-groups vars groups else)))
 
-(defun compile-match-1 (var clauses else)
-  (compile-match
-   (list var)
-   (mapcar (lambda (clause) (cons (list (car clause)) (cdr clause))) clauses)
-   else))
+(defun compile-match-1 (form clauses else)
+  (let ((clauses (mapcar (lambda (c) (cons (list (car c)) (cdr c))) clauses)))
+    (if (literalp form)
+        (compile-match (list form) clauses else)
+        (once-only (form)
+          (compile-match (list form) clauses else)))))
+
+(defun compile-match-values (values-form clauses else)
+  (let* ((arity (loop for (patterns . then) in clauses
+                      maximize (length patterns)))
+         (vars (make-gensym-list arity "VAR")))
+    `(multiple-value-bind ,vars ,values-form
+       ,(compile-match vars clauses else))))
+
+(defun compile-ematch (vars clauses)
+  (let ((else `(error 'match-error
+                      :values (list ,@vars)
+                      :patterns ',@(mapcar #'car clauses))))
+    (compile-match vars clauses else)))
+
+(defun compile-ematch-1 (form clauses)
+  (let ((clauses (mapcar (lambda (c) (cons (list (car c)) (cdr c))) clauses)))
+    (if (literalp form)
+        (compile-ematch (list form) clauses)
+        (once-only (form)
+          (compile-ematch (list form) clauses)))))
+
+(defun compile-ematch-values (values-form clauses)
+  (let* ((arity (loop for (patterns . then) in clauses
+                      maximize (length patterns)))
+         (vars (make-gensym-list arity "VAR")))
+    `(multiple-value-bind ,vars ,values-form
+       ,(compile-ematch vars clauses))))
+
+(defun compile-cmatch (vars clauses)
+  (let ((else `(crror 'match-error
+                      :values (list ,@vars)
+                      :patterns ',@(mapcar #'car clauses))))
+    (compile-match vars clauses else)))
+
+(defun compile-cmatch-1 (form clauses)
+  (let ((clauses (mapcar (lambda (c) (cons (list (car c)) (cdr c))) clauses)))
+    (if (literalp form)
+        (compile-cmatch (list form) clauses)
+        (once-only (form)
+          (compile-cmatch (list form) clauses)))))
+
+(defun compile-cmatch-values (values-form clauses)
+  (let* ((arity (loop for (patterns . then) in clauses
+                      maximize (length patterns)))
+         (vars (make-gensym-list arity "VAR")))
+    `(multiple-value-bind ,vars ,values-form
+       ,(compile-cmatch vars clauses))))

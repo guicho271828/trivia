@@ -18,11 +18,13 @@
                 #:it)
   (:import-from :closer-mop
                 #:slot-definition-name
-                #:class-slots
-                #:class-direct-subclasses)
+                #:class-slots)
   (:export #:defpattern
            #:match
+           #:match-values
            #:ematch
+           #:ematch-values
            #:cmatch
+           #:cmatch-values
            #:xmatch
            #:guard))

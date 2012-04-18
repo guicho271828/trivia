@@ -23,7 +23,7 @@ Examples:
                        for guarded = (or (eq (second clause) 'when)
                                          (pattern-guarded-p pattern))
                        unless guarded
-                         collect (type-of-pattern (parse-pattern pattern))))))
+                         collect (pattern-type (parse-pattern pattern))))))
     (if (subtypep type union-type)
         (once-only (arg)
           (compile-match-1 arg clauses nil))
