@@ -160,7 +160,7 @@ matched.
 
 ## [Macro] xmatch
 
-    xmatch arg &body clauses
+    xmatch (the type arg) &body clauses
 
 Same as MATCH, except XMATCH does exhaustiveness analysis over
 CLAUSES with a type of ARG. If the type is not covered by CLAUSES, in
@@ -170,6 +170,13 @@ then a compile-time error will be raised.
 You need to specify the type of ARG with THE special operator like:
 
     (xmatch (the type arg) ...)
+
+Examples:
+
+    (xmatch (the (member :a :b) :b) (:a 1) (:b 2))
+    => 2
+    (xmatch (the (member :a :b) :b) (:a 1))
+    => COPMILE-TIME-ERROR
 
 Authors
 -------
