@@ -15,6 +15,7 @@
 (defstruct (constructor-pattern (:include pattern))
   name
   arity
+  type
   arguments
   predicate
   accessor)
@@ -22,6 +23,30 @@
 (defstruct (guard-pattern (:include pattern))
   pattern
   test-form)
+
+(defun pattern-guarded-p (pattern)
+  (etypecase pattern
+    ((or variable-pattern constant-pattern)
+     nil)
+    (constructor-pattern
+     (some #'pattern-guarded-p (constructor-pattern-arguments pattern)))
+    (guard-pattern
+     t)))
+
+;;;
+;;; Pattern Typing
+;;;
+
+(defgeneric type-of-pattern (pattern))
+
+(defmethod type-of-pattern ((pattern variable-pattern))
+  t)
+
+(defmethod type-of-pattern ((pattern constant-pattern))
+  `(eql ,(constant-pattern-value pattern)))
+
+(defmethod type-of-pattern ((pattern constructor-pattern))
+  (constructor-pattern-type pattern))
 
 ;;;
 ;;; Pattern Specifier
@@ -98,26 +123,39 @@ Examples:
 
 (defmethod parse-constructor-pattern ((name (eql 'cons)) &rest args)
   (unless (= (length args) 2)
-    (error "invalid number of arguments: ~D" (length args)))
-  (make-constructor-pattern
-   :name 'cons
-   :arity 2
-   :arguments (mapcar #'parse-pattern args)
-   :predicate (lambda (var) `(consp ,var))
-   :accessor (lambda (var i) `(,(ecase i (0 'car) (1 'cdr)) ,var))))
+    (error "Invalid number of arguments: ~D" (length args)))
+  (destructuring-bind (car-pattern cdr-pattern)
+      (mapcar #'parse-pattern args)
+    (make-constructor-pattern
+     :name 'cons
+     :arity 2
+     :type `(cons ,(type-of-pattern car-pattern) ,(type-of-pattern cdr-pattern))
+     :arguments (list car-pattern cdr-pattern)
+     :predicate (lambda (var) `(consp ,var))
+     :accessor (lambda (var i) `(,(ecase i (0 'car) (1 'cdr)) ,var)))))
 
-(macrolet ((define-sequece-constructor-pattern (type elt)
-             `(defmethod parse-constructor-pattern ((name (eql ',type)) &rest args)
-                (make-constructor-pattern
-                 :name ',type
-                 :arity (length args)
-                 :arguments (mapcar #'parse-pattern args)
-                 :predicate (lambda (var) `(typep ,var ',',type))
-                 :accessor (lambda (var i) `(,',elt ,var ,i))))))
-  (define-sequece-constructor-pattern sequence elt)
-  (define-sequece-constructor-pattern array aref)
-  (define-sequece-constructor-pattern vector aref)
-  (define-sequece-constructor-pattern simple-vector svref))
+(defmethod parse-constructor-pattern ((name (eql 'vector)) &rest args)
+  (let* ((args (mapcar #'parse-pattern args))
+         (element-type `(or ,@(mapcar #'type-of-pattern args)))
+         (arity (length args)))
+    (make-constructor-pattern
+     :name 'vector
+     :arity arity
+     :type `(vector ,element-type ,arity)
+     :arguments args
+     :predicate (lambda (var) `(typep ,var '(vector * ,arity)))
+     :accessor (lambda (var i) `(aref ,var ,i)))))
+
+(defmethod parse-constructor-pattern ((name (eql 'simple-vector)) &rest args)
+  (let* ((args (mapcar #'parse-pattern args))
+         (arity (length args)))
+    (make-constructor-pattern
+     :name 'simple-vector
+     :arity arity
+     :type `(simple-vector ,arity)
+     :arguments args
+     :predicate (lambda (var) `(typep ,var '(simple-vector ,arity)))
+     :accessor (lambda (var i) `(svref ,var ,i)))))
 
 (defmethod parse-constructor-pattern (class-name &rest slot-patterns)
   (setq slot-patterns (mapcar #'ensure-list slot-patterns))
@@ -125,7 +163,7 @@ Examples:
          (slot-defs (class-slots class))
          (slot-names (mapcar #'slot-definition-name slot-defs)))
     (awhen (first (set-difference (mapcar #'car slot-patterns) slot-names))
-      (error "unknown slot name ~A for ~A" it class-name))
+      (error "Unknown slot name ~A for ~A" it class-name))
     (let ((arguments
             (loop for slot-name in slot-names
                   for slot-pattern = (assoc slot-name slot-patterns)
@@ -139,6 +177,7 @@ Examples:
           (accessor (lambda (var i) `(slot-value ,var ',(nth i slot-names)))))
       (make-constructor-pattern :name class-name
                                 :arity (length arguments)
+                                :type class-name
                                 :arguments arguments
                                 :predicate predicate
                                 :accessor accessor))))

@@ -56,8 +56,6 @@ A constructor pattern matches not a value itself but a structure of
 the value. The following constructors are available:
 
 * (cons car cdr)
-* (sequence &rest elements)
-* (array &rest elements)
 * (vector &rest elements)
 * (simple-vector &rest elements)
 
@@ -102,7 +100,8 @@ Examples:
 ### Guard Pattern
 
 A guard pattern restricts a matching of PATTERN with a post condition
-TEST-FORM.  Note that a symbol GUARD is not (yet) exported.
+TEST-FORM. Note that a symbol GUARD is not (yet) exported. See also
+MATCH documentation.
 
 Examples:
 
@@ -121,4 +120,5 @@ Examples:
                              (:file "equal")
                              (:file "pattern")
                              (:file "compiler")
-                             (:file "match")))))
+                             (:file "match")
+                             (:file "xmatch")))))
