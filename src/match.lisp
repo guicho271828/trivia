@@ -28,7 +28,7 @@ will be translated to
 
     (match list ((guard (list x) (oddp x)) x))"
   (once-only (arg)
-    `(%match-1 ,arg ,clauses nil)))
+    (compile-match-1 arg clauses nil)))
 
 (defun %ematch-else (&optional arg patterns)
   (error 'match-error
@@ -39,7 +39,7 @@ will be translated to
   "Same as MATCH, except MATCH-ERROR will be raised if not matched."
   (once-only (arg)
     (let ((else `(%ematch-else ,arg ',(mapcar #'car clauses))))
-      `(%match-1 ,arg ,clauses ,else))))
+      (compile-match-1 arg clauses else))))
 
 (defun %cmatch-else (&optional arg patterns)
   (cerror "Continue."
@@ -52,4 +52,4 @@ will be translated to
 matched."
   (once-only (arg)
     (let ((else `(%cmatch-else ,arg ',(mapcar #'car clauses))))
-      `(%match-1 ,arg ,clauses ,else))))
+      (compile-match-1 arg clauses else))))

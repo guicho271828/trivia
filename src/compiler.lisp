@@ -1,25 +1,5 @@
 (in-package :fivepm)
 
-(defmacro with-match-fail (form else)
-  (flet ((literalp (value)
-           (typep value '(or symbol number character string))))
-    (cond
-      ((literalp else)
-       `(macrolet ((match-fail () ',else))
-          ,form))
-      ((equal else '(match-fail))
-       form)
-      (t
-       (let ((block (gensym "MATCH"))
-             (tag (gensym "MATCH-FAIL")))
-         `(block ,block
-            (tagbody
-               (return-from ,block
-                 (macrolet ((match-fail () '(go ,tag)))
-                   ,form))
-               ,tag
-               (return-from ,block ,else))))))))
-
 (defun compile-clause-body (body)
   (cond ((null body)
          nil)
@@ -32,65 +12,60 @@
          `(progn . ,body))))
 
 (defun compile-match-variable-group (vars clauses else)
-  `(%match ,(cdr vars)
-           ,(loop for ((pattern . rest) . then) in clauses
-                  for name = (variable-pattern-name pattern)
-                  collect
-                  (if name
-                      `(,rest (let ((,name ,(car vars))) . ,then))
-                      `(,rest . ,then)))
-           ,else))
+  (compile-match
+   (cdr vars)
+   (loop for ((pattern . rest) . then) in clauses
+         for name = (variable-pattern-name pattern)
+         collect
+         (if name
+             `(,rest (let ((,name ,(car vars))) . ,then))
+             `(,rest . ,then)))
+   else))
 
 (defun compile-match-constant-group (vars clauses else)
-  `(with-match-fail
-       (if ,(with-slots (value) (caaar clauses)
-              `(equals ,(car vars) ,value))
-           (%match ,(cdr vars)
-                   ,(loop for ((nil . rest) . then) in clauses
-                          collect `(,rest . ,then))
-                   (match-fail))
-           (match-fail))
-     ,else))
+  `(if ,(with-slots (value) (caaar clauses)
+          `(equals ,(car vars) ,value))
+       ,(compile-match
+         (cdr vars)
+         (loop for ((nil . rest) . then) in clauses
+               collect `(,rest . ,then))
+         else)
+       ,else))
 
 (defun compile-match-constructor-group (vars clauses else)
   (with-slots (arity arguments predicate accessor) (caaar clauses)
     (let* ((var (car vars))
            (test-form (funcall predicate var))
            (new-vars (make-gensym-list arity)))
-      `(with-match-fail
-           (if ,test-form
-               (let ,(loop for i from 0
-                           for new-var in new-vars
-                           for access = (funcall accessor var i)
-                           collect `(,new-var ,access))
-                 (declare (ignorable ,@new-vars))
-                 (%match (,@new-vars . ,(cdr vars))
-                         ,(loop for ((pattern . rest) . then) in clauses
-                                for args = (constructor-pattern-arguments pattern)
-                                collect `((,@args . ,rest) . ,then))
-                         (match-fail)))
-               (match-fail))
-         ,else))))
-
-(defun compile-match-guard (vars clause else)
-  (destructuring-bind ((pattern . rest) . then) clause
-    (with-slots (pattern test-form) pattern
-      `(with-match-fail
-           (%match (,(car vars))
-                   (((,pattern)
-                     (if ,test-form
-                         (%match ,(cdr vars)
-                                 ((,rest . ,then))
-                                 (match-fail))
-                         (match-fail))))
-                   (match-fail))
-         ,else))))
+      `(if ,test-form
+           (let ,(loop for i from 0
+                       for new-var in new-vars
+                       for access = (funcall accessor var i)
+                       collect `(,new-var ,access))
+             (declare (ignorable ,@new-vars))
+             ,(compile-match
+               (append new-vars (cdr vars))
+               (loop for ((pattern . rest) . then) in clauses
+                     for args = (constructor-pattern-arguments pattern)
+                     collect `((,@args . ,rest) . ,then))
+               else))
+           ,else))))
 
 (defun compile-match-guard-group (vars clauses else)
-  (reduce (lambda (clause else) (compile-match-guard vars clause else))
-          clauses
-          :initial-value else
-          :from-end t))
+  (assert (= (length clauses) 1))
+  (let ((clause (first clauses)))
+    (destructuring-bind ((pattern . rest) . then) clause
+      (with-slots (pattern test-form) pattern
+        (compile-match
+         (list (car vars))
+         `(((,pattern)
+            (if ,test-form
+                ,(compile-match
+                  (cdr vars)
+                  `((,rest . ,then))
+                  else)
+                ,else)))
+         else)))))
 
 (defun compile-match-empty-group (clauses else)
   (loop for (pattern . then) in clauses
@@ -98,7 +73,7 @@
           do (return (compile-clause-body then))
         finally (return else)))
 
-(defun compile-match-group (vars group else)
+(defun compile-match-group-1 (vars group else)
   (if vars
       (etypecase (caaar group)
         (variable-pattern
@@ -111,28 +86,49 @@
          (compile-match-guard-group vars group else)))
       (compile-match-empty-group group else)))
 
+(defun compile-match-group (vars group else)
+  (let* ((fail '(match-fail))
+         (compiled (compile-match-group-1 vars group fail))
+         (fail-count (count-occurrences compiled fail :test #'equal)))
+    (cond
+      ((or (literalp else)
+           (= fail-count 1))
+       (subst else fail compiled :test #'equal))
+      ((or (equal else fail)
+           (zerop fail-count))
+       compiled)
+      (t
+       (let ((block (gensym "MATCH"))
+             (tag (gensym "MATCH-FAIL")))
+         `(block ,block
+            (tagbody
+               (return-from ,block
+                 ,(subst `(go ,tag) fail compiled :test #'equal))
+               ,tag
+               (return-from ,block ,else))))))))
+
 (defun compile-match-groups (vars groups else)
   (reduce (lambda (group else) (compile-match-group vars group else))
           groups
           :initial-value else
           :from-end t))
 
-(defgeneric same-group-p (pattern1 pattern2)
-  (:method (pattern1 pattern2)
-    (eq (type-of pattern1) (type-of pattern2))))
-
-(defmethod same-group-p ((pattern1 constant-pattern) (pattern2 constant-pattern))
-  (%equal (constant-pattern-value pattern1)
-          (constant-pattern-value pattern2)))
-
-(defmethod same-group-p ((pattern1 constructor-pattern) (pattern2 constructor-pattern))
-  (and (eq (constructor-pattern-name pattern1)
-           (constructor-pattern-name pattern2))
-       (= (constructor-pattern-arity pattern1)
-          (constructor-pattern-arity pattern2))))
-
 (defun group-match-clauses (clauses)
-  (group clauses :test #'same-group-p :key #'caar))
+  (flet ((same-group-p (x y)
+           (and (eq (type-of x) (type-of y))
+                (cond ((constant-pattern-p x)
+                       (%equal (constant-pattern-value x)
+                               (constant-pattern-value y)))
+                      ((constructor-pattern-p x)
+                       (and (eq (constructor-pattern-name x)
+                                (constructor-pattern-name y))
+                            (= (constructor-pattern-arity x)
+                               (constructor-pattern-arity y))))
+                      ((guard-pattern-p x)
+                       ;; Never group guard patterns.
+                       nil)
+                      (t t)))))
+    (group clauses :test #'same-group-p :key #'caar)))
 
 (defun desugar-match-clause (clause)
   (if (car clause)
@@ -153,13 +149,13 @@
           `((,pattern . ,rest) . ,then)))
       clause))
 
-(defmacro %match (vars clauses else)
+(defun compile-match (vars clauses else)
   (let* ((clauses (mapcar #'parse-match-clause clauses))
          (groups (group-match-clauses clauses)))
     (compile-match-groups vars groups else)))
 
-(defmacro %match-1 (var clauses else)
-  `(%match (,var)
-           ,(loop for (pattern . then) in clauses
-                  collect `((,pattern) . ,then))
-           ,else))
+(defun compile-match-1 (var clauses else)
+  (compile-match
+   (list var)
+   (mapcar (lambda (clause) (cons (list (car clause)) (cdr clause))) clauses)
+   else))

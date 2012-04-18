@@ -173,7 +173,7 @@ You need to specify the type of ARG with THE special operator like:
 
 Examples:
 
-    (xmatch (the (member :a :b) :b) (:a 1) (:b 2))
+    (xmatch (the (member :a :b) :b) (:a 1) (:b 2) (:c 3))
     => 2
     (xmatch (the (member :a :b) :b) (:a 1))
     => COPMILE-TIME-ERROR

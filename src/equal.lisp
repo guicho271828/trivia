@@ -12,5 +12,6 @@
 (defmacro equals (var value)
   (cond ((null value) `(null ,var))
         ((symbolp value) `(eq ,var ',value))
+        ((literalp value) `(eql ,var ,value))
         ((consp value) `(%equal ,var ',value))
         (t `(%equal ,var ,value))))

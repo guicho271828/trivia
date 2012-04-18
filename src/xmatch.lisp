@@ -26,7 +26,7 @@ Examples:
                          collect (type-of-pattern (parse-pattern pattern))))))
     (if (subtypep type union-type)
         (once-only (arg)
-          `(match ,arg . ,clauses))
+          (compile-match-1 arg clauses nil))
         (error "Non exhaustive pattern matching for ~S.~@
                    Subtype relation ~S <: ~S is not satisfied."
                arg type union-type))))
