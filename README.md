@@ -114,7 +114,7 @@ Examples:
 ### Or Pattern
 
 An or pattern matches a value that is matched with one of
-PATTERNs. There is a restriction that every PATTERN of PATTERNs must
+PATTERNs. There is a restriction that every pattern of PATTERNs must
 have same set of variables.
 
 Examples:
@@ -163,10 +163,9 @@ will be translated to
     match-values values-form &body clauses
 
 Matches the multiple values of VALUES-FORM with CLAUSES. Unlike
-MATCH, CLAUSES has to be have the form of (PATTERNS . BODY), where
+MATCH, CLAUSES have to have the form of (PATTERNS . BODY), where
 PATTERNS is a list of patterns. The number of values that will be used
-to match is determined by the maximum arity of PATTERNS among
-CLAUSES.
+to match is determined by the maximum arity of PATTERNS among CLAUSES.
 
 Examples:
 

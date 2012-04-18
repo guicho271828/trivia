@@ -106,6 +106,14 @@ Examples:
   (when args
     `(cons ,(car args) (list ,@(cdr args)))))
 
+(defpattern list* (arg &rest args)
+  `(cons ,arg
+         ,(cond ((null args))
+                ((= (length args) 1)
+                 (car args))
+                (t
+                 `(list* ,(car args) ,@(cdr args))))))
+
 ;;;
 ;;; Pattern Specifier Parser
 ;;;

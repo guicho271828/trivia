@@ -31,10 +31,9 @@ will be translated to
 
 (defmacro match-values (values-form &body clauses)
   "Matches the multiple values of VALUES-FORM with CLAUSES. Unlike
-MATCH, CLAUSES has to be have the form of (PATTERNS . BODY), where
+MATCH, CLAUSES have to have the form of (PATTERNS . BODY), where
 PATTERNS is a list of patterns. The number of values that will be used
-to match is determined by the maximum arity of PATTERNS among
-CLAUSES.
+to match is determined by the maximum arity of PATTERNS among CLAUSES.
 
 Examples:
 
