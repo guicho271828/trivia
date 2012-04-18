@@ -72,19 +72,50 @@
 
 (defun compile-match-guard-group (vars clauses else)
   (assert (= (length clauses) 1))
-  (let ((clause (first clauses)))
-    (destructuring-bind ((pattern . rest) . then) clause
-      (with-slots (pattern test-form) pattern
-        (compile-match
-         (list (car vars))
-         `(((,pattern)
-            (if ,test-form
-                ,(compile-match
-                  (cdr vars)
-                  `((,rest . ,then))
-                  else)
-                ,else)))
-         else)))))
+  (destructuring-bind ((pattern . rest) . then)
+      (first clauses)
+    (with-slots (pattern test-form) pattern
+      (compile-match
+       (list (car vars))
+       `(((,pattern)
+          (if ,test-form
+              ,(compile-match
+                (cdr vars)
+                `((,rest . ,then))
+                else)
+              ,else)))
+       else))))
+
+(defun compile-match-or-group (vars clauses else)
+  (assert (= (length clauses) 1))
+  (destructuring-bind ((pattern . rest) . then)
+      (first clauses)
+    (let ((patterns (or-pattern-patterns pattern)))
+      (unless patterns
+        (return-from compile-match-or-group else))
+      (let ((new-vars (pattern-free-variables (car patterns))))
+        (unless (loop for pattern in (cdr patterns)
+                      for vars = (pattern-free-variables pattern)
+                      always (set-equal new-vars vars))
+          (error "Or-pattern must share same set of variables."))
+        (let* ((block (gensym "MATCH"))
+               (tag (gensym "MATCH-FAIL"))
+               (fail `(go ,tag)))
+          `(block ,block
+             (tagbody 
+                (return-from ,block
+                  (multiple-value-bind ,new-vars
+                      ,(compile-match-1
+                        (first vars)
+                        (loop for pattern in patterns
+                              collect `(,pattern (values ,@new-vars)))
+                        fail)
+                    ,(compile-match
+                      (cdr vars)
+                      `((,rest . ,then))
+                      fail)))
+                ,tag
+                (return-from ,block ,else))))))))
 
 (defun compile-match-empty-group (clauses else)
   (loop for (pattern . then) in clauses
@@ -92,39 +123,24 @@
           do (return (compile-clause-body then))
         finally (return else)))
 
-(defun compile-match-group-1 (vars group else)
-  (if vars
-      (etypecase (caaar group)
-        (variable-pattern
-         (compile-match-variable-group vars group else))
-        (constant-pattern
-         (compile-match-constant-group vars group else))
-        (constructor-pattern
-         (compile-match-constructor-group vars group else))
-        (guard-pattern
-         (compile-match-guard-group vars group else)))
-      (compile-match-empty-group group else)))
-
 (defun compile-match-group (vars group else)
-  (let* ((fail '(match-fail))
-         (compiled (compile-match-group-1 vars group fail))
-         (fail-count (count-occurrences compiled fail :test #'equal)))
-    (cond
-      ((or (literalp else)
-           (= fail-count 1))
-       (subst else fail compiled :test #'equal))
-      ((or (equal else fail)
-           (zerop fail-count))
-       compiled)
-      (t
-       (let ((block (gensym "MATCH"))
-             (tag (gensym "MATCH-FAIL")))
-         `(block ,block
-            (tagbody
-               (return-from ,block
-                 ,(subst `(go ,tag) fail compiled :test #'equal))
-               ,tag
-               (return-from ,block ,else))))))))
+  (let ((fail 'fail))
+    (compile-match-fail
+     fail
+     (aif (and vars (caaar group))
+          (etypecase it
+            (variable-pattern
+             (compile-match-variable-group vars group fail))
+            (constant-pattern
+             (compile-match-constant-group vars group fail))
+            (constructor-pattern
+             (compile-match-constructor-group vars group fail))
+            (guard-pattern
+             (compile-match-guard-group vars group fail))
+            (or-pattern
+             (compile-match-or-group vars group fail)))
+          (compile-match-empty-group group fail))
+     else)))
 
 (defun compile-match-groups (vars groups else)
   (reduce (lambda (group else) (compile-match-group vars group else))
@@ -135,18 +151,19 @@
 (defun group-match-clauses (clauses)
   (flet ((same-group-p (x y)
            (and (eq (type-of x) (type-of y))
-                (cond ((constant-pattern-p x)
-                       (%equal (constant-pattern-value x)
-                               (constant-pattern-value y)))
-                      ((constructor-pattern-p x)
-                       (and (eq (constructor-pattern-name x)
-                                (constructor-pattern-name y))
-                            (= (constructor-pattern-arity x)
-                               (constructor-pattern-arity y))))
-                      ((guard-pattern-p x)
-                       ;; Never group guard patterns.
-                       nil)
-                      (t t)))))
+                (typecase x
+                  (constant-pattern
+                   (%equal (constant-pattern-value x)
+                           (constant-pattern-value y)))
+                  (constructor-pattern
+                   (and (eq (constructor-pattern-name x)
+                            (constructor-pattern-name y))
+                        (= (constructor-pattern-arity x)
+                           (constructor-pattern-arity y))))
+                  ((or guard-pattern or-pattern)
+                   ;; Never group guard and or patterns.
+                   nil)
+                  (otherwise t)))))
     (group clauses :test #'same-group-p :key #'caar)))
 
 (defun desugar-match-clause (clause)

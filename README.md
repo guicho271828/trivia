@@ -19,6 +19,7 @@ specifiers are defined as follows:
                         | variable-pattern
                         | constructor-pattern
                         | guard-pattern
+                        | or-pattern
     
     constant-pattern ::= t | nil
                        | atom-except-symbol
@@ -29,6 +30,8 @@ specifiers are defined as follows:
     constructor-pattern ::= (NAME PATTERN*)
     
     guard-pattern ::= (guard PATTERN TEST-FORM)
+    
+    or-pattern ::= (or PATTERN*)
 
 ### Constant Pattern
 
@@ -107,6 +110,17 @@ Examples:
 
     (match 1 ((fivepm::guard x (evenp x)) 'even))
     => NIL
+
+### Or Pattern
+
+An or pattern matches a value that is matched with one of
+PATTERNs. There is a restriction that every PATTERN of PATTERNs must
+have same set of variables.
+
+Examples:
+
+    (match '(2 . 1) ((or (cons 1 x) (cons 2 x)) x))
+    => 1
 
 [Package] fivepm
 ----------------

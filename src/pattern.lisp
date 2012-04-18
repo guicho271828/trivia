@@ -24,18 +24,30 @@
   pattern
   test-form)
 
-(defun pattern-guarded-p (pattern)
-  (etypecase pattern
-    ((or variable-pattern constant-pattern)
-     nil)
-    (constructor-pattern
-     (some #'pattern-guarded-p (constructor-pattern-arguments pattern)))
-    (guard-pattern
-     t)))
+(defstruct (or-pattern (:include pattern))
+  patterns)
 
 ;;;
-;;; Pattern Typing
+;;; Pattern Utilities
 ;;;
+
+(defun pattern-guarded-p (pattern)
+  (typecase pattern
+    (constructor-pattern
+     (some #'pattern-guarded-p (constructor-pattern-arguments pattern)))
+    (guard-pattern t)
+    (otherwise nil)))
+
+(defun pattern-free-variables (pattern)
+  ;; TODO check for linear pattern
+  (typecase pattern
+    (variable-pattern
+     (awhen (variable-pattern-name pattern)
+       (list it)))
+    (constructor-pattern
+     (mappend #'pattern-free-variables (constructor-pattern-arguments pattern)))
+    (or-pattern
+     (mappend #'pattern-free-variables (or-pattern-patterns pattern)))))
 
 (defgeneric pattern-type (pattern))
 
@@ -114,6 +126,8 @@ Examples:
        (guard
         (make-guard-pattern :pattern (parse-pattern (second pattern))
                             :test-form (third pattern)))
+       (or
+        (make-or-pattern :patterns (mapcar #'parse-pattern (cdr pattern))))
        (otherwise
         (apply #'parse-constructor-pattern (car pattern) (cdr pattern)))))
     (otherwise

@@ -11,6 +11,10 @@
            (count-occurrences (cdr tree) subtree :test test))
         count)))
 
+(defun set-equal (set1 set2)
+  (and (null (set-difference set1 set2))
+       (null (set-difference set2 set1))))
+
 (defun span (list &key (test #'eql) (key #'identity))
   (loop with item = (funcall key (first list))
         for (x . rest) on list
