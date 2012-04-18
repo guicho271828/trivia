@@ -24,4 +24,5 @@
            #:match
            #:ematch
            #:cmatch
-           #:xmatch))
+           #:xmatch
+           #:guard))

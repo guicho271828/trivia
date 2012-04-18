@@ -101,8 +101,7 @@ Examples:
 ### Guard Pattern
 
 A guard pattern restricts a matching of PATTERN with a post condition
-TEST-FORM. Note that a symbol GUARD is not (yet) exported. See also
-MATCH documentation.
+TEST-FORM. See also MATCH documentation.
 
 Examples:
 
