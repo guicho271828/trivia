@@ -237,7 +237,8 @@
        ,(compile-ematch vars clauses))))
 
 (defun compile-cmatch (vars clauses)
-  (let ((else `(cerror 'match-error
+  (let ((else `(cerror "Continue."
+                       'match-error
                        :values (list ,@vars)
                        :patterns ',(mapcar #'car clauses))))
     (compile-match vars clauses else)))
