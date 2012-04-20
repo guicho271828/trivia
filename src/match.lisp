@@ -1,4 +1,4 @@
-(in-package :fivepm)
+(in-package :optima)
 
 (defmacro match (arg &body clauses)
   "Matches ARG with CLAUSES. CLAUSES is a list of the form of (PATTERN

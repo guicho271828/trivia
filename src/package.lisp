@@ -1,6 +1,5 @@
-(defpackage :fivepm
+(defpackage :optima
   (:use :cl)
-  (:nicknames :5pm)
   (:import-from :alexandria
                 #:ensure-car
                 #:ensure-list

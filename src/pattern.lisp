@@ -1,4 +1,4 @@
-(in-package :fivepm)
+(in-package :optima)
 
 ;;;
 ;;; Pattern Data Structure

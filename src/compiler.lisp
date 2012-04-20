@@ -1,4 +1,4 @@
-(in-package :fivepm)
+(in-package :optima)
 
 (defun compile-clause-body (body)
   (cond ((null body)

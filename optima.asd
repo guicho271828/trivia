@@ -1,6 +1,6 @@
-(asdf:defsystem :fivepm
-  :description "Very Fast Pattern Matching Library"
-  :long-description "fivepm is a very fast pattern matching library
+(asdf:defsystem :optima
+  :description "Optimized Pattern Matching Library"
+  :long-description "optima is a very fast pattern matching library
 which uses optimizing techniques widely used in a functional
 programming world. See the following references for more detail:
 
@@ -107,7 +107,7 @@ TEST-FORM. See also MATCH documentation.
 
 Examples:
 
-    (match 1 ((fivepm::guard x (evenp x)) 'even))
+    (match 1 ((guard x (evenp x)) 'even))
     => NIL
 
 ### Or Pattern

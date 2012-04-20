@@ -1,4 +1,4 @@
-(in-package :fivepm)
+(in-package :optima)
 
 (defmacro xmatch ((the type arg) &body clauses)
   "Same as MATCH, except XMATCH does exhaustiveness analysis over

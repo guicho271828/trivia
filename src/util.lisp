@@ -1,4 +1,4 @@
-(in-package :fivepm)
+(in-package :optima)
 
 (defun literalp (value)
   (typep value '(or symbol number character)))

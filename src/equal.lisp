@@ -1,4 +1,4 @@
-(in-package :fivepm)
+(in-package :optima)
 
 (defun %equal (a b)
   (declare (optimize (speed 3) (safety 0) (space 0)))
