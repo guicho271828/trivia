@@ -186,9 +186,9 @@
       clause))
 
 (define-condition match-error (error)
-  ((argument :initarg :values
-             :initform nil
-             :reader match-error-values)
+  ((values :initarg :values
+           :initform nil
+           :reader match-error-values)
    (patterns :initarg :patterns
              :initform nil
              :reader match-error-patterns))
@@ -210,7 +210,7 @@
           (compile-match (list form) clauses else)))))
 
 (defun compile-match-values (values-form clauses else)
-  (let* ((arity (loop for (patterns . then) in clauses
+  (let* ((arity (loop for (patterns . nil) in clauses
                       maximize (length patterns)))
          (vars (make-gensym-list arity "VAR")))
     `(multiple-value-bind ,vars ,values-form
@@ -230,7 +230,7 @@
           (compile-ematch (list form) clauses)))))
 
 (defun compile-ematch-values (values-form clauses)
-  (let* ((arity (loop for (patterns . then) in clauses
+  (let* ((arity (loop for (patterns . nil) in clauses
                       maximize (length patterns)))
          (vars (make-gensym-list arity "VAR")))
     `(multiple-value-bind ,vars ,values-form
@@ -250,7 +250,7 @@
           (compile-cmatch (list form) clauses)))))
 
 (defun compile-cmatch-values (values-form clauses)
-  (let* ((arity (loop for (patterns . then) in clauses
+  (let* ((arity (loop for (patterns . nil) in clauses
                       maximize (length patterns)))
          (vars (make-gensym-list arity "VAR")))
     `(multiple-value-bind ,vars ,values-form

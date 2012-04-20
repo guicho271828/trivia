@@ -1,17 +1,5 @@
 (in-package :fivepm)
 
-(define-condition match-error (error)
-  ((argument :initarg :values
-             :initform nil
-             :reader match-error-values)
-   (patterns :initarg :patterns
-             :initform nil
-             :reader match-error-patterns))
-  (:report (lambda (condition stream)
-             (format stream "Can't match ~S with ~{~S~^ or ~}."
-                     (match-error-values condition)
-                     (match-error-patterns condition)))))
-
 (defmacro match (arg &body clauses)
   "Matches ARG with CLAUSES. CLAUSES is a list of the form of (PATTERN
 . BODY) where PATTERN is a pattern specifier and BODY is an implicit
