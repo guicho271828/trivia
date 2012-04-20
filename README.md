@@ -158,9 +158,9 @@ will be translated to
 
     (match list ((guard (list x) (oddp x)) x))
 
-## [Macro] match-values
+## [Macro] multiple-value-match
 
-    match-values values-form &body clauses
+    multiple-value-match values-form &body clauses
 
 Matches the multiple values of VALUES-FORM with CLAUSES. Unlike
 MATCH, CLAUSES have to have the form of (PATTERNS . BODY), where
@@ -169,7 +169,7 @@ to match is determined by the maximum arity of PATTERNS among CLAUSES.
 
 Examples:
 
-    (match-values (values 1 2)
+    (multiple-value-match (values 1 2)
      ((2) 1)
      ((1 y) y))
     => 2
@@ -180,12 +180,12 @@ Examples:
 
 Same as MATCH, except MATCH-ERROR will be raised if not matched.
 
-## [Macro] ematch-values
+## [Macro] multiple-value-ematch
 
-    ematch-values values-form &body clauses
+    multiple-value-ematch values-form &body clauses
 
-Same as MATCH-VALUES, except MATCH-ERROR will be raised if not
-matched.
+Same as MULTIPLE-VALUE-MATCH, except MATCH-ERROR will be raised if
+not matched.
 
 ## [Macro] cmatch
 
@@ -194,12 +194,12 @@ matched.
 Same as MATCH, except continuable MATCH-ERROR will be raised if not
 matched.
 
-## [Macro] cmatch-values
+## [Macro] multiple-value-cmatch
 
-    cmatch-values values-form &body clauses
+    multiple-value-cmatch values-form &body clauses
 
-Same as MATCH-VALUES, except continuable MATCH-ERROR will be raised
-if not matched.
+Same as MULTIPLE-VALUE-MATCH, except continuable MATCH-ERROR will
+be raised if not matched.
 
 ## [Macro] xmatch
 

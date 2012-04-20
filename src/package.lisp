@@ -21,10 +21,10 @@
                 #:class-slots)
   (:export #:defpattern
            #:match
-           #:match-values
+           #:multiple-value-match
            #:ematch
-           #:ematch-values
+           #:multiple-value-ematch
            #:cmatch
-           #:cmatch-values
+           #:multiple-value-cmatch
            #:xmatch
            #:guard))

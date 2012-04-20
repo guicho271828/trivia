@@ -209,7 +209,7 @@
         (once-only (form)
           (compile-match (list form) clauses else)))))
 
-(defun compile-match-values (values-form clauses else)
+(defun compile-multiple-value-match (values-form clauses else)
   (let* ((arity (loop for (patterns . nil) in clauses
                       maximize (length patterns)))
          (vars (make-gensym-list arity "VAR")))
@@ -229,7 +229,7 @@
         (once-only (form)
           (compile-ematch (list form) clauses)))))
 
-(defun compile-ematch-values (values-form clauses)
+(defun compile-multiple-value-ematch (values-form clauses)
   (let* ((arity (loop for (patterns . nil) in clauses
                       maximize (length patterns)))
          (vars (make-gensym-list arity "VAR")))
@@ -249,7 +249,7 @@
         (once-only (form)
           (compile-cmatch (list form) clauses)))))
 
-(defun compile-cmatch-values (values-form clauses)
+(defun compile-multiple-value-cmatch (values-form clauses)
   (let* ((arity (loop for (patterns . nil) in clauses
                       maximize (length patterns)))
          (vars (make-gensym-list arity "VAR")))
