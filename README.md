@@ -1,7 +1,7 @@
-fivepm - Very Fast Pattern Matching Library
+optima - Optimized Pattern Matching Library
 ===========================================
 
-fivepm is a very fast pattern matching library
+optima is a very fast pattern matching library
 which uses optimizing techniques widely used in a functional
 programming world. See the following references for more detail:
 
@@ -108,7 +108,7 @@ TEST-FORM. See also MATCH documentation.
 
 Examples:
 
-    (match 1 ((fivepm::guard x (evenp x)) 'even))
+    (match 1 ((guard x (evenp x)) 'even))
     => NIL
 
 ### Or Pattern
@@ -122,7 +122,7 @@ Examples:
     (match '(2 . 1) ((or (cons 1 x) (cons 2 x)) x))
     => 1
 
-[Package] fivepm
+[Package] optima
 ----------------
 
 ## [Macro] defpattern
