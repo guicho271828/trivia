@@ -19,6 +19,7 @@ specifiers are defined as follows:
                         | variable-pattern
                         | constructor-pattern
                         | guard-pattern
+                        | not-pattern
                         | or-pattern
     
     constant-pattern ::= t | nil
@@ -30,6 +31,8 @@ specifiers are defined as follows:
     constructor-pattern ::= (NAME PATTERN*)
     
     guard-pattern ::= (guard PATTERN TEST-FORM)
+    
+    not-pattern ::= (not PATTERN)
     
     or-pattern ::= (or PATTERN*)
 
@@ -46,13 +49,17 @@ Examples:
 ### Variable Pattern
 
 A variable pattern matches any value and bind the value to the
-variable. _ is a special variable pattern (a.k.a wildcard pattern)
-which matches any value but doesn't bind.
+variable. _ and otherwise is a special variable pattern (a.k.a
+wildcard pattern) which matches any value but doesn't bind.
 
 Examples:
 
     (match 1 (x x)) => 1
     (match 1 (_ 2)) => 2
+    (match 1
+      (2 2)
+      (otherwise 'otherwise))
+    => OTHERWISE
 
 ### Constructor Pattern
 
@@ -110,6 +117,15 @@ Examples:
 
     (match 1 ((guard x (evenp x)) 'even))
     => NIL
+
+### Not Pattern
+
+A not pattern matches a value that is not matched with PATTERN.
+
+Examples:
+
+    (match 1 ((not 2) 3)) => 3
+    (match 1 ((not (not 1)) 1)) => 1
 
 ### Or Pattern
 

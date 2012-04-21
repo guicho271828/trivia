@@ -93,9 +93,9 @@
     (let ((patterns (or-pattern-patterns pattern)))
       (unless patterns
         (return-from compile-match-or-group else))
-      (let ((new-vars (pattern-free-variables (car patterns))))
+      (let ((new-vars (pattern-variables (car patterns))))
         (unless (loop for pattern in (cdr patterns)
-                      for vars = (pattern-free-variables pattern)
+                      for vars = (pattern-variables pattern)
                       always (set-equal new-vars vars))
           (error "Or-pattern must share same set of variables."))
         (let* ((block (gensym "MATCH"))
@@ -117,6 +117,19 @@
                 ,tag
                 (return-from ,block ,else))))))))
 
+(defun compile-match-not-group (vars clauses else)
+  (assert (= (length clauses) 1))
+  (destructuring-bind ((pattern . rest) . then)
+      (first clauses)
+    (let ((pattern (not-pattern-pattern pattern)))
+      (compile-match-1
+       (first vars)
+       `((,pattern ,else))
+       (compile-match
+        (cdr vars)
+        `((,rest . ,then))
+        else)))))
+
 (defun compile-match-empty-group (clauses else)
   (loop for (pattern . then) in clauses
         if (null pattern)
@@ -124,7 +137,7 @@
         finally (return else)))
 
 (defun compile-match-group (vars group else)
-  (let ((fail 'fail))
+  (let ((fail (gensym "FAIL")))
     (compile-match-fail
      fail
      (aif (and vars (caaar group))
@@ -137,6 +150,8 @@
              (compile-match-constructor-group vars group fail))
             (guard-pattern
              (compile-match-guard-group vars group fail))
+            (not-pattern
+             (compile-match-not-group vars group fail))
             (or-pattern
              (compile-match-or-group vars group fail)))
           (compile-match-empty-group group fail))
@@ -160,8 +175,7 @@
                             (constructor-pattern-name y))
                         (= (constructor-pattern-arity x)
                            (constructor-pattern-arity y))))
-                  ((or guard-pattern or-pattern)
-                   ;; Never group guard and or patterns.
+                  ((or guard-pattern not-pattern or-pattern)
                    nil)
                   (otherwise t)))))
     (group clauses :test #'same-group-p :key #'caar)))

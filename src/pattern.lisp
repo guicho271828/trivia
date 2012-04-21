@@ -24,6 +24,9 @@
   pattern
   test-form)
 
+(defstruct (not-pattern (:include pattern))
+  pattern)
+
 (defstruct (or-pattern (:include pattern))
   patterns)
 
@@ -35,30 +38,36 @@
   (typecase pattern
     (constructor-pattern
      (some #'pattern-guarded-p (constructor-pattern-arguments pattern)))
-    (guard-pattern t)
-    (otherwise nil)))
+    (not-pattern
+     (pattern-guarded-p (not-pattern-pattern pattern)))
+    (or-pattern
+     (some #'pattern-guarded-p (or-pattern-patterns pattern)))
+    (guard-pattern t)))
 
-(defun pattern-free-variables (pattern)
+(defun pattern-variables (pattern)
   ;; TODO check for linear pattern
   (typecase pattern
     (variable-pattern
      (awhen (variable-pattern-name pattern)
        (list it)))
     (constructor-pattern
-     (mappend #'pattern-free-variables (constructor-pattern-arguments pattern)))
+     (mappend #'pattern-variables (constructor-pattern-arguments pattern)))
+    (not-pattern
+     (pattern-variables (not-pattern-pattern pattern)))
     (or-pattern
-     (mappend #'pattern-free-variables (or-pattern-patterns pattern)))))
+     (mappend #'pattern-variables (or-pattern-patterns pattern)))))
 
-(defgeneric pattern-type (pattern))
-
-(defmethod pattern-type ((pattern variable-pattern))
-  t)
-
-(defmethod pattern-type ((pattern constant-pattern))
-  `(eql ,(constant-pattern-value pattern)))
-
-(defmethod pattern-type ((pattern constructor-pattern))
-  (constructor-pattern-type pattern))
+(defun pattern-type (pattern)
+  (typecase pattern
+    (variable-pattern t)
+    (constant-pattern
+     `(eql ,(constant-pattern-value pattern)))
+    (constructor-pattern
+     (constructor-pattern-type pattern))
+    (not-pattern
+     `(not ,(pattern-type (not-pattern-pattern pattern))))
+    (or-pattern
+     `(or ,@(mapcar #'pattern-type (or-pattern-patterns pattern))))))
 
 ;;;
 ;;; Pattern Specifier
@@ -126,7 +135,10 @@ Examples:
     ((or (eql t) null keyword)
      (make-constant-pattern :value pattern))
     (symbol
-     (make-variable-pattern :name (unless (string= pattern "_") pattern)))
+     (let ((name (unless (or (eq pattern 'otherwise)
+                             (string= pattern "_"))
+                   pattern)))
+       (make-variable-pattern :name name)))
     (cons
      (case (first pattern)
        (quote
@@ -134,6 +146,8 @@ Examples:
        (guard
         (make-guard-pattern :pattern (parse-pattern (second pattern))
                             :test-form (third pattern)))
+       (not
+        (make-not-pattern :pattern (parse-pattern (second pattern))))
        (or
         (make-or-pattern :patterns (mapcar #'parse-pattern (cdr pattern))))
        (otherwise
