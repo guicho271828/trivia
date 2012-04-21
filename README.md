@@ -18,6 +18,7 @@ specifiers are defined as follows:
     pattern-specifier ::= constant-pattern
                         | variable-pattern
                         | constructor-pattern
+                        | as-pattern
                         | guard-pattern
                         | not-pattern
                         | or-pattern
@@ -30,15 +31,17 @@ specifiers are defined as follows:
     
     constructor-pattern ::= (NAME PATTERN*)
     
+    as-pattern ::= (as PATTERN NAME)
+    
     guard-pattern ::= (guard PATTERN TEST-FORM)
     
     not-pattern ::= (not PATTERN)
     
     or-pattern ::= (or PATTERN*)
 
-### Constant Pattern
+### Constant-Pattern
 
-A constant pattern matches the constant itself.
+A constant-pattern matches the constant itself.
 
 Examples:
 
@@ -46,11 +49,11 @@ Examples:
     (match "foo" ("foo" "bar")) => "bar"
     (match '(1) ('(1) 2)) => 2
 
-### Variable Pattern
+### Variable-Pattern
 
-A variable pattern matches any value and bind the value to the
-variable. _ and otherwise is a special variable pattern (a.k.a
-wildcard pattern) which matches any value but doesn't bind.
+A variable-pattern matches any value and bind the value to the
+variable. _ and otherwise is a special variable-pattern (a.k.a
+wildcard-pattern) which matches any value but doesn't bind.
 
 Examples:
 
@@ -61,9 +64,9 @@ Examples:
       (otherwise 'otherwise))
     => OTHERWISE
 
-### Constructor Pattern
+### Constructor-Pattern
 
-A constructor pattern matches not a value itself but a structure of
+A constructor-pattern matches not a value itself but a structure of
 the value. The following constructors are available:
 
 * (cons car cdr)
@@ -75,7 +78,7 @@ Examples:
     (match '(1 . 2) ((cons a b) (+ a b))) => 3
     (match #(1 2) ((simple-vector a b) (+ a b))) => 3
 
-LIST is not a constructor pattern but a dervied pattern. If we see the
+LIST is not a constructor-pattern but a dervied pattern. If we see the
 following pattern specifier
 
     (list a b c)
@@ -108,30 +111,40 @@ Examples:
       (_ 'not-matched))
     => NOT-MATCHED
 
-### Guard Pattern
+### As-Pattern
 
-A guard pattern restricts a matching of PATTERN with a post condition
-TEST-FORM. See also MATCH documentation.
+An as-pattern matches any value that is matched with sub-PATTERN, and
+binds the value to variable named NAME.
+
+Examples:
+
+    (match '(1 . 2) ((as (cons 1 _) cons) cons))
+    => (1 . 2)
+
+### Guard-Pattern
+
+A guard-pattern restricts a matching of sub-PATTERN with a post
+condition TEST-FORM. See also MATCH documentation.
 
 Examples:
 
     (match 1 ((guard x (evenp x)) 'even))
     => NIL
 
-### Not Pattern
+### Not-Pattern
 
-A not pattern matches a value that is not matched with PATTERN.
+A not-pattern matches a value that is not matched with sub-PATTERN.
 
 Examples:
 
     (match 1 ((not 2) 3)) => 3
     (match 1 ((not (not 1)) 1)) => 1
 
-### Or Pattern
+### Or-Pattern
 
-An or pattern matches a value that is matched with one of
-PATTERNs. There is a restriction that every pattern of PATTERNs must
-have same set of variables.
+An or-pattern matches a value that is matched with one of
+sub-PATTERNs. There is a restriction that every pattern of
+sub-PATTERNs must have same set of variables.
 
 Examples:
 
@@ -140,20 +153,6 @@ Examples:
 
 [Package] optima
 ----------------
-
-## [Macro] defpattern
-
-    defpattern name lambda-list &body body
-
-Defines a derived pattern specifier named NAME. This is analogous
-to DEFTYPE.
-
-Examples:
-
-    ;; Defines a LIST pattern.
-    (defpattern list (&rest args)
-      (when args
-        `(cons ,(car args) (list ,@(cdr args)))))
 
 ## [Macro] match
 
@@ -236,6 +235,20 @@ Examples:
     => 2
     (xmatch (the (member :a :b) :b) (:a 1))
     => COPMILE-TIME-ERROR
+
+## [Macro] defpattern
+
+    defpattern name lambda-list &body body
+
+Defines a derived pattern specifier named NAME. This is analogous
+to DEFTYPE.
+
+Examples:
+
+    ;; Defines a LIST pattern.
+    (defpattern list (&rest args)
+      (when args
+        `(cons ,(car args) (list ,@(cdr args)))))
 
 Authors
 -------

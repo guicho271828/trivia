@@ -74,10 +74,10 @@
   (assert (= (length clauses) 1))
   (destructuring-bind ((pattern . rest) . then)
       (first clauses)
-    (with-slots (pattern test-form) pattern
+    (with-slots (sub-pattern test-form) pattern
       (compile-match
        (list (car vars))
-       `(((,pattern)
+       `(((,sub-pattern)
           (if ,test-form
               ,(compile-match
                 (cdr vars)
@@ -90,7 +90,7 @@
   (assert (= (length clauses) 1))
   (destructuring-bind ((pattern . rest) . then)
       (first clauses)
-    (let ((patterns (or-pattern-patterns pattern)))
+    (let ((patterns (or-pattern-sub-patterns pattern)))
       (unless patterns
         (return-from compile-match-or-group else))
       (let ((new-vars (pattern-variables (car patterns))))
@@ -121,7 +121,7 @@
   (assert (= (length clauses) 1))
   (destructuring-bind ((pattern . rest) . then)
       (first clauses)
-    (let ((pattern (not-pattern-pattern pattern)))
+    (let ((pattern (not-pattern-sub-pattern pattern)))
       (compile-match-1
        (first vars)
        `((,pattern ,else))
@@ -180,25 +180,6 @@
                   (otherwise t)))))
     (group clauses :test #'same-group-p :key #'caar)))
 
-(defun desugar-match-clause (clause)
-  (if (car clause)
-      (destructuring-bind ((pattern . rest) . then) clause
-        (if (and (>= (length then) 2)
-                 (eq (first then) 'when))
-            (let* ((test (second then))
-                   (then (cddr then)))
-              `(((guard ,pattern ,test) . ,rest) . ,then))
-            `((,pattern . ,rest) . ,then)))
-      clause))
-
-(defun parse-match-clause (clause)
-  (if (car clause)
-      (destructuring-bind ((pattern . rest) . then)
-          (desugar-match-clause clause)
-        (let ((pattern (parse-pattern pattern)))
-          `((,pattern . ,rest) . ,then)))
-      clause))
-
 (define-condition match-error (error)
   ((values :initarg :values
            :initform nil
@@ -212,13 +193,30 @@
                      (match-error-patterns condition)))))
 
 (defun compile-match (vars clauses else)
-  (let* ((clauses (mapcar #'parse-match-clause clauses))
+  (let* ((clauses
+           (mapcar (lambda (clause)
+                     (when (car clause)
+                       (destructuring-bind ((pattern . rest) . then) clause
+                         ;; Desugar WHEN.
+                         (if (and (>= (length then) 2)
+                                  (eq (first then) 'when))
+                             (setq pattern `(guard ,pattern ,(second then))
+                                   then (cddr then)))
+                         ;; Parse the pattern specifier.
+                         (setq pattern (parse-pattern pattern))
+                         ;; Compile AS-PATTERNs here.
+                         (when (as-pattern-p pattern)
+                           (setq then `((let ((,(as-pattern-name pattern) ,(car vars))) ,@then))
+                                 pattern (as-pattern-sub-pattern pattern)))
+                         (setq clause `((,pattern . ,rest) . ,then))))
+                     clause)
+                   clauses))
          (groups (group-match-clauses clauses)))
     (compile-match-groups vars groups else)))
 
 (defun compile-match-1 (form clauses else)
   (let ((clauses (mapcar (lambda (c) (cons (list (car c)) (cdr c))) clauses)))
-    (if (literalp form)
+    (if (symbolp form)
         (compile-match (list form) clauses else)
         (once-only (form)
           (compile-match (list form) clauses else)))))
@@ -238,7 +236,7 @@
 
 (defun compile-ematch-1 (form clauses)
   (let ((clauses (mapcar (lambda (c) (cons (list (car c)) (cdr c))) clauses)))
-    (if (literalp form)
+    (if (symbolp form)
         (compile-ematch (list form) clauses)
         (once-only (form)
           (compile-ematch (list form) clauses)))))
@@ -259,7 +257,7 @@
 
 (defun compile-cmatch-1 (form clauses)
   (let ((clauses (mapcar (lambda (c) (cons (list (car c)) (cdr c))) clauses)))
-    (if (literalp form)
+    (if (symbolp form)
         (compile-cmatch (list form) clauses)
         (once-only (form)
           (compile-cmatch (list form) clauses)))))

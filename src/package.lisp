@@ -10,7 +10,8 @@
                 #:required-argument
                 #:with-gensyms
                 #:once-only
-                #:when-let)
+                #:when-let
+                #:destructuring-case)
   (:import-from :anaphora
                 #:aif
                 #:awhen
@@ -18,12 +19,13 @@
   (:import-from :closer-mop
                 #:slot-definition-name
                 #:class-slots)
-  (:export #:defpattern
-           #:match
+  (:export #:match
            #:multiple-value-match
            #:ematch
            #:multiple-value-ematch
            #:cmatch
            #:multiple-value-cmatch
            #:xmatch
+           #:defpattern
+           #:as
            #:guard))
