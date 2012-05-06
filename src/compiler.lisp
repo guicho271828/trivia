@@ -1,5 +1,7 @@
 (in-package :optima)
 
+(defvar *let* 'let)
+
 (defun compile-clause-body (body)
   (cond ((null body)
          nil)
@@ -37,7 +39,7 @@
          for name = (variable-pattern-name pattern)
          collect
          (if name
-             `(,rest (let ((,name ,(car vars))) . ,then))
+             `(,rest (,*let* ((,name ,(car vars))) . ,then))
              `(,rest . ,then)))
    else))
 
@@ -57,17 +59,18 @@
            (test-form (funcall predicate var))
            (new-vars (make-gensym-list arity)))
       `(if ,test-form
-           (let ,(loop for i from 0
-                       for new-var in new-vars
-                       for access = (funcall accessor var i)
-                       collect `(,new-var ,access))
-             (declare (ignorable ,@new-vars))
-             ,(compile-match
-               (append new-vars (cdr vars))
-               (loop for ((pattern . rest) . then) in clauses
-                     for args = (constructor-pattern-arguments pattern)
-                     collect `((,@args . ,rest) . ,then))
-               else))
+           (,*let*
+            ,(loop for i from 0
+                   for new-var in new-vars
+                   for access = (funcall accessor var i)
+                   collect `(,new-var ,access))
+            (declare (ignorable ,@new-vars))
+            ,(compile-match
+              (append new-vars (cdr vars))
+              (loop for ((pattern . rest) . then) in clauses
+                    for args = (constructor-pattern-arguments pattern)
+                    collect `((,@args . ,rest) . ,then))
+              else))
            ,else))))
 
 (defun compile-match-guard-group (vars clauses else)
@@ -180,18 +183,6 @@
                   (otherwise t)))))
     (group clauses :test #'same-group-p :key #'caar)))
 
-(define-condition match-error (error)
-  ((values :initarg :values
-           :initform nil
-           :reader match-error-values)
-   (patterns :initarg :patterns
-             :initform nil
-             :reader match-error-patterns))
-  (:report (lambda (condition stream)
-             (format stream "Can't match ~S with ~{~S~^ or ~}."
-                     (match-error-values condition)
-                     (match-error-patterns condition)))))
-
 (defun compile-match (vars clauses else)
   (let* ((clauses
            (mapcar (lambda (clause)
@@ -206,7 +197,7 @@
                          (setq pattern (parse-pattern pattern))
                          ;; Compile AS-PATTERNs here.
                          (when (as-pattern-p pattern)
-                           (setq then `((let ((,(as-pattern-name pattern) ,(car vars))) ,@then))
+                           (setq then `((,*let* ((,(as-pattern-name pattern) ,(car vars))) ,@then))
                                  pattern (as-pattern-sub-pattern pattern)))
                          (setq clause `((,pattern . ,rest) . ,then))))
                      clause)
@@ -227,44 +218,3 @@
          (vars (make-gensym-list arity "VAR")))
     `(multiple-value-bind ,vars ,values-form
        ,(compile-match vars clauses else))))
-
-(defun compile-ematch (vars clauses)
-  (let ((else `(error 'match-error
-                      :values (list ,@vars)
-                      :patterns ',(mapcar #'car clauses))))
-    (compile-match vars clauses else)))
-
-(defun compile-ematch-1 (form clauses)
-  (let ((clauses (mapcar (lambda (c) (cons (list (car c)) (cdr c))) clauses)))
-    (if (symbolp form)
-        (compile-ematch (list form) clauses)
-        (once-only (form)
-          (compile-ematch (list form) clauses)))))
-
-(defun compile-multiple-value-ematch (values-form clauses)
-  (let* ((arity (loop for (patterns . nil) in clauses
-                      maximize (length patterns)))
-         (vars (make-gensym-list arity "VAR")))
-    `(multiple-value-bind ,vars ,values-form
-       ,(compile-ematch vars clauses))))
-
-(defun compile-cmatch (vars clauses)
-  (let ((else `(cerror "Continue."
-                       'match-error
-                       :values (list ,@vars)
-                       :patterns ',(mapcar #'car clauses))))
-    (compile-match vars clauses else)))
-
-(defun compile-cmatch-1 (form clauses)
-  (let ((clauses (mapcar (lambda (c) (cons (list (car c)) (cdr c))) clauses)))
-    (if (symbolp form)
-        (compile-cmatch (list form) clauses)
-        (once-only (form)
-          (compile-cmatch (list form) clauses)))))
-
-(defun compile-multiple-value-cmatch (values-form clauses)
-  (let* ((arity (loop for (patterns . nil) in clauses
-                      maximize (length patterns)))
-         (vars (make-gensym-list arity "VAR")))
-    `(multiple-value-bind ,vars ,values-form
-       ,(compile-cmatch vars clauses))))

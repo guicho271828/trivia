@@ -68,7 +68,8 @@
 
 (defun pattern-type (pattern)
   (typecase pattern
-    (variable-pattern t)
+    (variable-pattern
+     t)
     (constant-pattern
      `(eql ,(constant-pattern-value pattern)))
     (constructor-pattern
@@ -117,7 +118,6 @@
 to DEFTYPE.
 
 Examples:
-
     ;; Defines a LIST pattern.
     (defpattern list (&rest args)
       (when args
@@ -144,32 +144,35 @@ Examples:
   (when (pattern-p pattern)
     (return-from parse-pattern pattern))
   (setq pattern (pattern-expand pattern))
-  (typecase pattern
-    ((or (eql t) null keyword)
-     (make-constant-pattern :value pattern))
-    (symbol
-     (let ((name (unless (or (eq pattern 'otherwise)
-                             (string= pattern "_"))
-                   pattern)))
-       (make-variable-pattern :name name)))
-    (cons
-     (destructuring-case pattern
-       ((quote value)
-        (make-constant-pattern :value value))
-       ((as sub-pattern name)
-        (make-as-pattern :sub-pattern (parse-pattern sub-pattern)
-                         :name name))
-       ((guard sub-pattern test-form)
-        (make-guard-pattern :sub-pattern (parse-pattern sub-pattern)
-                            :test-form test-form))
-       ((not sub-pattern)
-        (make-not-pattern :sub-pattern (parse-pattern sub-pattern)))
-       ((or sub-patterns)
-        (make-or-pattern :sub-patterns (mapcar #'parse-pattern sub-patterns)))
-       ((otherwise &rest args)
-        (apply #'parse-constructor-pattern (car pattern) args))))
-    (otherwise
-     (make-constant-pattern :value pattern))))
+  (flet ((var-name (name)
+           (unless (or (eq name 'otherwise)
+                       (string= name "_"))
+             name)))
+    (typecase pattern
+      ((or (eql t) null keyword)
+       (make-constant-pattern :value pattern))
+      (symbol
+       (make-variable-pattern :name (var-name pattern)))
+      (cons
+       (destructuring-case pattern
+         ((variable name)
+          (make-variable-pattern :name (var-name name)))
+         ((quote value)
+          (make-constant-pattern :value value))
+         ((as sub-pattern name)
+          (make-as-pattern :sub-pattern (parse-pattern sub-pattern)
+                           :name name))
+         ((guard sub-pattern test-form)
+          (make-guard-pattern :sub-pattern (parse-pattern sub-pattern)
+                              :test-form test-form))
+         ((not sub-pattern)
+          (make-not-pattern :sub-pattern (parse-pattern sub-pattern)))
+         ((or sub-patterns)
+          (make-or-pattern :sub-patterns (mapcar #'parse-pattern sub-patterns)))
+         ((otherwise &rest args)
+          (apply #'parse-constructor-pattern (car pattern) args))))
+      (otherwise
+       (make-constant-pattern :value pattern)))))
 
 (defgeneric parse-constructor-pattern (name &rest args))
 

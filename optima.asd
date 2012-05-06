@@ -17,6 +17,7 @@ specifiers are defined as follows:
     pattern-specifier ::= constant-pattern
                         | variable-pattern
                         | constructor-pattern
+                        | derived-pattern
                         | as-pattern
                         | guard-pattern
                         | not-pattern
@@ -26,9 +27,11 @@ specifiers are defined as follows:
                        | atom-except-symbol
                        | (quote VALUE)
     
-    variable-pattern ::= SYMBOL
+    variable-pattern ::= SYMBOL | (variable SYMBOL)
     
     constructor-pattern ::= (NAME PATTERN*)
+
+    derived-pattern ::= (NAME PATTERN*)
     
     as-pattern ::= (as PATTERN NAME)
     
@@ -77,17 +80,6 @@ Examples:
     (match '(1 . 2) ((cons a b) (+ a b))) => 3
     (match #(1 2) ((simple-vector a b) (+ a b))) => 3
 
-LIST is not a constructor-pattern but a dervied pattern. If we see the
-following pattern specifier
-
-    (list a b c)
-
-then we expand it into
-
-    (cons a (cons b (cons c nil)))
-
-See DEFPATTERN for more detail.
-
 In addition to constructor patterns above, there is one special
 constructor pattern which matches any value of type of STANDARD-CLASS.
 The form of the pattern looks like
@@ -109,6 +101,23 @@ Examples:
       ((person (name \"bar\")) 'matched)
       (_ 'not-matched))
     => NOT-MATCHED
+
+### Dervied-Pattern
+
+A derived-pattern is a pattern that is defined with DEFPATTERN. There
+are some builtin dervied patterns as below:
+
+#### LIST
+
+Expansion of LIST derived patterns=
+
+    (list a b c) => (cons a (cons b (cons c nil)))
+
+#### LIST*
+
+Expansion of LIST* derived patterns:
+
+    (list a b c) => (cons a (cons b c))
 
 ### As-Pattern
 

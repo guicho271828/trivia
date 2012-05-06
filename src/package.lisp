@@ -21,10 +21,16 @@
                 #:class-slots)
   (:export #:match
            #:multiple-value-match
+           #:smatch
+           #:multiple-value-smatch
            #:ematch
            #:multiple-value-ematch
+           #:esmatch
+           #:multiple-value-esmatch
            #:cmatch
            #:multiple-value-cmatch
+           #:csmatch
+           #:multiple-value-csmatch
            #:xmatch
            #:defpattern
            #:as

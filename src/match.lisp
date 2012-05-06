@@ -1,5 +1,17 @@
 (in-package :optima)
 
+(define-condition match-error (error)
+  ((values :initarg :values
+           :initform nil
+           :reader match-error-values)
+   (patterns :initarg :patterns
+             :initform nil
+             :reader match-error-patterns))
+  (:report (lambda (condition stream)
+             (format stream "Can't match ~S with ~{~S~^ or ~}."
+                     (match-error-values condition)
+                     (match-error-patterns condition)))))
+
 (defmacro match (arg &body clauses)
   "Matches ARG with CLAUSES. CLAUSES is a list of the form of (PATTERN
 . BODY) where PATTERN is a pattern specifier and BODY is an implicit
@@ -31,21 +43,85 @@ Examples:
     => 2"
   (compile-multiple-value-match values-form clauses nil))
 
+(defmacro smatch (arg &body clauses)
+  "Same as MATCH, except SMATCH binds variables by SYMBOL-MACROLET
+instead of LET."
+  (let ((*let* 'symbol-macrolet))
+    (compile-match-1 arg clauses nil)))
+
+(defmacro multiple-value-smatch (values-form &body clauses)
+  "Same as MULTIPLE-VALUE-MATCH, except MULTIPLE-VALUE-SMATCH binds
+variables by SYMBOL-MACROLET instead of LET."
+  (let ((*let* 'symbol-macrolet))
+    (compile-multiple-value-match values-form clauses nil)))
+
 (defmacro ematch (arg &body clauses)
   "Same as MATCH, except MATCH-ERROR will be raised if not matched."
-  (compile-ematch-1 arg clauses))
+  (let ((else `(error 'match-error
+                      :values (list ,arg)
+                      :patterns ',(mapcar #'car clauses))))
+    (compile-match-1 arg clauses else)))
 
 (defmacro multiple-value-ematch (values-form &body clauses)
   "Same as MULTIPLE-VALUE-MATCH, except MATCH-ERROR will be raised if
 not matched."
-  (compile-multiple-value-ematch values-form clauses))
+  (let ((else `(error 'match-error
+                      :values (list ,values-form)
+                      :patterns ',(mapcar #'car clauses))))
+    (compile-multiple-value-match values-form clauses else)))
+
+(defmacro esmatch (arg &body clauses)
+  "Same as EMATCH, except ESMATCH binds variables by SYMBOL-MACROLET
+instead of LET."
+  (let ((*let* 'symbol-macrolet)
+        (else `(error 'match-error
+                      :values (list ,arg)
+                      :patterns ',(mapcar #'car clauses))))
+    (compile-match-1 arg clauses else)))
+
+(defmacro multiple-value-esmatch (values-form &body clauses)
+  "Same as MULTIPLE-VALUE-EMATCH, except MULTIPLE-VALUE-ESMATCH binds
+variables by SYMBOL-MACROLET instead of LET."
+  (let ((*let* 'symbol-macrolet)
+        (else `(error 'match-error
+                      :values (list ,values-form)
+                      :patterns ',(mapcar #'car clauses))))
+    (compile-multiple-value-match values-form clauses else)))
 
 (defmacro cmatch (arg &body clauses)
   "Same as MATCH, except continuable MATCH-ERROR will be raised if not
 matched."
-  (compile-cmatch-1 arg clauses))
+  (let ((else `(cerror "Continue."
+                       'match-error
+                       :values (list ,arg)
+                       :patterns ',(mapcar #'car clauses))))
+    (compile-match-1 arg clauses else)))
 
 (defmacro multiple-value-cmatch (values-form &body clauses)
   "Same as MULTIPLE-VALUE-MATCH, except continuable MATCH-ERROR will
 be raised if not matched."
-  (compile-multiple-value-cmatch values-form clauses))
+  (let ((else `(cerror "Continue."
+                       'match-error
+                       :values (list ,values-form)
+                       :patterns ',(mapcar #'car clauses))))
+    (compile-multiple-value-match values-form clauses else)))
+
+(defmacro csmatch (arg &body clauses)
+  "Same as CMATCH, except CSMATCH binds variables by SYMBOL-MACROLET
+instead of LET."
+  (let ((*let* 'symbol-macrolet)
+        (else `(cerror "Continue."
+                       'match-error
+                       :values (list ,arg)
+                       :patterns ',(mapcar #'car clauses))))
+    (compile-match-1 arg clauses else)))
+
+(defmacro multiple-value-csmatch (values-form &body clauses)
+  "Same as MULTIPLE-VALUE-CMATCH, except MULTIPLE-VALUE-CSMATCH binds
+variables by SYMBOL-MACROLET instead of LET."
+  (let ((*let* 'symbol-macrolet)
+        (else `(cerror "Continue."
+                       'match-error
+                       :values (list ,values-form)
+                       :patterns ',(mapcar #'car clauses))))
+    (compile-multiple-value-match values-form clauses else)))
