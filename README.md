@@ -36,7 +36,7 @@ specifiers are defined as follows:
     
     as-pattern ::= (as PATTERN NAME)
     
-    guard-pattern ::= (guard PATTERN TEST-FORM)
+    guard-pattern ::= (when TEST-FORM)
     
     not-pattern ::= (not PATTERN)
     
@@ -124,12 +124,13 @@ Expansion of LIST* derived patterns:
 
 ### Guard-Pattern
 
-A guard-pattern restricts a matching of sub-PATTERN with a post
-condition TEST-FORM. See also MATCH documentation.
+A guard-pattern is a special pattern that tests TEST-FORM satisfies in
+the current matching context. Guard-patterns are basically used with
+and-patterns. See the examples below.
 
 Examples:
 
-    (match 1 ((guard x (evenp x)) 'even))
+    (match 1 ((and x (when (evenp x))) 'even))
     => NIL
 
 ### Not-Pattern
@@ -283,26 +284,6 @@ instead of LET.
 
 Same as MULTIPLE-VALUE-CMATCH, except MULTIPLE-VALUE-CSMATCH binds
 variables by SYMBOL-MACROLET instead of LET.
-
-## [Macro] xmatch
-
-    xmatch (the type arg) &body clauses
-
-Same as MATCH, except XMATCH does exhaustiveness analysis over
-CLAUSES with a type of ARG. If the type is not covered by CLAUSES, in
-other words, if the type is not a subtype of an union type of CLAUSES,
-then a compile-time error will be raised.
-
-You need to specify the type of ARG with THE special operator like:
-
-    (xmatch (the type arg) ...)
-
-Examples:
-
-    (xmatch (the (member :a :b) :b) (:a 1) (:b 2) (:c 3))
-    => 2
-    (xmatch (the (member :a :b) :b) (:a 1))
-    => COPMILE-TIME-ERROR
 
 ## [Macro] if-match
 

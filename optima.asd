@@ -35,7 +35,7 @@ specifiers are defined as follows:
     
     as-pattern ::= (as PATTERN NAME)
     
-    guard-pattern ::= (guard PATTERN TEST-FORM)
+    guard-pattern ::= (when TEST-FORM)
     
     not-pattern ::= (not PATTERN)
     
@@ -123,12 +123,13 @@ Expansion of LIST* derived patterns:
 
 ### Guard-Pattern
 
-A guard-pattern restricts a matching of sub-PATTERN with a post
-condition TEST-FORM. See also MATCH documentation.
+A guard-pattern is a special pattern that tests TEST-FORM satisfies in
+the current matching context. Guard-patterns are basically used with
+and-patterns. See the examples below.
 
 Examples:
 
-    (match 1 ((guard x (evenp x)) 'even))
+    (match 1 ((and x (when (evenp x))) 'even))
     => NIL
 
 ### Not-Pattern
@@ -175,5 +176,4 @@ Examples:
                              (:file "pattern")
                              (:file "compiler")
                              (:file "match")
-                             (:file "xmatch")
                              (:file "macros")))))

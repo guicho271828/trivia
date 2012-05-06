@@ -34,7 +34,6 @@
            #:multiple-value-cmatch
            #:csmatch
            #:multiple-value-csmatch
-           #:xmatch
            
            #:if-match
            #:if-smatch

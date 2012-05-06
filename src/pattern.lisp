@@ -19,7 +19,6 @@
   accessor)
 
 (defstruct (guard-pattern (:include pattern))
-  sub-pattern
   test-form)
 
 (defstruct (not-pattern (:include pattern))
@@ -33,16 +32,6 @@
 
 ;;; Pattern Utilities
 
-(defun pattern-guarded-p (pattern)
-  (typecase pattern
-    (constructor-pattern
-     (some #'pattern-guarded-p (constructor-pattern-arguments pattern)))
-    (guard-pattern t)
-    (not-pattern
-     (pattern-guarded-p (not-pattern-sub-pattern pattern)))
-    ((or or-pattern and-pattern)
-     (some #'pattern-guarded-p (slot-value pattern 'sub-patterns)))))
-
 (defun pattern-variables (pattern)
   (typecase pattern
     (variable-pattern
@@ -50,29 +39,10 @@
        (list it)))
     (constructor-pattern
      (mappend #'pattern-variables (constructor-pattern-arguments pattern)))
-    (guard-pattern
-     (pattern-variables (guard-pattern-sub-pattern pattern)))
     (not-pattern
      (pattern-variables (not-pattern-sub-pattern pattern)))
     ((or or-pattern and-pattern)
      (mappend #'pattern-variables (slot-value pattern 'sub-patterns)))))
-
-(defun pattern-type (pattern)
-  (typecase pattern
-    (variable-pattern
-     t)
-    (constant-pattern
-     `(eql ,(constant-pattern-value pattern)))
-    (constructor-pattern
-     (constructor-pattern-type pattern))
-    (guard-pattern
-     (pattern-type (guard-pattern-sub-pattern pattern)))
-    (not-pattern
-     `(not ,(pattern-type (not-pattern-sub-pattern pattern))))
-    (or-pattern
-     `(or ,@(mapcar #'pattern-type (or-pattern-sub-patterns pattern))))
-    (and-pattern
-     `(and ,@(mapcar #'pattern-type (and-pattern-sub-patterns pattern))))))
 
 ;;; Pattern Specifier
 
@@ -147,9 +117,8 @@ Examples:
           (make-variable-pattern :name (var-name name)))
          ((quote value)
           (make-constant-pattern :value value))
-         ((guard sub-pattern test-form)
-          (make-guard-pattern :sub-pattern (parse-pattern sub-pattern)
-                              :test-form test-form))
+         ((when test-form)
+          (make-guard-pattern :test-form test-form))
          ((not sub-pattern)
           (make-not-pattern :sub-pattern (parse-pattern sub-pattern)))
          ((or &rest sub-patterns)

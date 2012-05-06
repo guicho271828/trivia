@@ -77,17 +77,10 @@
   (assert (= (length clauses) 1))
   (destructuring-bind ((pattern . rest) . then)
       (first clauses)
-    (with-slots (sub-pattern test-form) pattern
-      (compile-match
-       (list (car vars))
-       `(((,sub-pattern)
-          (if ,test-form
-              ,(compile-match
-                (cdr vars)
-                `((,rest . ,then))
-                else)
-              ,else)))
-       else))))
+    (let ((then `(if ,(guard-pattern-test-form pattern)
+                     ,(compile-clause-body then)
+                     ,else)))
+      (compile-match vars `((,rest ,then)) else))))
 
 (defun compile-match-or-group (vars clauses else)
   (assert (= (length clauses) 1))
@@ -130,7 +123,10 @@
       (compile-match
        (append (make-list (length patterns) :initial-element (first vars))
                (cdr vars))
-       `(((,@ patterns . ,rest) . ,then))
+       ;; Reverse patterns here so that the pattern matching is
+       ;; executed in order of the patterns. This is important
+       ;; especially for guard patterns.
+       `(((,@(reverse patterns) . ,rest) . ,then))
        else))))
 
 (defun compile-match-not-group (vars clauses else)
@@ -206,7 +202,7 @@
                          ;; Desugar WHEN.
                          (when (and (>= (length then) 2)
                                     (eq (first then) 'when))
-                           (setq pattern `(guard ,pattern ,(second then))
+                           (setq pattern `(and ,pattern (when ,(second then)))
                                  then (cddr then)))
                          (setq pattern (parse-pattern pattern))
                          (setq clause `((,pattern . ,rest) . ,then))))
