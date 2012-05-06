@@ -315,6 +315,12 @@ Equivalent to (smatch ARG (PATTERN BODY...)).
 
 Equivalent to (match ARG (PATTERN) (otherwise BODY...)).
 
+## [Macro] with-match
+
+    with-match pattern arg &body body
+
+Equivalent to (ematch ARG (PATTERN BODY...)).
+
 Authors
 -------
 

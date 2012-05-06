@@ -39,4 +39,5 @@
            #:if-smatch
            #:when-match
            #:when-smatch
-           #:unless-match))
+           #:unless-match
+           #:with-match))
