@@ -175,4 +175,5 @@ Examples:
                              (:file "pattern")
                              (:file "compiler")
                              (:file "match")
-                             (:file "xmatch")))))
+                             (:file "xmatch")
+                             (:file "macros")))))

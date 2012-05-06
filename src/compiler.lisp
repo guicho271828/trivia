@@ -204,10 +204,10 @@
                      (when (car clause)
                        (destructuring-bind ((pattern . rest) . then) clause
                          ;; Desugar WHEN.
-                         (if (and (>= (length then) 2)
-                                  (eq (first then) 'when))
-                             (setq pattern `(guard ,pattern ,(second then))
-                                   then (cddr then)))
+                         (when (and (>= (length then) 2)
+                                    (eq (first then) 'when))
+                           (setq pattern `(guard ,pattern ,(second then))
+                                 then (cddr then)))
                          (setq pattern (parse-pattern pattern))
                          (setq clause `((,pattern . ,rest) . ,then))))
                      clause)

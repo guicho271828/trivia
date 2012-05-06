@@ -166,6 +166,20 @@ Examples:
 [Package] optima
 ----------------
 
+## [Macro] defpattern
+
+    defpattern name lambda-list &body body
+
+Defines a derived pattern specifier named NAME. This is analogous
+to DEFTYPE.
+
+Examples:
+
+    ;; Defines a LIST pattern.
+    (defpattern list (&rest args)
+      (when args
+        `(cons ,(car args) (list ,@(cdr args)))))
+
 ## [Macro] match
 
     match arg &body clauses
@@ -290,18 +304,35 @@ Examples:
     (xmatch (the (member :a :b) :b) (:a 1))
     => COPMILE-TIME-ERROR
 
-## [Macro] defpattern
+## [Macro] if-match
 
-    defpattern name lambda-list &body body
+    if-match (pattern arg) then &optional else
 
-Defines a derived pattern specifier named NAME. This is analogous
-to DEFTYPE.
+Equivalent to (match ARG (PATTERN THEN) (otherwise ELSE)).
 
-Examples:
-    ;; Defines a LIST pattern.
-    (defpattern list (&rest args)
-      (when args
-        `(cons ,(car args) (list ,@(cdr args)))))
+## [Macro] if-smatch
+
+    if-smatch (pattern arg) then &optional else
+
+Equivalent to (smatch ARG (PATTERN THEN) (otherwise ELSE)).
+
+## [Macro] when-match
+
+    when-match (pattern arg) &body body
+
+Equivalent to (match ARG (PATTERN BODY...)).
+
+## [Macro] when-smatch
+
+    when-smatch (pattern arg) &body body
+
+Equivalent to (smatch ARG (PATTERN BODY...)).
+
+## [Macro] unless-match
+
+    unless-match (pattern arg) &body body
+
+Equivalent to (match ARG (PATTERN) (otherwise BODY...)).
 
 Authors
 -------

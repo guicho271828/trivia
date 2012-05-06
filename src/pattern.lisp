@@ -44,7 +44,6 @@
      (some #'pattern-guarded-p (slot-value pattern 'sub-patterns)))))
 
 (defun pattern-variables (pattern)
-  ;; TODO check for linear pattern
   (typecase pattern
     (variable-pattern
      (awhen (variable-pattern-name pattern)
@@ -108,6 +107,7 @@
 to DEFTYPE.
 
 Examples:
+
     ;; Defines a LIST pattern.
     (defpattern list (&rest args)
       (when args

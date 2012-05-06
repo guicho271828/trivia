@@ -19,7 +19,10 @@
   (:import-from :closer-mop
                 #:slot-definition-name
                 #:class-slots)
-  (:export #:match
+  (:export #:guard
+           #:defpattern
+           
+           #:match
            #:multiple-value-match
            #:smatch
            #:multiple-value-smatch
@@ -32,5 +35,9 @@
            #:csmatch
            #:multiple-value-csmatch
            #:xmatch
-           #:defpattern
-           #:guard))
+           
+           #:if-match
+           #:if-smatch
+           #:when-match
+           #:when-smatch
+           #:unless-match))
