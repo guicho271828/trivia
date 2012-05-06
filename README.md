@@ -306,31 +306,31 @@ Examples:
 
 ## [Macro] if-match
 
-    if-match (pattern arg) then &optional else
+    if-match pattern arg then &optional else
 
 Equivalent to (match ARG (PATTERN THEN) (otherwise ELSE)).
 
 ## [Macro] if-smatch
 
-    if-smatch (pattern arg) then &optional else
+    if-smatch pattern arg then &optional else
 
 Equivalent to (smatch ARG (PATTERN THEN) (otherwise ELSE)).
 
 ## [Macro] when-match
 
-    when-match (pattern arg) &body body
+    when-match pattern arg &body body
 
 Equivalent to (match ARG (PATTERN BODY...)).
 
 ## [Macro] when-smatch
 
-    when-smatch (pattern arg) &body body
+    when-smatch pattern arg &body body
 
 Equivalent to (smatch ARG (PATTERN BODY...)).
 
 ## [Macro] unless-match
 
-    unless-match (pattern arg) &body body
+    unless-match pattern arg &body body
 
 Equivalent to (match ARG (PATTERN) (otherwise BODY...)).
 
