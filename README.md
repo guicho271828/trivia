@@ -19,10 +19,10 @@ specifiers are defined as follows:
                         | variable-pattern
                         | constructor-pattern
                         | derived-pattern
-                        | as-pattern
                         | guard-pattern
                         | not-pattern
                         | or-pattern
+                        | and-pattern
     
     constant-pattern ::= t | nil
                        | atom-except-symbol
@@ -41,6 +41,8 @@ specifiers are defined as follows:
     not-pattern ::= (not PATTERN)
     
     or-pattern ::= (or PATTERN*)
+    
+    and-pattern ::= (and PATTERN*)
 
 ### Constant-Pattern
 
@@ -120,16 +122,6 @@ Expansion of LIST* derived patterns:
 
     (list a b c) => (cons a (cons b c))
 
-### As-Pattern
-
-An as-pattern matches any value that is matched with sub-PATTERN, and
-binds the value to variable named NAME.
-
-Examples:
-
-    (match '(1 . 2) ((as (cons 1 _) cons) cons))
-    => (1 . 2)
-
 ### Guard-Pattern
 
 A guard-pattern restricts a matching of sub-PATTERN with a post
@@ -158,6 +150,17 @@ sub-PATTERNs must have same set of variables.
 Examples:
 
     (match '(2 . 1) ((or (cons 1 x) (cons 2 x)) x))
+    => 1
+
+### And-Pattern
+
+An and-pattern matches a value that is matched with all of
+sub-PATTERNs. The most common use case is to match a value and bind
+the value to a variable.
+
+Examples:
+
+    (match 1 ((and 1 x) x))
     => 1
 
 [Package] optima

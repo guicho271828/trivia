@@ -1,8 +1,6 @@
 (in-package :optima)
 
-;;;
 ;;; Pattern Data Structure
-;;;
 
 (defstruct pattern)
 
@@ -20,9 +18,6 @@
   predicate
   accessor)
 
-(defstruct (as-pattern (:include pattern))
-  sub-pattern name)
-
 (defstruct (guard-pattern (:include pattern))
   sub-pattern
   test-form)
@@ -33,21 +28,20 @@
 (defstruct (or-pattern (:include pattern))
   sub-patterns)
 
-;;;
+(defstruct (and-pattern (:include pattern))
+  sub-patterns)
+
 ;;; Pattern Utilities
-;;;
 
 (defun pattern-guarded-p (pattern)
   (typecase pattern
     (constructor-pattern
      (some #'pattern-guarded-p (constructor-pattern-arguments pattern)))
-    (as-pattern
-     (pattern-guarded-p (as-pattern-sub-pattern pattern)))
     (guard-pattern t)
     (not-pattern
      (pattern-guarded-p (not-pattern-sub-pattern pattern)))
-    (or-pattern
-     (some #'pattern-guarded-p (or-pattern-sub-patterns pattern)))))
+    ((or or-pattern and-pattern)
+     (some #'pattern-guarded-p (slot-value pattern 'sub-patterns)))))
 
 (defun pattern-variables (pattern)
   ;; TODO check for linear pattern
@@ -57,14 +51,12 @@
        (list it)))
     (constructor-pattern
      (mappend #'pattern-variables (constructor-pattern-arguments pattern)))
-    (as-pattern
-     (pattern-variables (as-pattern-sub-pattern pattern)))
     (guard-pattern
      (pattern-variables (guard-pattern-sub-pattern pattern)))
     (not-pattern
      (pattern-variables (not-pattern-sub-pattern pattern)))
-    (or-pattern
-     (mappend #'pattern-variables (or-pattern-sub-patterns pattern)))))
+    ((or or-pattern and-pattern)
+     (mappend #'pattern-variables (slot-value pattern 'sub-patterns)))))
 
 (defun pattern-type (pattern)
   (typecase pattern
@@ -74,18 +66,16 @@
      `(eql ,(constant-pattern-value pattern)))
     (constructor-pattern
      (constructor-pattern-type pattern))
-    (as-pattern
-     (pattern-type (as-pattern-sub-pattern pattern)))
     (guard-pattern
      (pattern-type (guard-pattern-sub-pattern pattern)))
     (not-pattern
      `(not ,(pattern-type (not-pattern-sub-pattern pattern))))
     (or-pattern
-     `(or ,@(mapcar #'pattern-type (or-pattern-sub-patterns pattern))))))
+     `(or ,@(mapcar #'pattern-type (or-pattern-sub-patterns pattern))))
+    (and-pattern
+     `(and ,@(mapcar #'pattern-type (and-pattern-sub-patterns pattern))))))
 
-;;;
 ;;; Pattern Specifier
-;;;
 
 (defun pattern-expand-function (name)
   (get name 'pattern-expand-function))
@@ -136,9 +126,7 @@ Examples:
                 (t
                  `(list* ,(car args) ,@(cdr args))))))
 
-;;;
 ;;; Pattern Specifier Parser
-;;;
 
 (defun parse-pattern (pattern)
   (when (pattern-p pattern)
@@ -159,16 +147,15 @@ Examples:
           (make-variable-pattern :name (var-name name)))
          ((quote value)
           (make-constant-pattern :value value))
-         ((as sub-pattern name)
-          (make-as-pattern :sub-pattern (parse-pattern sub-pattern)
-                           :name name))
          ((guard sub-pattern test-form)
           (make-guard-pattern :sub-pattern (parse-pattern sub-pattern)
                               :test-form test-form))
          ((not sub-pattern)
           (make-not-pattern :sub-pattern (parse-pattern sub-pattern)))
-         ((or sub-patterns)
+         ((or &rest sub-patterns)
           (make-or-pattern :sub-patterns (mapcar #'parse-pattern sub-patterns)))
+         ((and &rest sub-patterns)
+          (make-and-pattern :sub-patterns (mapcar #'parse-pattern sub-patterns)))
          ((otherwise &rest args)
           (apply #'parse-constructor-pattern (car pattern) args))))
       (otherwise

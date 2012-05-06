@@ -120,6 +120,19 @@
                 ,tag
                 (return-from ,block ,else))))))))
 
+(defun compile-match-and-group (vars clauses else)
+  (assert (= (length clauses) 1))
+  (destructuring-bind ((pattern . rest) . then)
+      (first clauses)
+    (let ((patterns (and-pattern-sub-patterns pattern)))
+      (unless patterns
+        (return-from compile-match-and-group else))
+      (compile-match
+       (append (make-list (length patterns) :initial-element (first vars))
+               (cdr vars))
+       `(((,@ patterns . ,rest) . ,then))
+       else))))
+
 (defun compile-match-not-group (vars clauses else)
   (assert (= (length clauses) 1))
   (destructuring-bind ((pattern . rest) . then)
@@ -156,7 +169,9 @@
             (not-pattern
              (compile-match-not-group vars group fail))
             (or-pattern
-             (compile-match-or-group vars group fail)))
+             (compile-match-or-group vars group fail))
+            (and-pattern
+             (compile-match-and-group vars group fail)))
           (compile-match-empty-group group fail))
      else)))
 
@@ -178,7 +193,7 @@
                             (constructor-pattern-name y))
                         (= (constructor-pattern-arity x)
                            (constructor-pattern-arity y))))
-                  ((or guard-pattern not-pattern or-pattern)
+                  ((or guard-pattern not-pattern or-pattern and-pattern)
                    nil)
                   (otherwise t)))))
     (group clauses :test #'same-group-p :key #'caar)))
@@ -193,12 +208,7 @@
                                   (eq (first then) 'when))
                              (setq pattern `(guard ,pattern ,(second then))
                                    then (cddr then)))
-                         ;; Parse the pattern specifier.
                          (setq pattern (parse-pattern pattern))
-                         ;; Compile AS-PATTERNs here.
-                         (when (as-pattern-p pattern)
-                           (setq then `((,*let* ((,(as-pattern-name pattern) ,(car vars))) ,@then))
-                                 pattern (as-pattern-sub-pattern pattern)))
                          (setq clause `((,pattern . ,rest) . ,then))))
                      clause)
                    clauses))

@@ -33,5 +33,4 @@
            #:multiple-value-csmatch
            #:xmatch
            #:defpattern
-           #:as
            #:guard))
