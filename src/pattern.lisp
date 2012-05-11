@@ -140,19 +140,16 @@ Examples:
     (make-constructor-pattern
      :name 'cons
      :arity 2
-     :type `(cons ,(pattern-type car-pattern) ,(pattern-type cdr-pattern))
      :arguments (list car-pattern cdr-pattern)
      :predicate (lambda (var) `(consp ,var))
      :accessor (lambda (var i) `(,(ecase i (0 'car) (1 'cdr)) ,var)))))
 
 (defmethod parse-constructor-pattern ((name (eql 'vector)) &rest args)
   (let* ((args (mapcar #'parse-pattern args))
-         (element-type `(or ,@(mapcar #'pattern-type args)))
          (arity (length args)))
     (make-constructor-pattern
      :name 'vector
      :arity arity
-     :type `(vector ,element-type ,arity)
      :arguments args
      :predicate (lambda (var) `(typep ,var '(vector * ,arity)))
      :accessor (lambda (var i) `(aref ,var ,i)))))
@@ -163,7 +160,6 @@ Examples:
     (make-constructor-pattern
      :name 'simple-vector
      :arity arity
-     :type `(simple-vector ,arity)
      :arguments args
      :predicate (lambda (var) `(typep ,var '(simple-vector ,arity)))
      :accessor (lambda (var i) `(svref ,var ,i)))))
@@ -188,7 +184,6 @@ Examples:
           (accessor (lambda (var i) `(slot-value ,var ',(nth i slot-names)))))
       (make-constructor-pattern :name class-name
                                 :arity (length arguments)
-                                :type class-name
                                 :arguments arguments
                                 :predicate predicate
                                 :accessor accessor))))
