@@ -121,6 +121,12 @@ Expansion of LIST* derived patterns:
 
     (list a b c) => (cons a (cons b c))
 
+#### SATISFIES
+
+Expansion of SATISFIES derived patterns:
+
+    (satisfies evenp) => (and #:G1 (when (evenp #:G1)))
+
 ### Guard-Pattern
 
 A guard-pattern is a special pattern that tests TEST-FORM satisfies in

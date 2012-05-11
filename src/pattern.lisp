@@ -96,6 +96,10 @@ Examples:
                 (t
                  `(list* ,(car args) ,@(cdr args))))))
 
+(defpattern satisfies (predicate-name)
+  (let ((var (gensym)))
+    `(and ,var (when (,predicate-name ,var)))))
+
 ;;; Pattern Specifier Parser
 
 (defun parse-pattern (pattern)
