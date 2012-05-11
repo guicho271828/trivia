@@ -1,12 +1,12 @@
 (in-package :optima)
 
-(defmacro if-match (pattern arg then &optional else)
+(defmacro if-match (pattern arg &body (then &optional else))
   "Equivalent to (match ARG (PATTERN THEN) (otherwise ELSE))."
   `(match ,arg
      (,pattern ,then)
      (otherwise ,else)))
 
-(defmacro if-smatch (pattern arg then &optional else)
+(defmacro if-smatch (pattern arg &body (then &optional else))
   "Equivalent to (smatch ARG (PATTERN THEN) (otherwise ELSE))."
   `(smatch ,arg
      (,pattern ,then)
@@ -29,3 +29,18 @@
 (defmacro with-match (pattern arg &body body)
   "Equivalent to (ematch ARG (PATTERN BODY...))."
   `(ematch ,arg (,pattern ,@body)))
+
+(defmacro lambda-match (&body clauses)
+  "Equivalent to (lambda (arg) (match arg CLAUSES...))."
+  (let ((arg (gensym)))
+    `(lambda (,arg) (match ,arg ,@clauses))))
+
+(defmacro lambda-ematch (&body clauses)
+  "Equivalent to (lambda (arg) (ematch arg CLAUSES...))."
+  (let ((arg (gensym)))
+    `(lambda (,arg) (ematch ,arg ,@clauses))))
+
+(defmacro lambda-cmatch (&body clauses)
+  "Equivalent to (lambda (arg) (cmatch arg CLAUSES...))."
+  (let ((arg (gensym)))
+    `(lambda (,arg) (cmatch ,arg ,@clauses))))

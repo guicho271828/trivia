@@ -40,4 +40,7 @@
            #:when-match
            #:when-smatch
            #:unless-match
-           #:with-match))
+           #:with-match
+           #:lambda-match
+           #:lambda-ematch
+           #:lambda-cmatch))
