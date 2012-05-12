@@ -33,8 +33,6 @@ specifiers are defined as follows:
 
     derived-pattern ::= (NAME PATTERN*)
     
-    as-pattern ::= (as PATTERN NAME)
-    
     guard-pattern ::= (when TEST-FORM)
     
     not-pattern ::= (not PATTERN)

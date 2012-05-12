@@ -26,7 +26,7 @@ introduce a guard for PATTERN. That is,
 
 will be translated to
 
-    (match list ((guard (list x) (oddp x)) x))"
+    (match list ((and (list x) (when (oddp x))) x))"
   (compile-match-1 arg clauses nil))
 
 (defmacro multiple-value-match (values-form &body clauses)

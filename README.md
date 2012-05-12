@@ -34,8 +34,6 @@ specifiers are defined as follows:
 
     derived-pattern ::= (NAME PATTERN*)
     
-    as-pattern ::= (as PATTERN NAME)
-    
     guard-pattern ::= (when TEST-FORM)
     
     not-pattern ::= (not PATTERN)
@@ -210,7 +208,7 @@ introduce a guard for PATTERN. That is,
 
 will be translated to
 
-    (match list ((guard (list x) (oddp x)) x))
+    (match list ((and (list x) (when (oddp x))) x))
 
 ## [Macro] multiple-value-match
 
