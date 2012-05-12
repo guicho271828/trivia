@@ -122,6 +122,12 @@ Expansion of LIST* derived patterns:
 
     (list a b c) => (cons a (cons b c))
 
+#### TYPEP
+
+Expansion of TYPEP derived patterns:
+
+    (TYPEP string) => (and #:G1 (when (typep #:G1 'string)))
+
 #### SATISFIES
 
 Expansion of SATISFIES derived patterns:

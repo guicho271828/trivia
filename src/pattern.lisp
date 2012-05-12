@@ -96,6 +96,10 @@ Examples:
                 (t
                  `(list* ,(car args) ,@(cdr args))))))
 
+(defpattern typep (type-specifier)
+  (let ((var (gensym)))
+    `(and ,var (when (typep ,var ',type-specifier)))))
+
 (defpattern satisfies (predicate-name)
   (let ((var (gensym)))
     `(and ,var (when (,predicate-name ,var)))))
