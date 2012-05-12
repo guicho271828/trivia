@@ -293,13 +293,13 @@ variables by SYMBOL-MACROLET instead of LET.
 
 ## [Macro] if-match
 
-    if-match pattern arg then &optional else
+    if-match pattern arg &body (then &optional else)
 
 Equivalent to (match ARG (PATTERN THEN) (otherwise ELSE)).
 
 ## [Macro] if-smatch
 
-    if-smatch pattern arg then &optional else
+    if-smatch pattern arg &body (then &optional else)
 
 Equivalent to (smatch ARG (PATTERN THEN) (otherwise ELSE)).
 
@@ -326,6 +326,24 @@ Equivalent to (match ARG (PATTERN) (otherwise BODY...)).
     with-match pattern arg &body body
 
 Equivalent to (ematch ARG (PATTERN BODY...)).
+
+## [Macro] lambda-match
+
+    lambda-match &body clauses
+
+Equivalent to (lambda (arg) (match arg CLAUSES...)).
+
+## [Macro] lambda-ematch
+
+    lambda-ematch &body clauses
+
+Equivalent to (lambda (arg) (ematch arg CLAUSES...)).
+
+## [Macro] lambda-cmatch
+
+    lambda-cmatch &body clauses
+
+Equivalent to (lambda (arg) (cmatch arg CLAUSES...)).
 
 Authors
 -------
