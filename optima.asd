@@ -101,8 +101,8 @@ The form of the pattern looks like
     (class-name &rest slots)
 
 where CLASS-NAME is a class name of the value, and SLOTS is a list of
-the form of (SLOT-NAME PATTERN). You can also specify the element like
-SLOT-NAME, which is a shorthand for (SLOT-NAME SLOT-NAME).
+the form of (SLOT-NAME PATTERN...). You can also specify the element
+like SLOT-NAME, which is a shorthand for (SLOT-NAME SLOT-NAME).
 
 Examples:
 
@@ -112,9 +112,9 @@ Examples:
       ((person name age) (list name age)))
     => (\"foo\" 30)
     (match foo
-      ((person (name \"bar\")) 'matched)
+      ((person (name \"foo\" name)) name)
       (_ 'not-matched))
-    => NOT-MATCHED
+    => \"foo\"
 
 ### Dervied-Pattern
 

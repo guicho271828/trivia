@@ -152,9 +152,13 @@ Examples:
          ((not sub-pattern)
           (make-not-pattern :sub-pattern (parse-pattern sub-pattern)))
          ((or &rest sub-patterns)
-          (make-or-pattern :sub-patterns (mapcar #'parse-pattern sub-patterns)))
+          (if (= (length sub-patterns) 1)
+              (parse-pattern (first sub-patterns))
+              (make-or-pattern :sub-patterns (mapcar #'parse-pattern sub-patterns))))
          ((and &rest sub-patterns)
-          (make-and-pattern :sub-patterns (mapcar #'parse-pattern sub-patterns)))
+          (if (= (length sub-patterns) 1)
+              (parse-pattern (first sub-patterns))
+              (make-and-pattern :sub-patterns (mapcar #'parse-pattern sub-patterns))))
          ((otherwise &rest args)
           (apply #'parse-constructor-pattern (car pattern) args))))
       (otherwise
@@ -207,7 +211,7 @@ Examples:
                   collect
                   (if slot-pattern
                       (if (cdr slot-pattern)
-                          (parse-pattern (second slot-pattern))
+                          (parse-pattern `(and ,@(cdr slot-pattern)))
                           (make-variable-pattern :name (car slot-pattern)))
                       (make-variable-pattern))))
           (predicate (lambda (var) `(typep ,var ',class-name)))
