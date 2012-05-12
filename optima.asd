@@ -16,6 +16,7 @@ specifiers are defined as follows:
 
     pattern-specifier ::= constant-pattern
                         | variable-pattern
+                        | symbol-macro-pattern
                         | constructor-pattern
                         | derived-pattern
                         | guard-pattern
@@ -28,6 +29,8 @@ specifiers are defined as follows:
                        | (quote VALUE)
     
     variable-pattern ::= SYMBOL | (variable SYMBOL)
+
+    symbol-macro-pattern ::= (symbol-macrolet SYMBOL)
     
     constructor-pattern ::= (NAME PATTERN*)
 
@@ -65,6 +68,17 @@ Examples:
       (2 2)
       (otherwise 'otherwise))
     => OTHERWISE
+
+### Symbol-Macro-Pattern
+
+A symbol-macro-pattern matches any value as variable-patterns but bind
+the value with SYMBOL-MACROLET.
+
+Examples:
+
+    (defvar c (cons 1 2))
+    (match c ((cons (symbol-macrolet x) y) (incf x) (incf y)))
+    c => (2 . 2)
 
 ### Constructor-Pattern
 

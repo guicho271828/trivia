@@ -1,7 +1,5 @@
 (in-package :optima)
 
-(defvar *let* 'let)
-
 (defun compile-clause-body (body)
   (cond ((null body)
          nil)
@@ -39,7 +37,18 @@
          for name = (variable-pattern-name pattern)
          collect
          (if name
-             `(,rest (,*let* ((,name ,(car vars))) . ,then))
+             `(,rest (let ((,name ,(car vars))) . ,then))
+             `(,rest . ,then)))
+   else))
+
+(defun compile-match-symbol-macro-group (vars clauses else)
+  (compile-match
+   (cdr vars)
+   (loop for ((pattern . rest) . then) in clauses
+         for name = (symbol-macro-pattern-name pattern)
+         collect
+         (if name
+             `(,rest (symbol-macrolet ((,name ,(car vars))) . ,then))
              `(,rest . ,then)))
    else))
 
@@ -57,21 +66,36 @@
   (with-slots (arity arguments predicate accessor) (caaar clauses)
     (let* ((var (car vars))
            (test-form (funcall predicate var))
-           (new-vars (make-gensym-list arity)))
-      `(if ,test-form
-           (,*let*
-            ,(loop for i from 0
-                   for new-var in new-vars
-                   for access = (funcall accessor var i)
-                   collect `(,new-var ,access))
-            (declare (ignorable ,@new-vars))
-            ,(compile-match
-              (append new-vars (cdr vars))
-              (loop for ((pattern . rest) . then) in clauses
-                    for args = (constructor-pattern-arguments pattern)
-                    collect `((,@args . ,rest) . ,then))
-              else))
-           ,else))))
+           (new-vars (make-gensym-list arity))
+           (then (compile-match
+                  (append new-vars (cdr vars))
+                  (loop for ((pattern . rest) . then) in clauses
+                        for args = (constructor-pattern-arguments pattern)
+                        collect `((,@args . ,rest) . ,then))
+                  else)))
+      (loop for i from 0 below arity
+            for new-var in new-vars
+            for access = (funcall accessor var i)
+            for binding = `(,new-var ,access)
+            if (loop for ((pattern . rest) . then) in clauses
+                     for arg = (nth i (constructor-pattern-arguments pattern))
+                     never (pattern-symbol-macro-included-p arg))
+              collect binding into let-bindings
+            else
+              collect binding into symbol-macro-bindings
+            finally
+               (when symbol-macro-bindings
+                 (setq then `(symbol-macrolet ,symbol-macro-bindings
+                               (declare (ignorable ,@(mapcar #'car symbol-macro-bindings)))
+                               ,then)))
+               (when let-bindings
+                 (setq then `(let ,let-bindings
+                               (declare (ignorable ,@(mapcar #'car let-bindings)))
+                               ,then)))
+               (return
+                 `(if ,test-form
+                      ,then
+                      ,else))))))
 
 (defun compile-match-guard-group (vars clauses else)
   (assert (= (length clauses) 1))
@@ -156,6 +180,8 @@
           (etypecase it
             (variable-pattern
              (compile-match-variable-group vars group fail))
+            (symbol-macro-pattern
+             (compile-match-symbol-macro-group vars group fail))
             (constant-pattern
              (compile-match-constant-group vars group fail))
             (constructor-pattern

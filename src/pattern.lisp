@@ -1,10 +1,15 @@
 (in-package :optima)
 
+(defvar *parse-variable-as-symbol-macro* nil)
+
 ;;; Pattern Data Structure
 
 (defstruct pattern)
 
 (defstruct (variable-pattern (:include pattern))
+  name)
+
+(defstruct (symbol-macro-pattern (:include pattern))
   name)
 
 (defstruct (constant-pattern (:include pattern))
@@ -13,7 +18,6 @@
 (defstruct (constructor-pattern (:include pattern))
   name
   arity
-  type
   arguments
   predicate
   accessor)
@@ -43,6 +47,18 @@
      (pattern-variables (not-pattern-sub-pattern pattern)))
     ((or or-pattern and-pattern)
      (mappend #'pattern-variables (slot-value pattern 'sub-patterns)))))
+
+(defun pattern-symbol-macro-included-p (pattern)
+  (typecase pattern
+    (symbol-macro-pattern t)
+    (constructor-pattern
+     (some #'pattern-symbol-macro-included-p
+           (constructor-pattern-arguments pattern)))
+    (not-pattern
+     (pattern-symbol-macro-included-p (not-pattern-sub-pattern pattern)))
+    ((or or-pattern and-pattern)
+     (some #'pattern-symbol-macro-included-p
+           (slot-value pattern 'sub-patterns)))))
 
 ;;; Pattern Specifier
 
@@ -118,11 +134,17 @@ Examples:
       ((or (eql t) null keyword)
        (make-constant-pattern :value pattern))
       (symbol
-       (make-variable-pattern :name (var-name pattern)))
+       (if *parse-variable-as-symbol-macro*
+           (make-symbol-macro-pattern :name pattern)
+           (make-variable-pattern :name (var-name pattern))))
       (cons
        (destructuring-case pattern
          ((variable name)
-          (make-variable-pattern :name (var-name name)))
+          (if *parse-variable-as-symbol-macro*
+              (make-symbol-macro-pattern :name name)
+              (make-variable-pattern :name (var-name name))))
+         ((symbol-macrolet name)
+          (make-symbol-macro-pattern :name name))
          ((quote value)
           (make-constant-pattern :value value))
          ((when test-form)

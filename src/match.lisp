@@ -45,14 +45,14 @@ Examples:
 
 (defmacro smatch (arg &body clauses)
   "Same as MATCH, except SMATCH binds variables by SYMBOL-MACROLET
-instead of LET."
-  (let ((*let* 'symbol-macrolet))
+instead of LET. See the documentation of symbol-macro-pattern."
+  (let ((*parse-variable-as-symbol-macro* t))
     (compile-match-1 arg clauses nil)))
 
 (defmacro multiple-value-smatch (values-form &body clauses)
   "Same as MULTIPLE-VALUE-MATCH, except MULTIPLE-VALUE-SMATCH binds
 variables by SYMBOL-MACROLET instead of LET."
-  (let ((*let* 'symbol-macrolet))
+  (let ((*parse-variable-as-symbol-macro* t))
     (compile-multiple-value-match values-form clauses nil)))
 
 (defmacro ematch (arg &body clauses)
@@ -73,7 +73,7 @@ not matched."
 (defmacro esmatch (arg &body clauses)
   "Same as EMATCH, except ESMATCH binds variables by SYMBOL-MACROLET
 instead of LET."
-  (let ((*let* 'symbol-macrolet)
+  (let ((*parse-variable-as-symbol-macro* t)
         (else `(error 'match-error
                       :values (list ,arg)
                       :patterns ',(mapcar #'car clauses))))
@@ -82,7 +82,7 @@ instead of LET."
 (defmacro multiple-value-esmatch (values-form &body clauses)
   "Same as MULTIPLE-VALUE-EMATCH, except MULTIPLE-VALUE-ESMATCH binds
 variables by SYMBOL-MACROLET instead of LET."
-  (let ((*let* 'symbol-macrolet)
+  (let ((*parse-variable-as-symbol-macro* t)
         (else `(error 'match-error
                       :values (list ,values-form)
                       :patterns ',(mapcar #'car clauses))))
@@ -109,7 +109,7 @@ be raised if not matched."
 (defmacro csmatch (arg &body clauses)
   "Same as CMATCH, except CSMATCH binds variables by SYMBOL-MACROLET
 instead of LET."
-  (let ((*let* 'symbol-macrolet)
+  (let ((*parse-variable-as-symbol-macro* t)
         (else `(cerror "Continue."
                        'match-error
                        :values (list ,arg)
@@ -119,7 +119,7 @@ instead of LET."
 (defmacro multiple-value-csmatch (values-form &body clauses)
   "Same as MULTIPLE-VALUE-CMATCH, except MULTIPLE-VALUE-CSMATCH binds
 variables by SYMBOL-MACROLET instead of LET."
-  (let ((*let* 'symbol-macrolet)
+  (let ((*parse-variable-as-symbol-macro* t)
         (else `(cerror "Continue."
                        'match-error
                        :values (list ,values-form)
