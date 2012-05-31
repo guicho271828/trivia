@@ -32,7 +32,7 @@ specifiers are defined as follows:
 
     symbol-macro-pattern ::= (symbol-macrolet SYMBOL)
     
-    constructor-pattern ::= (NAME PATTERN*)
+    constructor-pattern ::= (NAME ARG*)
 
     derived-pattern ::= (NAME PATTERN*)
     
@@ -78,43 +78,126 @@ Examples:
 
     (defvar c (cons 1 2))
     (match c ((cons (symbol-macrolet x) y) (incf x) (incf y)))
-    c => (2 . 2)
+    c
+     => (2 . 2)
 
 ### Constructor-Pattern
 
 A constructor-pattern matches not a value itself but a structure of
 the value. The following constructors are available:
 
-* (cons car cdr)
-* (vector &rest elements)
-* (simple-vector &rest elements)
+#### CONS
+
+Syntax:
+
+    cons-constructor-pattern ::= (cons CAR-PATTERN CDR-PATTERN)
 
 Examples:
 
-    (match '(1 . 2) ((cons a b) (+ a b))) => 3
-    (match #(1 2) ((simple-vector a b) (+ a b))) => 3
+    (match '(1 . 2)
+      ((cons a b) (+ a b)))
+     => 3
 
-In addition to constructor patterns above, there is one special
-constructor pattern which matches any value of type of STANDARD-CLASS.
-The form of the pattern looks like
+#### VECTOR
 
-    (class-name &rest slots)
+Syntax:
 
-where CLASS-NAME is a class name of the value, and SLOTS is a list of
-the form of (SLOT-NAME PATTERN...). You can also specify the element
-like SLOT-NAME, which is a shorthand for (SLOT-NAME SLOT-NAME).
+    vector-constructor-pattern ::= (vector PATTERN*)
 
 Examples:
 
-    (defstruct person name age)
+    (match #(1 2)
+      ((vector a b) (+ a b)))
+    => 3
+
+#### SIMPLE-VECTOR
+
+Syntax:
+
+    simple-vector-constructor-pattern ::= (simple-vector PATTERN*)
+
+Examples:
+
+    (match #(1 2)
+      ((simple-vector a b) (+ a b)))
+    => 3
+
+#### CLASS
+
+Mathces an instance of any class (of standard-class).
+
+Syntax:
+
+    class-constructor-pattern ::= (class NAME slot*)
+                                | (NAME slot*)
+    
+    slot ::= SLOT-NAME
+           | (SLOT-NAME PATTERN*)
+
+CLASS can be omitted. If slot is a symbol, then it will be regarded
+as (slot slot). If more than one PATTERN are given, then they will be
+wrapped by and-pattern like (and PATTERN*).
+
+Examples:
+
+    (defclass point ()
+      ((x :initarg :x)
+       (y :initarg :y)))
+    (defvar p (make-instance 'point :x 1 :y 2))
+    (match p
+      ((point x y) (list x y)))
+    => (1 2)
+    (match p
+      ((point (x 1 x) _) x))
+    => 1
+    (defstruct person (name age))
     (defvar foo (make-person :name \"foo\" :age 30))
     (match foo
       ((person name age) (list name age)))
     => (\"foo\" 30)
-    (match foo
-      ((person (name \"foo\" name)) name)
-      (_ 'not-matched))
-    => \"foo\"
+
+#### STRUCTURE
+
+Mathces an any value of a structure.
+
+Syntax:
+
+    structure-constructor-pattern ::= (structure CONC-NAME slot*)
+                                    | (CONC-NAME slot*)
+    
+    slot ::= SLOT-NAME
+           | (SLOT-NAME PATTERN*)
+
+As well as CLASS constructor-pattern, STRUCTURE can be
+omitted. CONC-NAME is a prefix string of a predicate (CONC-NAME +
+\"p\") and accessors (CONC-NAME + SLOT-NAME). For example, if we have
+the following defstruct,
+
+    (defstruct person name age)
+
+the structure constructor-pattern (person- name age) is valid because
+PERSON-P, PERSON-NAME and PERSON-AGE are available here. Technically,
+we don't need a structure defined. If we have the following code, for
+instance,
+
+    (defun point-p (p) (consp p))
+    (defun point-x (p) (car p))
+    (defun point-y (p) (cdr p))
+
+the pattern matching below is valid.
+
+    (match (cons 1 2)
+      ((point- x y) (list x y)))
+    => (1 2)
+
+Examples:
+
+    (defstruct (person (:conc-name :p-)
+                       (:predicate p-p))
+      name age)
+    (match (make-person :name \"foo\" :age 30)
+      ((p- name age) (list name age)))
+    => (\"foo\" 30)
 
 ### Dervied-Pattern
 

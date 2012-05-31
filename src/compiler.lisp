@@ -63,8 +63,9 @@
        ,else))
 
 (defun compile-match-constructor-group (vars clauses else)
-  (with-slots (arity arguments predicate accessor) (caaar clauses)
-    (let* ((var (car vars))
+  (with-slots (arguments predicate accessor) (caaar clauses)
+    (let* ((arity (length arguments))
+           (var (car vars))
            (test-form (funcall predicate var))
            (new-vars (make-gensym-list arity))
            (then (compile-match
@@ -211,10 +212,8 @@
                    (%equal (constant-pattern-value x)
                            (constant-pattern-value y)))
                   (constructor-pattern
-                   (and (eq (constructor-pattern-name x)
-                            (constructor-pattern-name y))
-                        (= (constructor-pattern-arity x)
-                           (constructor-pattern-arity y))))
+                   (equal (constructor-pattern-signature x)
+                          (constructor-pattern-signature y)))
                   ((or guard-pattern not-pattern or-pattern and-pattern)
                    nil)
                   (otherwise t)))))

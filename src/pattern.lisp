@@ -16,8 +16,7 @@
   value)
 
 (defstruct (constructor-pattern (:include pattern))
-  name
-  arity
+  signature
   arguments
   predicate
   accessor)
@@ -172,8 +171,7 @@ Examples:
   (destructuring-bind (car-pattern cdr-pattern)
       (mapcar #'parse-pattern args)
     (make-constructor-pattern
-     :name 'cons
-     :arity 2
+     :signature '(cons car cdr)
      :arguments (list car-pattern cdr-pattern)
      :predicate (lambda (var) `(consp ,var))
      :accessor (lambda (var i) `(,(ecase i (0 'car) (1 'cdr)) ,var)))))
@@ -182,8 +180,7 @@ Examples:
   (let* ((args (mapcar #'parse-pattern args))
          (arity (length args)))
     (make-constructor-pattern
-     :name 'vector
-     :arity arity
+     :signature `(vector ,arity)
      :arguments args
      :predicate (lambda (var) `(typep ,var '(vector * ,arity)))
      :accessor (lambda (var i) `(aref ,var ,i)))))
@@ -192,13 +189,12 @@ Examples:
   (let* ((args (mapcar #'parse-pattern args))
          (arity (length args)))
     (make-constructor-pattern
-     :name 'simple-vector
-     :arity arity
+     :signature `(simple-vector ,arity)
      :arguments args
      :predicate (lambda (var) `(typep ,var '(simple-vector ,arity)))
      :accessor (lambda (var i) `(svref ,var ,i)))))
 
-(defmethod parse-constructor-pattern (class-name &rest slot-patterns)
+(defun parse-class-constructor-pattern (class-name &rest slot-patterns)
   (setq slot-patterns (mapcar #'ensure-list slot-patterns))
   (let* ((class (find-class class-name))
          (slot-defs (class-slots class))
@@ -216,8 +212,34 @@ Examples:
                       (make-variable-pattern))))
           (predicate (lambda (var) `(typep ,var ',class-name)))
           (accessor (lambda (var i) `(slot-value ,var ',(nth i slot-names)))))
-      (make-constructor-pattern :name class-name
-                                :arity (length arguments)
+      (make-constructor-pattern :signature `(,class-name ,(length arguments))
                                 :arguments arguments
                                 :predicate predicate
                                 :accessor accessor))))
+
+(defun parse-struct-constructor-pattern (conc-name &rest slot-patterns)
+  (setq slot-patterns (mapcar #'ensure-list slot-patterns))
+  (let* ((slot-names (mapcar #'car slot-patterns))
+         (arguments
+           (loop for slot-pattern in slot-patterns 
+                 collect
+                 (if (cdr slot-pattern)
+                     (parse-pattern `(and ,@(cdr slot-pattern)))
+                     (make-variable-pattern :name (car slot-pattern)))))
+         (predicate (lambda (var) `(,(symbolicate conc-name :p) ,var)))
+         (accessor (lambda (var i) `(,(symbolicate conc-name (nth i slot-names)) ,var))))
+    (make-constructor-pattern :signature `(,conc-name ,@slot-names)
+                              :arguments arguments
+                              :predicate predicate
+                              :accessor accessor)))
+
+(defmethod parse-constructor-pattern ((name (eql 'class)) &rest args)
+  (apply #'parse-class-constructor-pattern args))
+
+(defmethod parse-constructor-pattern ((name (eql 'structure)) &rest args)
+  (apply #'parse-struct-constructor-pattern args))
+
+(defmethod parse-constructor-pattern (name &rest slot-patterns)
+  (if (find-class name nil)
+      (apply #'parse-class-constructor-pattern name slot-patterns)
+      (apply #'parse-struct-constructor-pattern name slot-patterns)))
