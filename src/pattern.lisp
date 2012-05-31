@@ -121,47 +121,48 @@ Examples:
 
 ;;; Pattern Specifier Parser
 
-(defun parse-pattern (pattern)
-  (when (pattern-p pattern)
-    (return-from parse-pattern pattern))
-  (setq pattern (pattern-expand pattern))
+(defun make-bind-pattern (name)
   (flet ((var-name (name)
            (unless (or (eq name 'otherwise)
                        (string= name "_"))
              name)))
-    (typecase pattern
-      ((or (eql t) null keyword)
-       (make-constant-pattern :value pattern))
-      (symbol
-       (if *parse-variable-as-symbol-macro*
-           (make-symbol-macro-pattern :name pattern)
-           (make-variable-pattern :name (var-name pattern))))
-      (cons
-       (destructuring-case pattern
-         ((variable name)
-          (if *parse-variable-as-symbol-macro*
-              (make-symbol-macro-pattern :name name)
-              (make-variable-pattern :name (var-name name))))
-         ((symbol-macrolet name)
-          (make-symbol-macro-pattern :name name))
-         ((quote value)
-          (make-constant-pattern :value value))
-         ((when test-form)
-          (make-guard-pattern :test-form test-form))
-         ((not sub-pattern)
-          (make-not-pattern :sub-pattern (parse-pattern sub-pattern)))
-         ((or &rest sub-patterns)
-          (if (= (length sub-patterns) 1)
-              (parse-pattern (first sub-patterns))
-              (make-or-pattern :sub-patterns (mapcar #'parse-pattern sub-patterns))))
-         ((and &rest sub-patterns)
-          (if (= (length sub-patterns) 1)
-              (parse-pattern (first sub-patterns))
-              (make-and-pattern :sub-patterns (mapcar #'parse-pattern sub-patterns))))
-         ((otherwise &rest args)
-          (apply #'parse-constructor-pattern (car pattern) args))))
-      (otherwise
-       (make-constant-pattern :value pattern)))))
+    (if *parse-variable-as-symbol-macro*
+        (make-symbol-macro-pattern :name name)
+        (make-variable-pattern :name (var-name name)))))
+
+(defun parse-pattern (pattern)
+  (when (pattern-p pattern)
+    (return-from parse-pattern pattern))
+  (setq pattern (pattern-expand pattern))
+  (typecase pattern
+    ((or (eql t) null keyword)
+     (make-constant-pattern :value pattern))
+    (symbol
+     (make-bind-pattern pattern))
+    (cons
+     (destructuring-case pattern
+       ((variable name)
+        (make-bind-pattern name))
+       ((symbol-macrolet name)
+        (make-symbol-macro-pattern :name name))
+       ((quote value)
+        (make-constant-pattern :value value))
+       ((when test-form)
+        (make-guard-pattern :test-form test-form))
+       ((not sub-pattern)
+        (make-not-pattern :sub-pattern (parse-pattern sub-pattern)))
+       ((or &rest sub-patterns)
+        (if (= (length sub-patterns) 1)
+            (parse-pattern (first sub-patterns))
+            (make-or-pattern :sub-patterns (mapcar #'parse-pattern sub-patterns))))
+       ((and &rest sub-patterns)
+        (if (= (length sub-patterns) 1)
+            (parse-pattern (first sub-patterns))
+            (make-and-pattern :sub-patterns (mapcar #'parse-pattern sub-patterns))))
+       ((otherwise &rest args)
+        (apply #'parse-constructor-pattern (car pattern) args))))
+    (otherwise
+     (make-constant-pattern :value pattern))))
 
 (defgeneric parse-constructor-pattern (name &rest args))
 
@@ -208,7 +209,7 @@ Examples:
                   (if slot-pattern
                       (if (cdr slot-pattern)
                           (parse-pattern `(and ,@(cdr slot-pattern)))
-                          (make-variable-pattern :name (car slot-pattern)))
+                          (make-bind-pattern (car slot-pattern)))
                       (make-variable-pattern))))
           (predicate (lambda (var) `(typep ,var ',class-name)))
           (accessor (lambda (var i) `(slot-value ,var ',(nth i slot-names)))))
@@ -225,7 +226,7 @@ Examples:
                  collect
                  (if (cdr slot-pattern)
                      (parse-pattern `(and ,@(cdr slot-pattern)))
-                     (make-variable-pattern :name (car slot-pattern)))))
+                     (make-bind-pattern (car slot-pattern)))))
          (predicate (lambda (var) `(,(symbolicate conc-name :p) ,var)))
          (accessor (lambda (var i) `(,(symbolicate conc-name (nth i slot-names)) ,var))))
     (make-constructor-pattern :signature `(,conc-name ,@slot-names)
