@@ -19,8 +19,7 @@
   (:import-from :closer-mop
                 #:slot-definition-name
                 #:class-slots)
-  (:export #:guard
-           #:defpattern
+  (:export #:defpattern
            
            #:match
            #:multiple-value-match
