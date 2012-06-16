@@ -158,6 +158,8 @@ Examples:
         (make-constant-pattern :value value))
        ((when test-form)
         (make-guard-pattern :test-form test-form))
+       ((unless test-form)
+        (make-guard-pattern :test-form `(not ,test-form)))
        ((not sub-pattern)
         (make-not-pattern :sub-pattern (parse-pattern sub-pattern)))
        ((or &rest sub-patterns)

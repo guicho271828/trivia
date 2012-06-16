@@ -226,8 +226,9 @@
                        (destructuring-bind ((pattern . rest) . then) clause
                          ;; Desugar WHEN.
                          (when (and (>= (length then) 2)
-                                    (eq (first then) 'when))
-                           (setq pattern `(and ,pattern (when ,(second then)))
+                                    (or (eq (first then) 'when)
+                                        (eq (first then) 'unless)))
+                           (setq pattern `(and ,pattern (,(first then) ,(second then)))
                                  then (cddr then)))
                          (setq pattern (parse-pattern pattern))
                          (setq clause `((,pattern . ,rest) . ,then))))
