@@ -78,7 +78,7 @@
             for new-var in new-vars
             for access = (funcall accessor var i)
             for binding = `(,new-var ,access)
-            if (loop for ((pattern . rest) . then) in clauses
+            if (loop for ((pattern . nil) . nil) in clauses
                      for arg = (nth i (constructor-pattern-arguments pattern))
                      never (pattern-symbol-macro-included-p arg))
               collect binding into let-bindings
