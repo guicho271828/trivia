@@ -37,7 +37,7 @@ specifiers are defined as follows:
 
     derived-pattern ::= (NAME PATTERN*)
     
-    guard-pattern ::= (when TEST-FORM)
+    guard-pattern ::= (when TEST-FORM) | (unless TEST-FORM)
     
     not-pattern ::= (not PATTERN)
     
@@ -125,7 +125,8 @@ Examples:
 
 #### CLASS
 
-Mathces an instance of any class (of standard-class).
+Matches an instance of a given subclass of standard-class, as well as the
+instance's slots.
 
 Syntax:
 
@@ -149,7 +150,7 @@ Examples:
       ((point x y) (list x y)))
     => (1 2)
     (match p
-      ((point (x 1 x) _) x))
+      ((point (x 1 x)) x))
     => 1
     (defstruct person (name age))
     (defvar foo (make-person :name "foo" :age 30))
@@ -159,7 +160,7 @@ Examples:
 
 #### STRUCTURE
 
-Mathces an any value of a structure.
+Matches any structure value, and its slot values.
 
 Syntax:
 
@@ -200,7 +201,7 @@ Examples:
       ((p- name age) (list name age)))
     => ("foo" 30)
 
-### Dervied-Pattern
+### Derived-Pattern
 
 A derived-pattern is a pattern that is defined with DEFPATTERN. There
 are some builtin dervied patterns as below:
@@ -239,6 +240,8 @@ Examples:
 
     (match 1 ((and x (when (evenp x))) 'even))
     => NIL
+    (match 1 ((and x (unless (evenp x))) 'even))
+    => EVEN
 
 ### Not-Pattern
 
@@ -298,14 +301,16 @@ progn. If ARG is matched with some PATTERN, then evaluates
 corresponding BODY and returns the evaluated value. Otherwise, returns
 NIL.
 
-If BODY starts with a symbol WHEN, then the next form will be used to
-introduce a guard for PATTERN. That is,
+If BODY starts with the symbols WHEN or UNLESS, then the next form will be
+used to introduce a guard for PATTERN. That is,
 
     (match list ((list x) when (oddp x) x))
+    (match list ((list x) unless (evenp x) x))
 
 will be translated to
 
     (match list ((and (list x) (when (oddp x))) x))
+    (match list ((and (list x) (unless (evenp x))) x))
 
 ## [Macro] multiple-value-match
 
