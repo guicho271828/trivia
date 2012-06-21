@@ -23,25 +23,25 @@ specifiers are defined as follows:
                         | not-pattern
                         | or-pattern
                         | and-pattern
-    
+
     constant-pattern ::= t | nil
                        | atom-except-symbol
                        | (quote VALUE)
-    
+
     variable-pattern ::= SYMBOL | (variable SYMBOL)
 
     symbol-macro-pattern ::= (symbol-macrolet SYMBOL)
-    
+
     constructor-pattern ::= (NAME ARG*)
 
     derived-pattern ::= (NAME PATTERN*)
-    
+
     guard-pattern ::= (when TEST-FORM)
-    
+
     not-pattern ::= (not PATTERN)
-    
+
     or-pattern ::= (or PATTERN*)
-    
+
     and-pattern ::= (and PATTERN*)
 
 ### Constant-Pattern
@@ -122,6 +122,30 @@ Examples:
       ((simple-vector a b) (+ a b)))
     => 3
 
+#### PLIST
+
+Syntax:
+
+    plist-constructor-pattern ::= (plist (key PATTERN)*)
+
+Examples:
+
+    (match '(:one 1 :two 2 :three 3)
+      ((plist :one 1 :two x) x))
+    => 2
+
+#### ALIST
+
+Syntax:
+
+    alist-constructor-pattern ::= (alist (key . PATTERN)*)
+
+Examples:
+
+    (match '((:one . 1) (:two . 2) (:three . 3))
+      ((alist (:one . 1) (:two . x)) x))
+    => 2
+
 #### CLASS
 
 Mathces an instance of any class (of standard-class).
@@ -130,7 +154,7 @@ Syntax:
 
     class-constructor-pattern ::= (class NAME slot*)
                                 | (NAME slot*)
-    
+
     slot ::= SLOT-NAME
            | (SLOT-NAME PATTERN*)
 
@@ -164,7 +188,7 @@ Syntax:
 
     structure-constructor-pattern ::= (structure CONC-NAME slot*)
                                     | (CONC-NAME slot*)
-    
+
     slot ::= SLOT-NAME
            | (SLOT-NAME PATTERN*)
 

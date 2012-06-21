@@ -16,6 +16,15 @@
   value)
 
 (defstruct (constructor-pattern (:include pattern))
+  "A constructor-pattern matches not a value itself but a structure of
+the value
+  SIGNATURE - a mostly-unique data structure
+  ARGUMENTS - List of subpatterns
+  PREDICATE - lambda-predicate returning T if the currently matched data (its argument)
+              can be matched by this constructor pattern without regard for subpatterns
+  ACCESSOR - lambda of two arguments: the data and the currently matched subpattern
+             index. Should return the corresponding piece of data structure to be matched
+             by this subpattern"
   signature
   arguments
   predicate
@@ -222,7 +231,7 @@ Examples:
   (setq slot-patterns (mapcar #'ensure-list slot-patterns))
   (let* ((slot-names (mapcar #'car slot-patterns))
          (arguments
-           (loop for slot-pattern in slot-patterns 
+           (loop for slot-pattern in slot-patterns
                  collect
                  (if (cdr slot-pattern)
                      (parse-pattern `(and ,@(cdr slot-pattern)))
@@ -244,3 +253,28 @@ Examples:
   (if (find-class name nil)
       (apply #'parse-class-constructor-pattern name slot-patterns)
       (apply #'parse-struct-constructor-pattern name slot-patterns)))
+
+(defmethod parse-constructor-pattern ((name (eql 'plist)) &rest args)
+  (let (keys values)
+    (loop for (key value) on args by #'cddr
+       do (push key keys)
+       do (push value values))
+    (unless (= (length keys)
+               (length values))
+      (error "plist pattern has an extra key: ~A" args))
+    (make-constructor-pattern
+     :signature `(plist ,@keys)
+     :arguments (mapcar #'parse-pattern values)
+     :predicate (lambda (var) `(null (set-difference ',keys ,var))) ; Optimize?
+     :accessor (lambda (var i) `(getf ,var (nth ,i ',keys))))))
+
+(defmethod parse-constructor-pattern ((name (eql 'alist)) &rest args)
+  (let (keys values)
+    (loop for (key . value) in args
+       do (push key keys)
+       do (push value values))
+    (make-constructor-pattern
+     :signature `(alist ,@keys)
+     :arguments (mapcar #'parse-pattern values)
+     :predicate (lambda (var) `(null (set-difference ',keys (mapcar #'car ,var)))) ; Optimize?
+     :accessor (lambda (var i) `(cdr (assoc (nth ,i ',keys) ,var))))))
