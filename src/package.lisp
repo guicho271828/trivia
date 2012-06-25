@@ -20,7 +20,7 @@
                 #:slot-definition-name
                 #:class-slots)
   (:export #:defpattern
-           
+
            #:match
            #:multiple-value-match
            #:smatch
@@ -33,7 +33,7 @@
            #:multiple-value-cmatch
            #:csmatch
            #:multiple-value-csmatch
-           
+
            #:if-match
            #:if-smatch
            #:when-match
@@ -42,4 +42,9 @@
            #:with-match
            #:lambda-match
            #:lambda-ematch
-           #:lambda-cmatch))
+           #:lambda-cmatch
+
+           ; Pattern designators not from :cl package
+           #:prop-list
+           #:assoc-list
+           ))

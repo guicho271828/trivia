@@ -254,7 +254,7 @@ Examples:
       (apply #'parse-class-constructor-pattern name slot-patterns)
       (apply #'parse-struct-constructor-pattern name slot-patterns)))
 
-(defmethod parse-constructor-pattern ((name (eql 'plist)) &rest args)
+(defmethod parse-constructor-pattern ((name (eql 'prop-list)) &rest args)
   (let (keys values)
     (loop for (key value) on args by #'cddr
        do (push key keys)
@@ -265,10 +265,10 @@ Examples:
     (make-constructor-pattern
      :signature `(plist ,@keys)
      :arguments (mapcar #'parse-pattern values)
-     :predicate (lambda (var) `(null (set-difference ',keys ,var))) ; Optimize?
+     :predicate (lambda (var) `(zerop (rem (length ,var) 2))) ; Optimize/simplify to just consp?
      :accessor (lambda (var i) `(getf ,var (nth ,i ',keys))))))
 
-(defmethod parse-constructor-pattern ((name (eql 'alist)) &rest args)
+(defmethod parse-constructor-pattern ((name (eql 'assoc-list)) &rest args)
   (let (keys values)
     (loop for (key . value) in args
        do (push key keys)
@@ -276,5 +276,5 @@ Examples:
     (make-constructor-pattern
      :signature `(alist ,@keys)
      :arguments (mapcar #'parse-pattern values)
-     :predicate (lambda (var) `(null (set-difference ',keys (mapcar #'car ,var)))) ; Optimize?
+     :predicate (lambda (var) `(every #'consp ,var)) ; Optimize/simplify to just consp?
      :accessor (lambda (var i) `(cdr (assoc (nth ,i ',keys) ,var))))))
