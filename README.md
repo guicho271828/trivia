@@ -123,30 +123,6 @@ Examples:
       ((simple-vector a b) (+ a b)))
     => 3
 
-#### PLIST
-
-Syntax:
-
-    plist-constructor-pattern ::= (plist (key PATTERN)*)
-
-Examples:
-
-    (match '(:one 1 :two 2 :three 3)
-      ((plist :one 1 :two x) x))
-    => 2
-
-#### ALIST
-
-Syntax:
-
-    alist-constructor-pattern ::= (alist (key . PATTERN)*)
-
-Examples:
-
-    (match '((:one . 1) (:two . 2) (:three . 3))
-      ((alist (:one . 1) (:two . x)) x))
-    => 2
-
 #### CLASS
 
 Mathces an instance of any class (of standard-class).
@@ -469,6 +445,37 @@ Equivalent to (lambda (arg) (ematch arg CLAUSES...)).
     lambda-cmatch &body clauses
 
 Equivalent to (lambda (arg) (cmatch arg CLAUSES...)).
+
+[Package] optima.extra
+----------------
+
+This package contains derived and constructor patterns with designators not from
+COMMON-LISP package.
+
+#### PLIST
+
+Syntax:
+
+    plist-constructor-pattern ::= (plist (key PATTERN)*)
+
+Examples:
+
+    (match '(:one 1 :two 2 :three 3)
+      ((plist :one 1 :two x) x))
+    => 2
+
+#### ALIST
+
+Syntax:
+
+    alist-constructor-pattern ::= (alist (key . PATTERN)*)
+
+Examples:
+
+    (match '((:one . 1) (:two . 2) (:three . 3))
+      ((alist (:one . 1) (:two . x)) x))
+    => 2
+
 
 Authors
 -------

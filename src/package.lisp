@@ -42,9 +42,10 @@
            #:with-match
            #:lambda-match
            #:lambda-ematch
-           #:lambda-cmatch
+           #:lambda-cmatch))
 
-           ; Pattern designators not from :cl package
-           #:prop-list
-           #:assoc-list
-           ))
+(defpackage :optima.extra
+  (:use :cl
+        :optima)
+  (:export #:plist
+           #:alist))

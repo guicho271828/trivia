@@ -253,28 +253,3 @@ Examples:
   (if (find-class name nil)
       (apply #'parse-class-constructor-pattern name slot-patterns)
       (apply #'parse-struct-constructor-pattern name slot-patterns)))
-
-(defmethod parse-constructor-pattern ((name (eql 'prop-list)) &rest args)
-  (let (keys values)
-    (loop for (key value) on args by #'cddr
-       do (push key keys)
-       do (push value values))
-    (unless (= (length keys)
-               (length values))
-      (error "plist pattern has an extra key: ~A" args))
-    (make-constructor-pattern
-     :signature `(plist ,@keys)
-     :arguments (mapcar #'parse-pattern values)
-     :predicate (lambda (var) `(zerop (rem (length ,var) 2))) ; Optimize/simplify to just consp?
-     :accessor (lambda (var i) `(getf ,var (nth ,i ',keys))))))
-
-(defmethod parse-constructor-pattern ((name (eql 'assoc-list)) &rest args)
-  (let (keys values)
-    (loop for (key . value) in args
-       do (push key keys)
-       do (push value values))
-    (make-constructor-pattern
-     :signature `(alist ,@keys)
-     :arguments (mapcar #'parse-pattern values)
-     :predicate (lambda (var) `(every #'consp ,var)) ; Optimize/simplify to just consp?
-     :accessor (lambda (var i) `(cdr (assoc (nth ,i ',keys) ,var))))))
