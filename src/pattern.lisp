@@ -16,6 +16,15 @@
   value)
 
 (defstruct (constructor-pattern (:include pattern))
+  "A constructor-pattern matches not a value itself but a structure of
+the value
+  SIGNATURE - a mostly-unique data structure
+  ARGUMENTS - List of subpatterns
+  PREDICATE - lambda-predicate returning T if the currently matched data (its argument)
+              can be matched by this constructor pattern without regard for subpatterns
+  ACCESSOR - lambda of two arguments: the data and the currently matched subpattern
+             index. Should return the corresponding piece of data structure to be matched
+             by this subpattern"
   signature
   arguments
   predicate
@@ -222,7 +231,7 @@ Examples:
   (setq slot-patterns (mapcar #'ensure-list slot-patterns))
   (let* ((slot-names (mapcar #'car slot-patterns))
          (arguments
-           (loop for slot-pattern in slot-patterns 
+           (loop for slot-pattern in slot-patterns
                  collect
                  (if (cdr slot-pattern)
                      (parse-pattern `(and ,@(cdr slot-pattern)))

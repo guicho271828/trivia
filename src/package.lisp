@@ -20,7 +20,7 @@
                 #:slot-definition-name
                 #:class-slots)
   (:export #:defpattern
-           
+
            #:match
            #:multiple-value-match
            #:smatch
@@ -33,7 +33,7 @@
            #:multiple-value-cmatch
            #:csmatch
            #:multiple-value-csmatch
-           
+
            #:if-match
            #:if-smatch
            #:when-match
@@ -43,3 +43,9 @@
            #:lambda-match
            #:lambda-ematch
            #:lambda-cmatch))
+
+(defpackage :optima.extra
+  (:use :cl
+        :optima)
+  (:export #:plist
+           #:alist))
