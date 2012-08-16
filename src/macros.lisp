@@ -45,6 +45,18 @@
   (with-unique-names (arg)
     `(lambda (,arg) (cmatch ,arg ,@clauses))))
 
+(defmacro lambda-match1 (pattern &body body)
+  "Equivalent to (lambda-match (PATTERN BODY...))."
+  `(lambda-match (,pattern ,@body)))
+
+(defmacro lambda-ematch1 (pattern &body body)
+  "Equivalent to (lambda-ematch (PATTERN BODY...))."
+  `(lambda-ematch (,pattern ,@body)))
+
+(defmacro lambda-cmatch1 (pattern &body body)
+  "Equivalent to (lambda-cmatch (PATTERN BODY...))."
+  `(lambda-cmatch (,pattern ,@body)))
+
 (defmacro defun-match (name &body clauses)
   "Equivalent to (defun NAME (arg) (match arg CLAUSES...))."
   (with-unique-names (arg)
@@ -62,3 +74,15 @@
   (with-unique-names (arg)
     `(defun ,name (,arg)
        (cmatch ,arg ,@clauses))))
+
+(defmacro defun-match1 (name pattern &body body)
+  "Equivalent to `(defun-match name (PATTERN BODY...))."
+  `(defun-match ,name (,pattern ,@body)))
+
+(defmacro defun-ematch1 (name pattern &body body)
+  "Equivalent to `(defun-ematch name (PATTERN BODY...))."
+  `(defun-ematch ,name (,pattern ,@body)))
+
+(defmacro defun-cmatch1 (name pattern &body body)
+  "Equivalent to `(defun-cmatch name (PATTERN BODY...))."
+  `(defun-cmatch ,name (,pattern ,@body)))

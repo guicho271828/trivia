@@ -451,6 +451,24 @@ Equivalent to (lambda (arg) (ematch arg CLAUSES...)).
 
 Equivalent to (lambda (arg) (cmatch arg CLAUSES...)).
 
+## [Macro] lambda-match1
+
+    lambda-match1 pattern &body body
+
+Equivalent to (lambda-match (PATTERN BODY...)).
+
+## [Macro] lambda-ematch1
+
+    lambda-ematch1 pattern &body body
+
+Equivalent to (lambda-ematch (PATTERN BODY...)).
+
+## [Macro] lambda-cmatch1
+
+    lambda-cmatch1 pattern &body body
+
+Equivalent to (lambda-cmatch (PATTERN BODY...)).
+
 ## [Macro] defun-match
 
     defun-match name &body clauses
@@ -468,6 +486,24 @@ Equivalent to (defun NAME (arg) (ematch arg CLAUSES...)).
     defun-cmatch name &body clauses
 
 Equivalent to (defun NAME (arg) (cmatch arg CLAUSES...)).
+
+## [Macro] defun-match1
+
+    defun-match1 name pattern &body body
+
+Equivalent to `(defun-match name (PATTERN BODY...)).
+
+## [Macro] defun-ematch1
+
+    defun-ematch1 name pattern &body body
+
+Equivalent to `(defun-ematch name (PATTERN BODY...)).
+
+## [Macro] defun-cmatch1
+
+    defun-cmatch1 name pattern &body body
+
+Equivalent to `(defun-cmatch name (PATTERN BODY...)).
 
 [Package] optima.extra
 ----------------------
