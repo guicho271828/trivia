@@ -8,7 +8,7 @@
                 #:make-keyword
                 #:make-gensym-list
                 #:required-argument
-                #:with-gensyms
+                #:with-unique-names
                 #:once-only
                 #:when-let
                 #:destructuring-case)
@@ -42,10 +42,39 @@
            #:with-match
            #:lambda-match
            #:lambda-ematch
-           #:lambda-cmatch))
+           #:lambda-cmatch
+           #:defun-match
+           #:defun-ematch
+           #:defun-cmatch))
 
 (defpackage :optima.extra
-  (:use :cl
-        :optima)
+  (:use :cl :optima)
   (:export #:plist
-           #:alist))
+           #:alist)
+  (:documentation
+   "This package contains derived and constructor patterns with
+designators not from COMMON-LISP package.
+
+#### PLIST
+
+Syntax:
+
+    plist-constructor-pattern ::= (plist (key PATTERN)*)
+
+Examples:
+
+    (match '(:one 1 :two 2 :three 3)
+      ((plist :one 1 :two x) x))
+    => 2
+
+#### ALIST
+
+Syntax:
+
+    alist-constructor-pattern ::= (alist (key . PATTERN)*)
+
+Examples:
+
+    (match '((:one . 1) (:two . 2) (:three . 3))
+      ((alist (:one . 1) (:two . x)) x))
+    => 2"))

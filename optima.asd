@@ -23,25 +23,25 @@ specifiers are defined as follows:
                         | not-pattern
                         | or-pattern
                         | and-pattern
-
+    
     constant-pattern ::= t | nil
                        | atom-except-symbol
                        | (quote VALUE)
-
+    
     variable-pattern ::= SYMBOL | (variable SYMBOL)
-
+    
     symbol-macro-pattern ::= (symbol-macrolet SYMBOL)
-
+    
     constructor-pattern ::= (NAME ARG*)
-
+    
     derived-pattern ::= (NAME PATTERN*)
-
-    guard-pattern ::= (when TEST-FORM)
-
+    
+    guard-pattern ::= (when TEST-FORM) | (unless TEST-FORM)
+    
     not-pattern ::= (not PATTERN)
-
+    
     or-pattern ::= (or PATTERN*)
-
+    
     and-pattern ::= (and PATTERN*)
 
 ### Constant-Pattern
@@ -124,13 +124,14 @@ Examples:
 
 #### CLASS
 
-Mathces an instance of any class (of standard-class).
+Matches an instance of a given subclass of standard-class, as well as
+the instance's slots.
 
 Syntax:
 
     class-constructor-pattern ::= (class NAME slot*)
                                 | (NAME slot*)
-
+    
     slot ::= SLOT-NAME
            | (SLOT-NAME PATTERN*)
 
@@ -148,7 +149,7 @@ Examples:
       ((point x y) (list x y)))
     => (1 2)
     (match p
-      ((point (x 1 x) _) x))
+      ((point (x 1 x)) x))
     => 1
     (defstruct person (name age))
     (defvar foo (make-person :name \"foo\" :age 30))
@@ -158,7 +159,7 @@ Examples:
 
 #### STRUCTURE
 
-Mathces an any value of a structure.
+Matches any structure value, and its slot values.
 
 Syntax:
 
@@ -199,7 +200,7 @@ Examples:
       ((p- name age) (list name age)))
     => (\"foo\" 30)
 
-### Dervied-Pattern
+### Derived-Pattern
 
 A derived-pattern is a pattern that is defined with DEFPATTERN. There
 are some builtin dervied patterns as below:
@@ -238,6 +239,8 @@ Examples:
 
     (match 1 ((and x (when (evenp x))) 'even))
     => NIL
+    (match 1 ((and x (unless (evenp x))) 'even))
+    => EVEN
 
 ### Not-Pattern
 

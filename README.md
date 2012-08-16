@@ -30,11 +30,11 @@ specifiers are defined as follows:
                        | (quote VALUE)
     
     variable-pattern ::= SYMBOL | (variable SYMBOL)
-
+    
     symbol-macro-pattern ::= (symbol-macrolet SYMBOL)
     
     constructor-pattern ::= (NAME ARG*)
-
+    
     derived-pattern ::= (NAME PATTERN*)
     
     guard-pattern ::= (when TEST-FORM) | (unless TEST-FORM)
@@ -125,8 +125,8 @@ Examples:
 
 #### CLASS
 
-Matches an instance of a given subclass of standard-class, as well as the
-instance's slots.
+Matches an instance of a given subclass of standard-class, as well as
+the instance's slots.
 
 Syntax:
 
@@ -166,7 +166,7 @@ Syntax:
 
     structure-constructor-pattern ::= (structure CONC-NAME slot*)
                                     | (CONC-NAME slot*)
-    
+
     slot ::= SLOT-NAME
            | (SLOT-NAME PATTERN*)
 
@@ -301,8 +301,8 @@ progn. If ARG is matched with some PATTERN, then evaluates
 corresponding BODY and returns the evaluated value. Otherwise, returns
 NIL.
 
-If BODY starts with the symbols WHEN or UNLESS, then the next form will be
-used to introduce a guard for PATTERN. That is,
+If BODY starts with the symbols WHEN or UNLESS, then the next form
+will be used to introduce a guard for PATTERN. That is,
 
     (match list ((list x) when (oddp x) x))
     (match list ((list x) unless (evenp x) x))
@@ -451,11 +451,29 @@ Equivalent to (lambda (arg) (ematch arg CLAUSES...)).
 
 Equivalent to (lambda (arg) (cmatch arg CLAUSES...)).
 
-[Package] optima.extra
-----------------
+## [Macro] defun-match
 
-This package contains derived and constructor patterns with designators not from
-COMMON-LISP package.
+    defun-match name &body clauses
+
+Equivalent to (defun NAME (arg) (match arg CLAUSES...)).
+
+## [Macro] defun-ematch
+
+    defun-ematch name &body clauses
+
+Equivalent to (defun NAME (arg) (ematch arg CLAUSES...)).
+
+## [Macro] defun-cmatch
+
+    defun-cmatch name &body clauses
+
+Equivalent to (defun NAME (arg) (cmatch arg CLAUSES...)).
+
+[Package] optima.extra
+----------------------
+
+This package contains derived and constructor patterns with
+designators not from COMMON-LISP package.
 
 #### PLIST
 
@@ -480,7 +498,6 @@ Examples:
     (match '((:one . 1) (:two . 2) (:three . 3))
       ((alist (:one . 1) (:two . x)) x))
     => 2
-
 
 Authors
 -------

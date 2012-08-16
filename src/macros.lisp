@@ -32,15 +32,33 @@
 
 (defmacro lambda-match (&body clauses)
   "Equivalent to (lambda (arg) (match arg CLAUSES...))."
-  (let ((arg (gensym)))
+  (with-unique-names (arg)
     `(lambda (,arg) (match ,arg ,@clauses))))
 
 (defmacro lambda-ematch (&body clauses)
   "Equivalent to (lambda (arg) (ematch arg CLAUSES...))."
-  (let ((arg (gensym)))
+  (with-unique-names (arg)
     `(lambda (,arg) (ematch ,arg ,@clauses))))
 
 (defmacro lambda-cmatch (&body clauses)
   "Equivalent to (lambda (arg) (cmatch arg CLAUSES...))."
-  (let ((arg (gensym)))
+  (with-unique-names (arg)
     `(lambda (,arg) (cmatch ,arg ,@clauses))))
+
+(defmacro defun-match (name &body clauses)
+  "Equivalent to (defun NAME (arg) (match arg CLAUSES...))."
+  (with-unique-names (arg)
+    `(defun ,name (,arg)
+       (match ,arg ,@clauses))))
+
+(defmacro defun-ematch (name &body clauses)
+  "Equivalent to (defun NAME (arg) (ematch arg CLAUSES...))."
+  (with-unique-names (arg)
+    `(defun ,name (,arg)
+       (ematch ,arg ,@clauses))))
+
+(defmacro defun-cmatch (name &body clauses)
+  "Equivalent to (defun NAME (arg) (cmatch arg CLAUSES...))."
+  (with-unique-names (arg)
+    `(defun ,name (,arg)
+       (cmatch ,arg ,@clauses))))

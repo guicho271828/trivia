@@ -19,14 +19,16 @@ progn. If ARG is matched with some PATTERN, then evaluates
 corresponding BODY and returns the evaluated value. Otherwise, returns
 NIL.
 
-If BODY starts with a symbol WHEN, then the next form will be used to
-introduce a guard for PATTERN. That is,
+If BODY starts with the symbols WHEN or UNLESS, then the next form
+will be used to introduce a guard for PATTERN. That is,
 
     (match list ((list x) when (oddp x) x))
+    (match list ((list x) unless (evenp x) x))
 
 will be translated to
 
-    (match list ((and (list x) (when (oddp x))) x))"
+    (match list ((and (list x) (when (oddp x))) x))
+    (match list ((and (list x) (unless (evenp x))) x))"
   (compile-match-1 arg clauses nil))
 
 (defmacro multiple-value-match (values-form &body clauses)
