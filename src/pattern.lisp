@@ -213,18 +213,21 @@ Examples:
          (slot-names (mapcar #'slot-definition-name slot-defs)))
     (awhen (first (set-difference (mapcar #'car slot-patterns) slot-names))
       (error "Unknown slot name ~A for ~A" it class-name))
-    (let ((arguments
-            (loop for slot-name in slot-names
-                  for slot-pattern = (assoc slot-name slot-patterns)
-                  collect
-                  (if slot-pattern
-                      (if (cdr slot-pattern)
-                          (parse-pattern `(and ,@(cdr slot-pattern)))
-                          (make-bind-pattern (car slot-pattern)))
-                      (make-variable-pattern))))
-          (predicate (lambda (var) `(typep ,var ',class-name)))
-          (accessor (lambda (var i) `(slot-value ,var ',(nth i slot-names)))))
-      (make-constructor-pattern :signature `(,class-name ,(length arguments))
+    (let ((signature
+            `(,class-name ,@(mapcar #'car slot-patterns)))
+          (arguments
+            (loop for (slot-name . slot-sub-pats) in slot-patterns
+                  if slot-sub-pats
+                    collect (parse-pattern `(and ,@slot-sub-pats))
+                  else
+                    collect (make-bind-pattern slot-name)))
+          (predicate
+            (lambda (var)
+              `(typep ,var ',class-name)))
+          (accessor
+            (lambda (var i)
+              `(slot-value ,var ',(car (nth i slot-patterns))))))
+      (make-constructor-pattern :signature signature
                                 :arguments arguments
                                 :predicate predicate
                                 :accessor accessor))))
