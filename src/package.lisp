@@ -34,6 +34,10 @@
            #:csmatch
            #:multiple-value-csmatch
 
+           #:match-error
+           #:match-error-values
+           #:match-error-patterns
+
            #:if-match
            #:if-smatch
            #:when-match

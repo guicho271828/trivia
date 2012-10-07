@@ -407,6 +407,20 @@ instead of LET.
 Same as MULTIPLE-VALUE-CMATCH, except MULTIPLE-VALUE-CSMATCH binds
 variables by SYMBOL-MACROLET instead of LET.
 
+## [Class] match-error
+
+## [Type] match-error
+
+    match-error
+
+## [Function] match-error-values
+
+    match-error-values condition
+
+## [Function] match-error-patterns
+
+    match-error-patterns condition
+
 ## [Macro] if-match
 
     if-match pattern arg &body (then &optional else)
