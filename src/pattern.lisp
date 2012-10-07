@@ -7,6 +7,9 @@
 (defstruct (variable-pattern (:include pattern))
   name)
 
+(defun variable-pattern-implicit-p (pattern)
+  (eq (get (variable-pattern-name pattern) 'implicit) t))
+
 (defstruct (symbol-pattern (:include pattern))
   name)
 
@@ -45,8 +48,10 @@ the value
 (defun pattern-variables (pattern)
   (typecase pattern
     (variable-pattern
-     (awhen (variable-pattern-name pattern)
-       (list it)))
+     (let ((name (variable-pattern-name pattern)))
+       (when (and name
+                  (not (variable-pattern-implicit-p pattern)))
+         (list name))))
     (constructor-pattern
      (mappend #'pattern-variables (constructor-pattern-arguments pattern)))
     (not-pattern
@@ -94,16 +99,32 @@ the value
             (mapcar #'pattern-expand-all (cdr pattern)))
       pattern))
 
+(defun genpvar ()
+  "Creates and returns a fresh pattern variable.  Not GENSYM but
+GENPVAR should be used to introduce a new variable during pattern
+expansion.  See also DEFPATTERN."
+  (let ((var (gensym)))
+    (setf (get var 'implicit) t)
+    var))
+
 (defmacro defpattern (name lambda-list &body body)
   "Defines a derived pattern specifier named NAME. This is analogous
-to DEFTYPE.
+to DEFTYPE.  Note that if you introduce a pattern variable to the
+pattern expansion, you should use GENPVAR instead of GENSYM to tell
+the pattern matching compiler that the variable will never appear in
+the match body.
 
 Examples:
 
     ;; Defines a LIST pattern.
     (defpattern list (&rest args)
       (when args
-        `(cons ,(car args) (list ,@(cdr args)))))"
+        `(cons ,(car args) (list ,@(cdr args)))))
+    
+    ;; Defines a SATISFIES pattern.
+    (defpattern satisfies (predicate-name &rest args)
+      (let ((var (genpvar)))
+        `(and ,var (when (,predicate-name ,var ,@args)))))"
   `(setf (pattern-expand-function ',name) (lambda ,lambda-list ,@body)))
 
 (defpattern list (&rest args)
@@ -119,7 +140,7 @@ Examples:
                  `(list* ,(car args) ,@(cdr args))))))
 
 (defpattern satisfies (predicate-name &rest args)
-  (let ((var (gensym)))
+  (let ((var (genpvar)))
     `(and ,var (when (,predicate-name ,var ,@args)))))
 
 (defpattern eq (arg)

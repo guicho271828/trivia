@@ -287,12 +287,23 @@ Examples:
 [Package] optima
 ----------------
 
+## [Function] genpvar
+
+    genpvar
+
+Creates and returns a fresh pattern variable.  Not GENSYM but
+GENPVAR should be used to introduce a new variable during pattern
+expansion.  See also DEFPATTERN.
+
 ## [Macro] defpattern
 
     defpattern name lambda-list &body body
 
 Defines a derived pattern specifier named NAME. This is analogous
-to DEFTYPE.
+to DEFTYPE.  Note that if you introduce a pattern variable to the
+pattern expansion, you should use GENPVAR instead of GENSYM to tell
+the pattern matching compiler that the variable will never appear in
+the match body.
 
 Examples:
 
@@ -300,6 +311,11 @@ Examples:
     (defpattern list (&rest args)
       (when args
         `(cons ,(car args) (list ,@(cdr args)))))
+    
+    ;; Defines a SATISFIES pattern.
+    (defpattern satisfies (predicate-name &rest args)
+      (let ((var (genpvar)))
+        `(and ,var (when (,predicate-name ,var ,@args)))))
 
 ## [Macro] match
 
