@@ -17,7 +17,7 @@ specifiers are defined as follows:
 
     pattern-specifier ::= constant-pattern
                         | variable-pattern
-                        | symbol-macro-pattern
+                        | symbol-pattern
                         | constructor-pattern
                         | derived-pattern
                         | guard-pattern
@@ -31,7 +31,7 @@ specifiers are defined as follows:
     
     variable-pattern ::= SYMBOL | (variable SYMBOL)
     
-    symbol-macro-pattern ::= (symbol-macrolet SYMBOL)
+    symbol-pattern ::= (symbol SYMBOL) | (symbol-macrolet SYMBOL)
     
     constructor-pattern ::= (NAME ARG*)
     
@@ -70,15 +70,15 @@ Examples:
       (otherwise 'otherwise))
     => OTHERWISE
 
-### Symbol-Macro-Pattern
+### Symbol-Pattern
 
-A symbol-macro-pattern matches any value as variable-patterns but bind
-the value with SYMBOL-MACROLET.
+A symbol-pattern matches any value as variable-patterns but bind the
+value with SYMBOL-MACROLET.
 
 Examples:
 
     (defvar c (cons 1 2))
-    (match c ((cons (symbol-macrolet x) y) (incf x) (incf y)))
+    (match c ((cons (symbol x) y) (incf x) (incf y)))
     c
      => (2 . 2)
 
@@ -338,20 +338,6 @@ Examples:
      ((1 y) y))
     => 2
 
-## [Macro] smatch
-
-    smatch arg &body clauses
-
-Same as MATCH, except SMATCH binds variables by SYMBOL-MACROLET
-instead of LET. See the documentation of symbol-macro-pattern.
-
-## [Macro] multiple-value-smatch
-
-    multiple-value-smatch values-form &body clauses
-
-Same as MULTIPLE-VALUE-MATCH, except MULTIPLE-VALUE-SMATCH binds
-variables by SYMBOL-MACROLET instead of LET.
-
 ## [Macro] ematch
 
     ematch arg &body clauses
@@ -364,20 +350,6 @@ Same as MATCH, except MATCH-ERROR will be raised if not matched.
 
 Same as MULTIPLE-VALUE-MATCH, except MATCH-ERROR will be raised if
 not matched.
-
-## [Macro] esmatch
-
-    esmatch arg &body clauses
-
-Same as EMATCH, except ESMATCH binds variables by SYMBOL-MACROLET
-instead of LET.
-
-## [Macro] multiple-value-esmatch
-
-    multiple-value-esmatch values-form &body clauses
-
-Same as MULTIPLE-VALUE-EMATCH, except MULTIPLE-VALUE-ESMATCH binds
-variables by SYMBOL-MACROLET instead of LET.
 
 ## [Macro] cmatch
 
@@ -392,20 +364,6 @@ matched.
 
 Same as MULTIPLE-VALUE-MATCH, except continuable MATCH-ERROR will
 be raised if not matched.
-
-## [Macro] csmatch
-
-    csmatch arg &body clauses
-
-Same as CMATCH, except CSMATCH binds variables by SYMBOL-MACROLET
-instead of LET.
-
-## [Macro] multiple-value-csmatch
-
-    multiple-value-csmatch values-form &body clauses
-
-Same as MULTIPLE-VALUE-CMATCH, except MULTIPLE-VALUE-CSMATCH binds
-variables by SYMBOL-MACROLET instead of LET.
 
 ## [Class] match-error
 
@@ -427,23 +385,11 @@ variables by SYMBOL-MACROLET instead of LET.
 
 Equivalent to (match ARG (PATTERN THEN) (otherwise ELSE)).
 
-## [Macro] if-smatch
-
-    if-smatch pattern arg &body (then &optional else)
-
-Equivalent to (smatch ARG (PATTERN THEN) (otherwise ELSE)).
-
 ## [Macro] when-match
 
     when-match pattern arg &body body
 
 Equivalent to (match ARG (PATTERN BODY...)).
-
-## [Macro] when-smatch
-
-    when-smatch pattern arg &body body
-
-Equivalent to (smatch ARG (PATTERN BODY...)).
 
 ## [Macro] unless-match
 

@@ -23,25 +23,17 @@
 
            #:match
            #:multiple-value-match
-           #:smatch
-           #:multiple-value-smatch
            #:ematch
            #:multiple-value-ematch
-           #:esmatch
-           #:multiple-value-esmatch
            #:cmatch
            #:multiple-value-cmatch
-           #:csmatch
-           #:multiple-value-csmatch
 
            #:match-error
            #:match-error-values
            #:match-error-patterns
 
            #:if-match
-           #:if-smatch
            #:when-match
-           #:when-smatch
            #:unless-match
            #:with-match
            #:lambda-match

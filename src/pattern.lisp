@@ -1,7 +1,5 @@
 (in-package :optima)
 
-(defvar *parse-variable-as-symbol-macro* nil)
-
 ;;; Pattern Data Structure
 
 (defstruct pattern)
@@ -9,7 +7,7 @@
 (defstruct (variable-pattern (:include pattern))
   name)
 
-(defstruct (symbol-macro-pattern (:include pattern))
+(defstruct (symbol-pattern (:include pattern))
   name)
 
 (defstruct (constant-pattern (:include pattern))
@@ -56,16 +54,16 @@ the value
     ((or or-pattern and-pattern)
      (mappend #'pattern-variables (slot-value pattern 'sub-patterns)))))
 
-(defun pattern-symbol-macro-included-p (pattern)
+(defun symbol-pattern-included-p (pattern)
   (typecase pattern
-    (symbol-macro-pattern t)
+    (symbol-pattern t)
     (constructor-pattern
-     (some #'pattern-symbol-macro-included-p
+     (some #'symbol-pattern-included-p
            (constructor-pattern-arguments pattern)))
     (not-pattern
-     (pattern-symbol-macro-included-p (not-pattern-sub-pattern pattern)))
+     (symbol-pattern-included-p (not-pattern-sub-pattern pattern)))
     ((or or-pattern and-pattern)
-     (some #'pattern-symbol-macro-included-p
+     (some #'symbol-pattern-included-p
            (slot-value pattern 'sub-patterns)))))
 
 ;;; Pattern Specifier
@@ -146,9 +144,7 @@ Examples:
            (unless (or (eq name 'otherwise)
                        (string= name "_"))
              name)))
-    (if *parse-variable-as-symbol-macro*
-        (make-symbol-macro-pattern :name name)
-        (make-variable-pattern :name (var-name name)))))
+    (make-variable-pattern :name (var-name name))))
 
 (defun parse-pattern (pattern)
   (when (pattern-p pattern)
@@ -163,8 +159,10 @@ Examples:
      (destructuring-case pattern
        ((variable name)
         (make-bind-pattern name))
+       ((symbol name)
+        (make-symbol-pattern :name name))
        ((symbol-macrolet name)
-        (make-symbol-macro-pattern :name name))
+        (make-symbol-pattern :name name))
        ((quote value)
         (make-constant-pattern :value value))
        ((when test-form)
