@@ -120,13 +120,12 @@ Examples:
                 (t
                  `(list* ,(car args) ,@(cdr args))))))
 
-(defpattern typep (type-specifier)
+(defpattern satisfies (predicate-name &rest args)
   (let ((var (gensym)))
-    `(and ,var (when (typep ,var ',type-specifier)))))
+    `(and ,var (when (,predicate-name ,var ,@args)))))
 
-(defpattern satisfies (predicate-name)
-  (let ((var (gensym)))
-    `(and ,var (when (,predicate-name ,var)))))
+(defpattern typep (type-specifier)
+  `(satisfies typep ',type-specifier))
 
 ;;; Pattern Specifier Parser
 

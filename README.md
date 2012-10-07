@@ -218,17 +218,18 @@ Expansion of LIST* derived patterns:
 
     (list a b c) => (cons a (cons b c))
 
-#### TYPEP
-
-Expansion of TYPEP derived patterns:
-
-    (TYPEP string) => (and #:G1 (when (typep #:G1 'string)))
-
 #### SATISFIES
 
 Expansion of SATISFIES derived patterns:
 
     (satisfies evenp) => (and #:G1 (when (evenp #:G1)))
+    (satisfies typep 'list) => (and #:G1 (when (typep #:G1 'list)))
+
+#### TYPEP
+
+Expansion of TYPEP derived patterns:
+
+    (TYPEP string) => (satisfies typep 'string)
 
 ### Guard-Pattern
 
