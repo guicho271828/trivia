@@ -124,6 +124,18 @@ Examples:
   (let ((var (gensym)))
     `(and ,var (when (,predicate-name ,var ,@args)))))
 
+(defpattern eq (arg)
+  `(satisfies eq ,arg))
+
+(defpattern eql (arg)
+  `(satisfies eql ,arg))
+
+(defpattern equal (arg)
+  `(satisfies equal ,arg))
+
+(defpattern equalp (arg)
+  `(satisfies equalp ,arg))
+
 (defpattern typep (type-specifier)
   `(satisfies typep ',type-specifier))
 

@@ -224,6 +224,15 @@ Expansion of SATISFIES derived patterns:
     (satisfies evenp) => (and #:G1 (when (evenp #:G1)))
     (satisfies typep 'list) => (and #:G1 (when (typep #:G1 'list)))
 
+#### EQ, EQL, EQUAL, EQUALP
+
+Expansion of EQ, EQL, EQUAL, EQUALP derived patterns:
+
+    (eq 'foo) => (satisfies eq 'foo)
+    (eql 123) => (satisfies eql 123)
+    (equal '(1 2)) => (satisfies equal '(1 2))
+    (equalp \"foo\") => (satisfies equalp \"foo\")
+
 #### TYPEP
 
 Expansion of TYPEP derived patterns:
