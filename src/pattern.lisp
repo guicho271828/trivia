@@ -99,14 +99,6 @@ the value
             (mapcar #'pattern-expand-all (cdr pattern)))
       pattern))
 
-(defun genpvar ()
-  "Creates and returns a fresh pattern variable.  Not GENSYM but
-GENPVAR should be used to introduce a new variable during pattern
-expansion.  See also DEFPATTERN."
-  (let ((var (gensym)))
-    (setf (get var 'implicit) t)
-    var))
-
 (defmacro defpattern (name lambda-list &body body)
   "Defines a derived pattern specifier named NAME. This is analogous
 to DEFTYPE.  Note that if you introduce a pattern variable to the
@@ -119,12 +111,7 @@ Examples:
     ;; Defines a LIST pattern.
     (defpattern list (&rest args)
       (when args
-        `(cons ,(car args) (list ,@(cdr args)))))
-    
-    ;; Defines a SATISFIES pattern.
-    (defpattern satisfies (predicate-name &rest args)
-      (let ((var (genpvar)))
-        `(and ,var (when (,predicate-name ,var ,@args)))))"
+        `(cons ,(car args) (list ,@(cdr args)))))"
   `(setf (pattern-expand-function ',name) (lambda ,lambda-list ,@body)))
 
 (defpattern list (&rest args)
