@@ -291,10 +291,7 @@ Examples:
     defpattern name lambda-list &body body
 
 Defines a derived pattern specifier named NAME. This is analogous
-to DEFTYPE.  Note that if you introduce a pattern variable to the
-pattern expansion, you should use GENPVAR instead of GENSYM to tell
-the pattern matching compiler that the variable will never appear in
-the match body.
+to DEFTYPE.
 
 Examples:
 
