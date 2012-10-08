@@ -222,8 +222,7 @@ Expansion of LIST* derived patterns:
 
 Expansion of SATISFIES derived patterns:
 
-    (satisfies evenp) => (and #:G1 (when (evenp #:G1)))
-    (satisfies typep 'list) => (and #:G1 (when (typep #:G1 'list)))
+    (satisfies evenp) => (when (evenp *))
 
 #### EQ, EQL, EQUAL, EQUALP
 
@@ -243,14 +242,14 @@ Expansion of TYPEP derived patterns:
 ### Guard-Pattern
 
 A guard-pattern is a special pattern that tests TEST-FORM satisfies in
-the current matching context. Guard-patterns are basically used with
-and-patterns. See the examples below.
+the current matching context. A special symbol * in the predicate form
+refers to the value being matched. See the examples below.
 
 Examples:
 
-    (match 1 ((and x (when (evenp x))) 'even))
+    (match 1 ((when (evenp *)) 'even))
     => NIL
-    (match 1 ((and x (unless (evenp x))) 'even))
+    (match 1 ((unless (evenp *)) 'even))
     => EVEN
 
 ### Not-Pattern

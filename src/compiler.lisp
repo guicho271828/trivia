@@ -102,9 +102,12 @@
   (assert (= (length clauses) 1))
   (destructuring-bind ((pattern . rest) . then)
       (first clauses)
-    (let ((then `(if ,(guard-pattern-test-form pattern)
-                     ,(compile-clause-body then)
-                     ,else)))
+    (let* ((test `(let ((* ,(car vars)))
+                    (declare (ignorable *))
+                    ,(guard-pattern-test-form pattern)))
+           (then `(if ,test
+                      ,(compile-clause-body then)
+                      ,else)))
       (compile-match (cdr vars) `((,rest ,then)) else))))
 
 (defun compile-match-or-group (vars clauses else)

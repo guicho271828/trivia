@@ -139,24 +139,23 @@ Examples:
                 (t
                  `(list* ,(car args) ,@(cdr args))))))
 
-(defpattern satisfies (predicate-name &rest args)
-  (let ((var (genpvar)))
-    `(and ,var (when (,predicate-name ,var ,@args)))))
+(defpattern satisfies (predicate-name)
+  `(when (,predicate-name *)))
 
 (defpattern eq (arg)
-  `(satisfies eq ,arg))
+  `(when (eq * ,arg)))
 
 (defpattern eql (arg)
-  `(satisfies eql ,arg))
+  `(when (eql * ,arg)))
 
 (defpattern equal (arg)
-  `(satisfies equal ,arg))
+  `(when (equal * ,arg)))
 
 (defpattern equalp (arg)
-  `(satisfies equalp ,arg))
+  `(when (equalp * ,arg)))
 
 (defpattern typep (type-specifier)
-  `(satisfies typep ',type-specifier))
+  `(when (typep * ',type-specifier)))
 
 ;;; Pattern Specifier Parser
 
