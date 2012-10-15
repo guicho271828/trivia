@@ -244,8 +244,10 @@
   (let ((clauses (mapcar (lambda (c) (cons (list (car c)) (cdr c))) clauses)))
     (if (symbolp form)
         (compile-match (list form) clauses else)
-        (once-only (form)
-          (compile-match (list form) clauses else)))))
+        (let ((form-var (gensym "FORM")))
+          `(let ((,form-var ,form))
+             (declare (ignorable ,form-var))
+             ,(compile-match (list form-var) clauses else))))))
 
 (defun compile-multiple-value-match (values-form clauses else)
   (let* ((arity (loop for (patterns . nil) in clauses
