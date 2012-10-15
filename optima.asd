@@ -297,3 +297,12 @@ Examples:
                              (:file "compiler")
                              (:file "match")
                              (:file "macros")))))
+
+(defmethod asdf:perform ((op asdf:test-op) (system (eql (asdf:find-system :optima))))
+  (asdf:load-system :optima-test)
+  (eval (read-from-string "(eos:run! 'optima-test::optima-test)"))
+  t)
+
+(asdf:defsystem :optima-test
+  :depends-on (:optima :eos)
+  :components ((:file "test/suite")))
