@@ -90,6 +90,12 @@
     (is (equal (match point
                  ((point- x y) (list x y)))
                '(1 2)))
+    (is-match point (point))
+    (is-match point (point (x 1) (y 2)))
+    (is-match point (point (x 1)))
+    (is-match point (point (y 2)))
+    (is-not-match point (point (x 2)))
+    (is-not-match 1 (point-))
     (is-match point (point-))
     (is-match point (point- (x 1) (y 2)))
     (is-match point (point- (x 1)))
