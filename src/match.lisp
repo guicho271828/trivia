@@ -71,33 +71,41 @@ Examples:
 
 (defmacro ematch (arg &body clauses)
   "Same as MATCH, except MATCH-ERROR will be raised if not matched."
-  (let ((else `(error 'match-error
-                      :values (list ,arg)
-                      :patterns ',(mapcar #'car clauses))))
-    (compile-match-1 arg clauses else)))
+  (once-only (arg)
+    (let ((else `(error 'match-error
+                        :values (list ,arg)
+                        :patterns ',(mapcar (lambda (c) (list (car c))) clauses))))
+      (compile-match-1 arg clauses else))))
 
 (defmacro multiple-value-ematch (values-form &body clauses)
   "Same as MULTIPLE-VALUE-MATCH, except MATCH-ERROR will be raised if
 not matched."
-  (let ((else `(error 'match-error
-                      :values (list ,values-form)
-                      :patterns ',(mapcar #'car clauses))))
-    (compile-multiple-value-match values-form clauses else)))
+  (let* ((values (gensym "VALUES"))
+         (else `(error 'match-error
+                       :values ,values
+                       :patterns ',(mapcar #'car clauses))))
+    ;; FIXME: remove allocations
+    `(let ((,values (multiple-value-list ,values-form)))
+       ,(compile-multiple-value-match `(values-list ,values) clauses else))))
 
 (defmacro cmatch (arg &body clauses)
   "Same as MATCH, except continuable MATCH-ERROR will be raised if not
 matched."
-  (let ((else `(cerror "Continue."
-                       'match-error
-                       :values (list ,arg)
-                       :patterns ',(mapcar #'car clauses))))
-    (compile-match-1 arg clauses else)))
+  (once-only (arg)
+    (let ((else `(cerror "Continue."
+                         'match-error
+                         :values (list ,arg)
+                         :patterns ',(mapcar (lambda (c) (list (car c))) clauses))))
+      (compile-match-1 arg clauses else))))
 
 (defmacro multiple-value-cmatch (values-form &body clauses)
   "Same as MULTIPLE-VALUE-MATCH, except continuable MATCH-ERROR will
 be raised if not matched."
-  (let ((else `(cerror "Continue."
-                       'match-error
-                       :values (list ,values-form)
-                       :patterns ',(mapcar #'car clauses))))
-    (compile-multiple-value-match values-form clauses else)))
+  (let* ((values (gensym "VALUES"))
+         (else `(cerror "Continue."
+                        'match-error
+                        :values ,values
+                        :patterns ',(mapcar #'car clauses))))
+    ;; FIXME: remove allocations
+    `(let ((,values (multiple-value-list ,values-form)))
+       ,(compile-multiple-value-match `(values-list ,values) clauses else))))

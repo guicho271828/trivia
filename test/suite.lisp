@@ -254,7 +254,14 @@
   (signals match-error
     (ematch 1
       (1 (fail))
-      (1 t))))
+      (1 t)))
+  ;; only once
+  (let ((count 0))
+    (flet ((f () (incf count)))
+      (is (eql (handler-case (ematch (f) (0 t))
+                 (match-error (e)
+                   (first (match-error-values e))))
+               1)))))
 
 (test multiple-value-ematch
   (signals match-error
@@ -263,17 +270,38 @@
   ;; fail
   (signals match-error
     (multiple-value-ematch (values 1 2)
-      ((1 2) (fail)))))
+      ((1 2) (fail))))
+  ;; only once
+  (let ((count 0))
+    (flet ((f () (incf count)))
+      (is (eql (handler-case (multiple-value-ematch (values (f)) ((0) t))
+                 (match-error (e)
+                   (first (match-error-values e))))
+               1)))))
 
 (test cmatch
   (is-true (cmatch 1 (1 t)))
   (is-false (handler-bind ((match-error #'continue))
-              (cmatch 1 (2 t)))))
+              (cmatch 1 (2 t))))
+  ;; only once
+  (let ((count 0))
+    (flet ((f () (incf count)))
+      (is (eql (handler-case (cmatch (f) (0 t))
+                 (match-error (e)
+                   (first (match-error-values e))))
+               1)))))
 
 (test multiple-value-cmatch
   (is-false (handler-bind ((match-error #'continue))
               (multiple-value-cmatch (values 1 2)
-                ((2 1) t)))))
+                ((2 1) t))))
+  ;; only once
+  (let ((count 0))
+    (flet ((f () (incf count)))
+      (is (eql (handler-case (multiple-value-cmatch (values (f)) ((0) t))
+                 (match-error (e)
+                   (first (match-error-values e))))
+               1)))))
 
 (test issue39
   (is (eql (match '(0) ((list x) x))
