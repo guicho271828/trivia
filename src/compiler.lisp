@@ -241,6 +241,7 @@
                       maximize (length patterns)))
          (vars (make-gensym-list arity "VAR")))
     `(multiple-value-bind ,vars ,values-form
+       (declare (ignorable ,@vars))
        ,(compile-match vars clauses else))))
 
 (defmacro %match (vars clauses else)
