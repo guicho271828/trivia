@@ -32,6 +32,7 @@
            #:match-error-values
            #:match-error-patterns
 
+           #:guard
            #:defpattern
 
            #:if-match

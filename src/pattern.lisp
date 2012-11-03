@@ -7,9 +7,6 @@
 (defstruct (variable-pattern (:include pattern))
   name)
 
-(defun variable-pattern-implicit-p (pattern)
-  (eq (get (variable-pattern-name pattern) 'implicit) t))
-
 (defstruct (symbol-pattern (:include pattern))
   name)
 
@@ -32,7 +29,7 @@ the value
   accessor)
 
 (defstruct (guard-pattern (:include pattern))
-  test-form)
+  sub-pattern test-form)
 
 (defstruct (not-pattern (:include pattern))
   sub-pattern)
@@ -45,17 +42,26 @@ the value
 
 ;;; Pattern Utilities
 
+(defun gentempvar ()
+  "Generate a temporary pattern variable which is able to be accessed
+through matching test."
+  (let ((var (gensym)))
+    (setf (get var 'temporary) t)
+    var))
+
+(defun temporary-variable-p (var)
+  (eq (get var 'temporary) t))
+
 (defun pattern-variables (pattern)
   (typecase pattern
     (variable-pattern
      (let ((name (variable-pattern-name pattern)))
-       (when (and name
-                  (not (variable-pattern-implicit-p pattern)))
+       (when (and name (not (temporary-variable-p name)))
          (list name))))
     (constructor-pattern
      (mappend #'pattern-variables (constructor-pattern-arguments pattern)))
-    (not-pattern
-     (pattern-variables (not-pattern-sub-pattern pattern)))
+    ((or guard-pattern not-pattern)
+     (pattern-variables (slot-value pattern 'sub-pattern)))
     ((or or-pattern and-pattern)
      (mappend #'pattern-variables (slot-value pattern 'sub-patterns)))))
 
@@ -65,8 +71,8 @@ the value
     (constructor-pattern
      (some #'symbol-pattern-included-p
            (constructor-pattern-arguments pattern)))
-    (not-pattern
-     (symbol-pattern-included-p (not-pattern-sub-pattern pattern)))
+    ((or guard-pattern not-pattern)
+     (symbol-pattern-included-p (slot-value pattern 'sub-pattern)))
     ((or or-pattern and-pattern)
      (some #'symbol-pattern-included-p
            (slot-value pattern 'sub-patterns)))))
@@ -123,6 +129,20 @@ Examples:
                 (t
                  `(list* ,(car args) ,@(cdr args))))))
 
+(defpattern when (test)
+  (let* ((var (gentempvar))
+         (test `(let ((* ,var))
+                  (declare (ignorable *))
+                  ,test)))
+    `(guard ,var ,test)))
+
+(defpattern unless (test)
+  (let* ((var (gentempvar))
+         (test `(let ((* ,var))
+                  (declare (ignorable *))
+                  (not ,test))))
+    `(guard ,var ,test)))
+
 (defpattern satisfies (predicate-name)
   `(when (,predicate-name *)))
 
@@ -169,10 +189,9 @@ Examples:
         (make-symbol-pattern :name name))
        ((quote value)
         (make-constant-pattern :value value))
-       ((when test-form)
-        (make-guard-pattern :test-form test-form))
-       ((unless test-form)
-        (make-guard-pattern :test-form `(not ,test-form)))
+       ((guard sub-pattern test-form)
+        (make-guard-pattern :sub-pattern (parse-pattern sub-pattern)
+                            :test-form test-form))
        ((not sub-pattern)
         (make-not-pattern :sub-pattern (parse-pattern sub-pattern)))
        ((or &rest sub-patterns)

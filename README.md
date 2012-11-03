@@ -19,11 +19,11 @@ specifiers are defined as follows:
                         | variable-pattern
                         | symbol-pattern
                         | constructor-pattern
-                        | derived-pattern
                         | guard-pattern
                         | not-pattern
                         | or-pattern
                         | and-pattern
+                        | derived-pattern
     
     constant-pattern ::= t | nil
                        | atom-except-symbol
@@ -35,15 +35,15 @@ specifiers are defined as follows:
     
     constructor-pattern ::= (NAME ARG*)
     
-    derived-pattern ::= (NAME PATTERN*)
-    
-    guard-pattern ::= (when TEST-FORM) | (unless TEST-FORM)
+    guard-pattern ::= (guard PATTERN TEST-FORM)
     
     not-pattern ::= (not PATTERN)
     
     or-pattern ::= (or PATTERN*)
     
     and-pattern ::= (and PATTERN*)
+    
+    derived-pattern ::= (NAME PATTERN*)
 
 ### Constant-Pattern
 
@@ -201,56 +201,17 @@ Examples:
       ((p- name age) (list name age)))
     => ("foo" 30)
 
-### Derived-Pattern
-
-A derived-pattern is a pattern that is defined with DEFPATTERN. There
-are some builtin dervied patterns as below:
-
-#### LIST
-
-Expansion of LIST derived patterns=
-
-    (list a b c) => (cons a (cons b (cons c nil)))
-
-#### LIST*
-
-Expansion of LIST* derived patterns:
-
-    (list a b c) => (cons a (cons b c))
-
-#### SATISFIES
-
-Expansion of SATISFIES derived patterns:
-
-    (satisfies evenp) => (when (evenp *))
-
-#### EQ, EQL, EQUAL, EQUALP
-
-Expansion of EQ, EQL, EQUAL, EQUALP derived patterns:
-
-    (eq 'foo) => (satisfies eq 'foo)
-    (eql 123) => (satisfies eql 123)
-    (equal '(1 2)) => (satisfies equal '(1 2))
-    (equalp "foo") => (satisfies equalp "foo")
-
-#### TYPEP
-
-Expansion of TYPEP derived patterns:
-
-    (TYPEP string) => (satisfies typep 'string)
-
 ### Guard-Pattern
 
-A guard-pattern is a special pattern that tests TEST-FORM satisfies in
-the current matching context. A special symbol * in the predicate form
-refers to the value being matched. See the examples below.
+A guard-pattern is a special pattern that also tests whether TEST-FORM
+satisfies in the current matching context.
 
 Examples:
 
-    (match 1 ((when (evenp *)) 'even))
+    (match 1 ((guard x (eql x 2)) t))
     => NIL
-    (match 1 ((unless (evenp *)) 'even))
-    => EVEN
+    (match 1 ((guard x (eql x 1)) t))
+    => T
 
 ### Not-Pattern
 
@@ -282,6 +243,61 @@ Examples:
 
     (match 1 ((and 1 x) x))
     => 1
+
+### Derived-Pattern
+
+A derived-pattern is a pattern that is defined with DEFPATTERN. There
+are some builtin dervied patterns as below:
+
+#### LIST
+
+Expansion of LIST derived patterns=
+
+    (list a b c) => (cons a (cons b (cons c nil)))
+
+#### LIST*
+
+Expansion of LIST* derived patterns:
+
+    (list a b c) => (cons a (cons b c))
+
+#### WHEN
+
+Expansion of WHEN dervied patterns:
+
+    (when test) => (guard #G0 (let ((* G0)) test))
+
+As you see in the expansion above, you can use a special symbol * to
+access the value being matched.
+
+#### UNLESS
+
+Expansion of UNLESS dervied patterns:
+
+    (unless test) => (guard #G0 (let ((* G0)) (not test)))
+
+Same as WHEN derived patterns, but satisfies if TEST is not satisfied.
+
+#### SATISFIES
+
+Expansion of SATISFIES derived patterns:
+
+    (satisfies f) => (when (f *))
+
+#### EQ, EQL, EQUAL, EQUALP
+
+Expansion of EQ, EQL, EQUAL, EQUALP derived patterns:
+
+    (eq 'foo) => (satisfies eq 'foo)
+    (eql 123) => (satisfies eql 123)
+    (equal '(1 2)) => (satisfies equal '(1 2))
+    (equalp "foo") => (satisfies equalp "foo")
+
+#### TYPEP
+
+Expansion of TYPEP derived patterns:
+
+    (TYPEP type) => (when (typep * 'type))
 
 [Package] optima
 ----------------

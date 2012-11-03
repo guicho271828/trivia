@@ -123,18 +123,27 @@
   (is-not-match 1 (typep (not t))))
 
 (test guard-pattern
+  (is-match 1 (guard _ t))
+  (is-not-match 1 (guard _ nil))
+  (is-match 1 (guard 1 t))
+  (is-not-match 1 (guard 1 nil))
+  (is-not-match 1 (guard 2 t))
+  (is-match 1 (guard x (eql x 1)))
+  ;; when/unless
   (is-match 1 (when t))
   (is-not-match 1 (when nil))
   (is-match 1 (unless nil))
+  (is-match (cons 1 2) (cons _ (when (numberp *))))
+  (is-not-match (cons 1 2) (cons _ (unless (numberp *))))
   (is-not-match 1 (unless t))
   (is-match 1 (and x (when (eql x 1))))
   (is-match 1 (and x (unless (eql x 2))))
-  ;; bind
+  ;; when bind
   (is-match 1 (when (eql * 1)))
   (is-match 1 (unless (eql * 2)))
   ;; syntax sugar
-  (is-true (match 1 (_ when (eql * 1) t)))
-  (is-true (match 1 (_ unless (eql * 2) t))))
+  (is-true (match 1 (_ when t t)))
+  (is-true (match 1 (_ unless nil t))))
 
 (test not-pattern
   (is-match 1 (not 2))

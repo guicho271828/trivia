@@ -89,20 +89,6 @@
                        ,then
                        ,else))))))
 
-(defun compile-match-guard-group (vars clauses else)
-  (assert (= (length clauses) 1))
-  (destructuring-bind ((pattern . rest) . then)
-      (first clauses)
-    (let* ((test `(let ((* ,(car vars)))
-                    (declare (ignorable *))
-                    ,(guard-pattern-test-form pattern)))
-           (then `(iff ,test
-                       ,(compile-clause-body then)
-                       ,else)))
-      `(%match ,(cdr vars)
-               ((,rest ,then))
-               ,else))))
-
 (defun compile-match-or-group (vars clauses else)
   (assert (= (length clauses) 1))
   (destructuring-bind ((pattern . rest) . then)
@@ -111,10 +97,12 @@
       (unless patterns
         (return-from compile-match-or-group else))
       (let ((new-vars (pattern-variables (car patterns))))
-        (unless (loop for pattern in (cdr patterns)
-                      for vars = (pattern-variables pattern)
-                      always (set-equal new-vars vars))
-          (error "Or-pattern must share same set of variables."))
+        (loop for pattern in (cdr patterns)
+              for vars = (pattern-variables pattern)
+              unless (set-equal new-vars vars)
+                do (error "Or-pattern must share the same set of variables: ~S, ~S"
+                          (sort vars #'string<)
+                          (sort new-vars #'string<)))
         `(try (multiple-value-bind ,new-vars
                   (%match (,(first vars))
                           ,(loop for pattern in patterns
@@ -173,8 +161,6 @@
              (compile-match-constant-group vars group fail))
             (constructor-pattern
              (compile-match-constructor-group vars group fail))
-            (guard-pattern
-             (compile-match-guard-group vars group fail))
             (not-pattern
              (compile-match-not-group vars group fail))
             (or-pattern
@@ -200,26 +186,40 @@
                   (constructor-pattern
                    (equal (constructor-pattern-signature x)
                           (constructor-pattern-signature y)))
-                  ((or guard-pattern not-pattern or-pattern and-pattern)
+                  (guard-pattern
+                   (error "Something wrong."))
+                  ((or not-pattern or-pattern and-pattern)
                    nil)
                   (otherwise t)))))
     (group clauses :test #'same-group-p :key #'caar)))
 
 (defun compile-match (vars clauses else)
-  (flet ((desugar-match-clause (clause)
+  (flet ((process-clause (clause)
            (if (and (consp clause)
                     (car clause))
                (destructuring-bind ((pattern . rest) . then) clause
-                 ;; Desugar WHEN/UNLESS.
-                 (when (and (>= (length then) 2)
-                            (or (eq (first then) 'when)
-                                (eq (first then) 'unless)))
-                   (setq pattern `(and ,pattern (,(first then) ,(second then)))
-                         then (cddr then)))
+                 ;; Parse pattern here.
                  (setq pattern (parse-pattern pattern))
+                 ;; Desugar WHEN/UNLESS here.
+                 (cond ((and (>= (length then) 2)
+                             (eq (first then) 'when))
+                        (setq then `((if ,(second then)
+                                         (progn ,.(cddr then))
+                                         (fail)))))
+                       ((and (>= (length then) 2)
+                             (eq (first then) 'unless))
+                        (setq then `((if (not ,(second then))
+                                         (progn ,.(cddr then))
+                                         (fail))))))
+                 ;; Expand guard pattern here.
+                 (loop while (guard-pattern-p pattern) do
+                   (setq then `((if ,(guard-pattern-test-form pattern)
+                                    (progn ,.then)
+                                    (fail)))
+                         pattern (guard-pattern-sub-pattern pattern)))
                  `((,pattern ,.rest) ,.then))
                clause)))
-    (let* ((clauses (mapcar #'desugar-match-clause clauses))
+    (let* ((clauses (mapcar #'process-clause clauses))
            (groups (group-match-clauses clauses)))
       (compile-match-groups vars groups else))))
 
