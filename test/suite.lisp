@@ -39,22 +39,22 @@
              ((list x y z) (+ x y z)))
            6)))
 
-(test symbol-pattern
+(test place-pattern
   ;; level 0
   (let ((z 1))
-    (match z ((symbol x) (incf x)))
+    (match z ((place x) (incf x)))
     (is (eql z 2)))
   ;; level 1
   (let ((z (cons 1 2)))
     (match z
-      ((cons (symbol x) y)
+      ((cons (place x) y)
        (incf x)
        (incf y)))
     (is (equal z (cons 2 2))))
   ;; level 2
   (let ((z (list (vector 1))))
     (match z
-      ((list (vector (symbol x)))
+      ((list (vector (place x)))
        (incf x)))
     (is (equalp z (list (vector 2))))))
 
@@ -257,7 +257,7 @@
 
 (test issue38
   (signals error
-    (macroexpand '(match 1 ((or (symbol x) (symbol x)))))))
+    (macroexpand '(match 1 ((or (place x) (place x)))))))
 
 (test issue31
   (is (equal (match '(1 2 3 4)

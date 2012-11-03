@@ -17,7 +17,7 @@ specifiers are defined as follows:
 
     pattern-specifier ::= constant-pattern
                         | variable-pattern
-                        | symbol-pattern
+                        | place-pattern
                         | constructor-pattern
                         | guard-pattern
                         | not-pattern
@@ -31,7 +31,7 @@ specifiers are defined as follows:
     
     variable-pattern ::= SYMBOL | (variable SYMBOL)
     
-    symbol-pattern ::= (symbol SYMBOL) | (symbol-macrolet SYMBOL)
+    place-pattern ::= (place SYMBOL)
     
     constructor-pattern ::= (NAME ARG*)
     
@@ -70,15 +70,15 @@ Examples:
       (otherwise 'otherwise))
     => OTHERWISE
 
-### Symbol-Pattern
+### Place-Pattern
 
-A symbol-pattern matches any value as variable-patterns but bind the
+A place-pattern matches any value like variable-patterns but bind the
 value with SYMBOL-MACROLET.
 
 Examples:
 
     (defvar c (cons 1 2))
-    (match c ((cons (symbol x) y) (incf x) (incf y)))
+    (match c ((cons (place x) y) (incf x) (incf y)))
     c
      => (2 . 2)
 

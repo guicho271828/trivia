@@ -33,10 +33,10 @@
              ,clauses
              ,else)))
 
-(defun compile-match-symbol-group (vars clauses else)
+(defun compile-match-place-group (vars clauses else)
   (let ((clauses
           (loop for ((pattern . rest) . then) in clauses
-                for name = (symbol-pattern-name pattern)
+                for name = (place-pattern-name pattern)
                 collect
                 (if name
                     `(,rest (symbol-macrolet ((,name ,(car vars))) ,.then))
@@ -71,14 +71,14 @@
             for binding = `(,new-var ,access)
             if (loop for ((pattern . nil) . nil) in clauses
                      for arg = (nth i (constructor-pattern-arguments pattern))
-                     never (symbol-pattern-included-p arg))
+                     never (place-pattern-included-p arg))
               collect binding into let-bindings
             else
-              collect binding into symbol-macro-bindings
+              collect binding into symbol-bindings
             finally
-               (when symbol-macro-bindings
-                 (setq then `(symbol-macrolet ,symbol-macro-bindings
-                               (declare (ignorable ,@(mapcar #'car symbol-macro-bindings)))
+               (when symbol-bindings
+                 (setq then `(symbol-macrolet ,symbol-bindings
+                               (declare (ignorable ,@(mapcar #'car symbol-bindings)))
                                ,then)))
                (when let-bindings
                  (setq then `(let ,let-bindings
@@ -155,8 +155,8 @@
           (etypecase it
             (variable-pattern
              (compile-match-variable-group vars group fail))
-            (symbol-pattern
-             (compile-match-symbol-group vars group fail))
+            (place-pattern
+             (compile-match-place-group vars group fail))
             (constant-pattern
              (compile-match-constant-group vars group fail))
             (constructor-pattern

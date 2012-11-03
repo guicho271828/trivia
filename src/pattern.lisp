@@ -7,7 +7,7 @@
 (defstruct (variable-pattern (:include pattern))
   name)
 
-(defstruct (symbol-pattern (:include pattern))
+(defstruct (place-pattern (:include pattern))
   name)
 
 (defstruct (constant-pattern (:include pattern))
@@ -65,16 +65,16 @@ through matching test."
     ((or or-pattern and-pattern)
      (mappend #'pattern-variables (slot-value pattern 'sub-patterns)))))
 
-(defun symbol-pattern-included-p (pattern)
+(defun place-pattern-included-p (pattern)
   (typecase pattern
-    (symbol-pattern t)
+    (place-pattern t)
     (constructor-pattern
-     (some #'symbol-pattern-included-p
+     (some #'place-pattern-included-p
            (constructor-pattern-arguments pattern)))
     ((or guard-pattern not-pattern)
-     (symbol-pattern-included-p (slot-value pattern 'sub-pattern)))
+     (place-pattern-included-p (slot-value pattern 'sub-pattern)))
     ((or or-pattern and-pattern)
-     (some #'symbol-pattern-included-p
+     (some #'place-pattern-included-p
            (slot-value pattern 'sub-patterns)))))
 
 ;;; Pattern Specifier
@@ -183,10 +183,10 @@ Examples:
      (destructuring-case pattern
        ((variable name)
         (make-bind-pattern name))
-       ((symbol name)
-        (make-symbol-pattern :name name))
+       ((place name)
+        (make-place-pattern :name name))
        ((symbol-macrolet name)
-        (make-symbol-pattern :name name))
+        (make-place-pattern :name name))
        ((quote value)
         (make-constant-pattern :value value))
        ((guard sub-pattern test-form)
@@ -198,8 +198,8 @@ Examples:
         (if (= (length sub-patterns) 1)
             (parse-pattern (first sub-patterns))
             (let ((sub-patterns (mapcar #'parse-pattern sub-patterns)))
-              (when (some #'symbol-pattern-included-p sub-patterns)
-                (error "Or-pattern can't include symbol-patterns."))
+              (when (some #'place-pattern-included-p sub-patterns)
+                (error "Or-pattern can't include place-patterns."))
               (make-or-pattern :sub-patterns sub-patterns))))
        ((and &rest sub-patterns)
         (if (= (length sub-patterns) 1)
