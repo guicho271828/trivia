@@ -115,11 +115,11 @@ an error will be raised."
   (setf (get name 'pattern-expand-function) function))
 
 (defun pattern-expand-1 (pattern)
-  (aif (and (consp pattern)
-            (symbolp (car pattern))
-            (pattern-expand-function (car pattern)))
-       (apply it (cdr pattern))
-       pattern))
+  (if-let (it (and (consp pattern)
+		   (symbolp (car pattern))
+		   (pattern-expand-function (car pattern))))
+    (apply it (cdr pattern))
+    pattern))
 
 (defun pattern-expand (pattern)
   (let ((expansion (pattern-expand-1 pattern)))
@@ -288,7 +288,7 @@ Examples:
   (let* ((class (find-class class-name))
          (slot-defs (class-slots class))
          (slot-names (mapcar #'slot-definition-name slot-defs)))
-    (awhen (first (set-difference (mapcar #'car slot-patterns) slot-names))
+    (when-let (it (first (set-difference (mapcar #'car slot-patterns) slot-names)))
       (error "Unknown slot name ~A for ~A" it class-name))
     (let ((signature
             `(,class-name ,@(mapcar #'car slot-patterns)))
