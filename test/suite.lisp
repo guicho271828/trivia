@@ -1,5 +1,6 @@
 (defpackage :optima-test
-  (:use :cl :optima :eos))
+  (:use :cl :optima :eos)
+  (:shadowing-import-from :optima #:fail))
 (in-package :optima-test)
 
 (def-suite optima-test)
@@ -174,34 +175,68 @@
 
 (test match
   ;; empty
-  (is (null (match 1)))
+  (is-false (match 1))
   ;; values
   (is (equal (multiple-value-list (match 1 (1 (values 1 2 3))))
-             '(1 2 3))))
-
+             '(1 2 3)))
+  ;; fail
+  (is-false (match 1
+              (1 (fail))))
+  (is-false (match 1
+              (1 (fail))
+              (1 t)))
+  (is-true (match 1
+             (1 (fail))
+             (1 nil)
+             (_ t)))
+  (is (eql (match (cons 1 2)
+             ((cons x y)
+              (if (eql x 1)
+                  (fail)
+                  y))
+             ((cons x 2)
+              x))
+           1))
+  
 (test multiple-value-match
   (is (eql (multiple-value-match (values 1 2)
              ((2) 1)
              ((1 y) y))
-           2)))
+           2))
+  ;; fail
+  (is-true (multiple-value-match (values 1 2)
+             ((1 2) (fail))
+             ((_ _) t))))
 
 (test ematch
   (is-true (ematch 1 (1 t)))
   (signals match-error
-    (ematch 1 (2 t))))
+    (ematch 1 (2 t)))
+  ;; fail
+  (is-true (ematch 1
+             (1 (fail))
+             (_ t)))
+  (signals match-error
+    (ematch 1
+      (1 (fail))
+      (1 t))))
 
 (test multiple-value-ematch
   (signals match-error
     (multiple-value-ematch (values 1 2)
-      ((2 1) t))))
+      ((2 1) t)))
+  ;; fail
+  (signals match-error
+    (multiple-value-ematch (values 1 2)
+      ((1 2) (fail)))))
 
 (test cmatch
   (is-true (cmatch 1 (1 t)))
-  (is (null (handler-bind ((match-error #'continue))
-              (cmatch 1 (2 t))))))
+  (is-false (handler-bind ((match-error #'continue))
+              (cmatch 1 (2 t)))))
 
 (test multiple-value-cmatch
-  (is (null (handler-bind ((match-error #'continue))
+  (is-false (handler-bind ((match-error #'continue))
               (multiple-value-cmatch (values 1 2)
                 ((2 1) t))))))
 

@@ -286,20 +286,6 @@ Examples:
 [Package] optima
 ----------------
 
-## [Macro] defpattern
-
-    defpattern name lambda-list &body body
-
-Defines a derived pattern specifier named NAME. This is analogous
-to DEFTYPE.
-
-Examples:
-
-    ;; Defines a LIST pattern.
-    (defpattern list (&rest args)
-      (when args
-        `(cons ,(car args) (list ,@(cdr args)))))
-
 ## [Macro] match
 
     match arg &body clauses
@@ -320,6 +306,30 @@ will be translated to
 
     (match list ((and (list x) (when (oddp x))) x))
     (match list ((and (list x) (unless (evenp x))) x))
+
+Evaluating a form (FAIL) in the clause body causes the latest pattern
+matching be failed. For example,
+
+    (match 1
+      (x (if (eql x 1)
+             (fail)
+             x))
+      (_ 'ok))
+
+returns OK, because the form (FAIL) in the first clause is
+evaluated.
+
+Examples:
+
+    (match 1 (1 1))
+    => 1
+    (match 1 (2 2))
+    => 2
+    (match 1 (x x))
+    => 1
+    (match (list 1 2 3)
+      (list x y z) (+ x y z))
+    => 6
 
 ## [Macro] multiple-value-match
 
@@ -364,6 +374,13 @@ matched.
 Same as MULTIPLE-VALUE-MATCH, except continuable MATCH-ERROR will
 be raised if not matched.
 
+## [Macro] fail
+
+    fail
+
+Causes the latest pattern matching be failed and continue to do the
+rest of pattern matching.
+
 ## [Class] match-error
 
 ## [Type] match-error
@@ -377,6 +394,20 @@ be raised if not matched.
 ## [Function] match-error-patterns
 
     match-error-patterns condition
+
+## [Macro] defpattern
+
+    defpattern name lambda-list &body body
+
+Defines a derived pattern specifier named NAME. This is analogous
+to DEFTYPE.
+
+Examples:
+
+    ;; Defines a LIST pattern.
+    (defpattern list (&rest args)
+      (when args
+        `(cons ,(car args) (list ,@(cdr args)))))
 
 ## [Macro] if-match
 

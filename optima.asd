@@ -294,6 +294,7 @@ Examples:
                              (:file "equal")
                              (:file "pattern")
                              (:file "extra")
+                             (:file "fail")
                              (:file "compiler")
                              (:file "match")
                              (:file "macros")))))

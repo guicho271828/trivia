@@ -3,14 +3,6 @@
 (defun literalp (value)
   (typep value '(or symbol number character)))
 
-(defun count-occurrences (tree subtree &key (test #'eql))
-  (let ((count (if (funcall test tree subtree) 1 0)))
-    (if (consp tree)
-        (+ count
-           (count-occurrences (car tree) subtree :test test)
-           (count-occurrences (cdr tree) subtree :test test))
-        count)))
-
 (defun set-equal (set1 set2)
   (and (null (set-difference set1 set2))
        (null (set-difference set2 set1))))

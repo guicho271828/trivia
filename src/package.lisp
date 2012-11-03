@@ -19,18 +19,20 @@
   (:import-from :closer-mop
                 #:slot-definition-name
                 #:class-slots)
-  (:export #:defpattern
-
-           #:match
+  (:export #:match
            #:multiple-value-match
            #:ematch
            #:multiple-value-ematch
            #:cmatch
            #:multiple-value-cmatch
 
+           #:fail
+
            #:match-error
            #:match-error-values
            #:match-error-patterns
+
+           #:defpattern
 
            #:if-match
            #:when-match

@@ -28,7 +28,31 @@ will be used to introduce a guard for PATTERN. That is,
 will be translated to
 
     (match list ((and (list x) (when (oddp x))) x))
-    (match list ((and (list x) (unless (evenp x))) x))"
+    (match list ((and (list x) (unless (evenp x))) x))
+
+Evaluating a form (FAIL) in the clause body causes the latest pattern
+matching be failed. For example,
+
+    (match 1
+      (x (if (eql x 1)
+             (fail)
+             x))
+      (_ 'ok))
+
+returns OK, because the form (FAIL) in the first clause is
+evaluated.
+
+Examples:
+
+    (match 1 (1 1))
+    => 1
+    (match 1 (2 2))
+    => 2
+    (match 1 (x x))
+    => 1
+    (match (list 1 2 3)
+      (list x y z) (+ x y z))
+    => 6"
   (compile-match-1 arg clauses nil))
 
 (defmacro multiple-value-match (values-form &body clauses)
