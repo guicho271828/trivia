@@ -206,7 +206,22 @@
              ((cons x 2)
               x))
            1))
-  
+  ;; linear pattern
+  (signals error
+    (macroexpand
+     '(match (cons 1 2)
+       ((cons x x) t))))
+  (signals error
+    (macroexpand
+     '(match (list 1 (list 2 3))
+       ((list x (list y x)) t))))
+  (signals error
+    (macroexpand
+     '(match 1
+       ((and x x) t))))
+  (is-match 1 (and _ _))
+  (is-match 1 (or * *)))
+
 (test multiple-value-match
   (is (eql (multiple-value-match (values 1 2)
              ((2) 1)
@@ -247,7 +262,7 @@
 (test multiple-value-cmatch
   (is-false (handler-bind ((match-error #'continue))
               (multiple-value-cmatch (values 1 2)
-                ((2 1) t))))))
+                ((2 1) t)))))
 
 (test issue39
   (is (eql (match '(0) ((list x) x))

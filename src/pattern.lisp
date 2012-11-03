@@ -2,7 +2,14 @@
 
 ;;; Pattern Data Structure
 
-(defstruct pattern)
+(defstruct pattern
+  ;; The original pattern specifier
+  (specifier (required-argument)))
+
+(defmethod print-object ((pattern pattern) stream)
+  ;; Note: printing the pattern specifier might not be valid but this
+  ;; is useful for debugging the process of pattern matching compiler.
+  (format stream "~S" (pattern-specifier pattern)))
 
 (defstruct (variable-pattern (:include pattern))
   name)
@@ -76,6 +83,32 @@ through matching test."
     ((or or-pattern and-pattern)
      (some #'place-pattern-included-p
            (slot-value pattern 'sub-patterns)))))
+
+(defun linear-pattern-p (pattern)
+  "Returns true if PATTERN is a linear pattern.
+If not, the cause variable will be returned as a second value."
+  (flet ((check (vars)
+           (loop for var in vars
+                 if (find var seen)
+                   return (values nil var)
+                 collect var into seen
+                 finally (return t))))
+    (typecase pattern
+      (constructor-pattern
+       (check (mappend #'pattern-variables (constructor-pattern-arguments pattern))))
+      ((or guard-pattern not-pattern)
+       (linear-pattern-p (slot-value pattern 'sub-pattern)))
+      (or-pattern
+       (every #'linear-pattern-p (or-pattern-sub-patterns pattern)))
+      (and-pattern
+       (check (mappend #'pattern-variables (and-pattern-sub-patterns pattern))))
+      (t t))))
+
+(defun check-pattern (pattern)
+  "Check if PATTERN is valid. Otherwise, an error will be raised."
+  (cond ((not (linear-pattern-p pattern))
+         (error "Non-linear pattern: ~S"
+                (pattern-specifier pattern)))))
 
 ;;; Pattern Specifier
 
@@ -168,7 +201,8 @@ Examples:
            (unless (or (eq name 'otherwise)
                        (string= name "_"))
              name)))
-    (make-variable-pattern :name (var-name name))))
+    (make-variable-pattern :specifier name
+                           :name (var-name name))))
 
 (defun parse-pattern (pattern)
   (when (pattern-p pattern)
@@ -176,7 +210,8 @@ Examples:
   (setq pattern (pattern-expand pattern))
   (typecase pattern
     ((or (eql t) null keyword)
-     (make-constant-pattern :value pattern))
+     (make-constant-pattern :specifier pattern
+                            :value pattern))
     (symbol
      (make-bind-pattern pattern))
     (cons
@@ -184,31 +219,39 @@ Examples:
        ((variable name)
         (make-bind-pattern name))
        ((place name)
-        (make-place-pattern :name name))
+        (make-place-pattern :specifier pattern
+                            :name name))
        ((symbol-macrolet name)
-        (make-place-pattern :name name))
+        (make-place-pattern :specifier pattern
+                            :name name))
        ((quote value)
-        (make-constant-pattern :value value))
+        (make-constant-pattern :specifier `(quote ,value)
+                               :value value))
        ((guard sub-pattern test-form)
-        (make-guard-pattern :sub-pattern (parse-pattern sub-pattern)
+        (make-guard-pattern :specifier pattern
+                            :sub-pattern (parse-pattern sub-pattern)
                             :test-form test-form))
        ((not sub-pattern)
-        (make-not-pattern :sub-pattern (parse-pattern sub-pattern)))
+        (make-not-pattern :specifier pattern
+                          :sub-pattern (parse-pattern sub-pattern)))
        ((or &rest sub-patterns)
         (if (= (length sub-patterns) 1)
             (parse-pattern (first sub-patterns))
             (let ((sub-patterns (mapcar #'parse-pattern sub-patterns)))
               (when (some #'place-pattern-included-p sub-patterns)
                 (error "Or-pattern can't include place-patterns."))
-              (make-or-pattern :sub-patterns sub-patterns))))
+              (make-or-pattern :specifier pattern
+                               :sub-patterns sub-patterns))))
        ((and &rest sub-patterns)
         (if (= (length sub-patterns) 1)
             (parse-pattern (first sub-patterns))
-            (make-and-pattern :sub-patterns (mapcar #'parse-pattern sub-patterns))))
+            (make-and-pattern :specifier pattern
+                              :sub-patterns (mapcar #'parse-pattern sub-patterns))))
        ((otherwise &rest args)
         (apply #'parse-constructor-pattern (car pattern) args))))
     (otherwise
-     (make-constant-pattern :value pattern))))
+     (make-constant-pattern :specifier pattern
+                            :value pattern))))
 
 (defgeneric parse-constructor-pattern (name &rest args))
 
@@ -218,6 +261,7 @@ Examples:
   (destructuring-bind (car-pattern cdr-pattern)
       (mapcar #'parse-pattern args)
     (make-constructor-pattern
+     :specifier `(cons ,@args)
      :signature '(cons car cdr)
      :arguments (list car-pattern cdr-pattern)
      :predicate (lambda (var) `(consp ,var))
@@ -227,6 +271,7 @@ Examples:
   (let* ((args (mapcar #'parse-pattern args))
          (arity (length args)))
     (make-constructor-pattern
+     :specifier `(vector ,@args)
      :signature `(vector ,arity)
      :arguments args
      :predicate (lambda (var) `(typep ,var '(vector * ,arity)))
@@ -236,6 +281,7 @@ Examples:
   (let* ((args (mapcar #'parse-pattern args))
          (arity (length args)))
     (make-constructor-pattern
+     :specifier `(simple-vector ,@args)
      :signature `(simple-vector ,arity)
      :arguments args
      :predicate (lambda (var) `(typep ,var '(simple-vector ,arity)))
@@ -262,7 +308,8 @@ Examples:
           (accessor
             (lambda (var i)
               `(slot-value ,var ',(car (nth i slot-patterns))))))
-      (make-constructor-pattern :signature signature
+      (make-constructor-pattern :specifier `(class ,class-name ,@slot-patterns)
+                                :signature signature
                                 :arguments arguments
                                 :predicate predicate
                                 :accessor accessor))))
@@ -278,7 +325,8 @@ Examples:
                      (make-bind-pattern (car slot-pattern)))))
          (predicate (lambda (var) `(,(symbolicate conc-name :p) ,var)))
          (accessor (lambda (var i) `(,(symbolicate conc-name (nth i slot-names)) ,var))))
-    (make-constructor-pattern :signature `(,conc-name ,@slot-names)
+    (make-constructor-pattern :specifier `(,conc-name ,@slot-patterns)
+                              :signature `(,conc-name ,@slot-names)
                               :arguments arguments
                               :predicate predicate
                               :accessor accessor)))

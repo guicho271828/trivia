@@ -200,6 +200,7 @@
                (destructuring-bind ((pattern . rest) . then) clause
                  ;; Parse pattern here.
                  (setq pattern (parse-pattern pattern))
+                 (check-pattern pattern)
                  ;; Desugar WHEN/UNLESS here.
                  (cond ((and (>= (length then) 2)
                              (eq (first then) 'when))
