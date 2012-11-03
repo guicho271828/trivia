@@ -197,10 +197,11 @@
   (flet ((process-clause (clause)
            (if (and (consp clause)
                     (car clause))
-               (destructuring-bind ((pattern . rest) . then) clause
-                 ;; Parse pattern here.
-                 (setq pattern (parse-pattern pattern))
-                 (check-pattern pattern)
+               (destructuring-bind (patterns . then) clause
+                 ;; Parse patterns here.
+                 ;; FIXME: parse-pattern here is redundant.
+                 (setq patterns (mapcar #'parse-pattern patterns))
+                 (check-patterns patterns)
                  ;; Desugar WHEN/UNLESS here.
                  (cond ((and (>= (length then) 2)
                              (eq (first then) 'when))
@@ -212,13 +213,15 @@
                         (setq then `((if (not ,(second then))
                                          (progn ,.(cddr then))
                                          (fail))))))
-                 ;; Expand guard pattern here.
-                 (loop while (guard-pattern-p pattern) do
-                   (setq then `((if ,(guard-pattern-test-form pattern)
-                                    (progn ,.then)
-                                    (fail)))
-                         pattern (guard-pattern-sub-pattern pattern)))
-                 `((,pattern ,.rest) ,.then))
+                 (let ((pattern (first patterns))
+                       (rest (rest patterns)))
+                   ;; Expand guard pattern here.
+                   (loop while (guard-pattern-p pattern) do
+                     (setq then `((if ,(guard-pattern-test-form pattern)
+                                      (progn ,.then)
+                                      (fail)))
+                           pattern (guard-pattern-sub-pattern pattern)))
+                   `((,pattern ,.rest) ,.then)))
                clause)))
     (let* ((clauses (mapcar #'process-clause clauses))
            (groups (group-match-clauses clauses)))

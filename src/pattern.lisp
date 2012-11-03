@@ -60,17 +60,30 @@ through matching test."
   (eq (get var 'temporary) t))
 
 (defun pattern-variables (pattern)
-  (typecase pattern
-    (variable-pattern
-     (let ((name (variable-pattern-name pattern)))
-       (when (and name (not (temporary-variable-p name)))
-         (list name))))
-    (constructor-pattern
-     (mappend #'pattern-variables (constructor-pattern-arguments pattern)))
-    ((or guard-pattern not-pattern)
-     (pattern-variables (slot-value pattern 'sub-pattern)))
-    ((or or-pattern and-pattern)
-     (mappend #'pattern-variables (slot-value pattern 'sub-patterns)))))
+  "Returns the set of variables in PATTERN. If PATTERN is not linear,
+an error will be raised."
+  (flet ((check (vars)
+           (loop for var in vars
+                 if (find var seen)
+                   do (error "Non-linear pattern: ~S"
+                             (pattern-specifier pattern))
+                 collect var into seen
+                 finally (return vars))))
+    (typecase pattern
+      (variable-pattern
+       (let ((name (variable-pattern-name pattern)))
+         (when (and name (not (temporary-variable-p name)))
+           (list name))))
+      (constructor-pattern
+       (check (mappend #'pattern-variables (constructor-pattern-arguments pattern))))
+      ((or guard-pattern not-pattern)
+       (check (pattern-variables (slot-value pattern 'sub-pattern))))
+      (or-pattern
+       (let ((vars-list (mappend #'pattern-variables
+                                 (slot-value pattern 'sub-patterns))))
+         (check (remove-duplicates vars-list))))
+      (and-pattern
+       (check (mappend #'pattern-variables (slot-value pattern 'sub-patterns)))))))
 
 (defun place-pattern-included-p (pattern)
   (typecase pattern
@@ -84,31 +97,14 @@ through matching test."
      (some #'place-pattern-included-p
            (slot-value pattern 'sub-patterns)))))
 
-(defun linear-pattern-p (pattern)
-  "Returns true if PATTERN is a linear pattern.
-If not, the cause variable will be returned as a second value."
-  (flet ((check (vars)
-           (loop for var in vars
-                 if (find var seen)
-                   return (values nil var)
-                 collect var into seen
-                 finally (return t))))
-    (typecase pattern
-      (constructor-pattern
-       (check (mappend #'pattern-variables (constructor-pattern-arguments pattern))))
-      ((or guard-pattern not-pattern)
-       (linear-pattern-p (slot-value pattern 'sub-pattern)))
-      (or-pattern
-       (every #'linear-pattern-p (or-pattern-sub-patterns pattern)))
-      (and-pattern
-       (check (mappend #'pattern-variables (and-pattern-sub-patterns pattern))))
-      (t t))))
-
-(defun check-pattern (pattern)
-  "Check if PATTERN is valid. Otherwise, an error will be raised."
-  (cond ((not (linear-pattern-p pattern))
-         (error "Non-linear pattern: ~S"
-                (pattern-specifier pattern)))))
+(defun check-patterns (patterns)
+  "Check if PATTERNS are valid. Otherwise, an error will be raised."
+  (loop for var in (mappend #'pattern-variables patterns)
+        if (find var seen)
+          do (error "Non-linear patterns: ~S"
+                    (mapcar #'pattern-specifier patterns))
+        collect var into seen
+        finally (return t)))
 
 ;;; Pattern Specifier
 

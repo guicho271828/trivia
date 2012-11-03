@@ -217,6 +217,10 @@
        ((list x (list y x)) t))))
   (signals error
     (macroexpand
+     '(match (list 1 (list 2 3))
+       ((list x (list y y)) t))))
+  (signals error
+    (macroexpand
      '(match 1
        ((and x x) t))))
   (is-match 1 (and _ _))
@@ -230,6 +234,13 @@
   ;; fail
   (is-true (multiple-value-match (values 1 2)
              ((1 2) (fail))
+             ((_ _) t)))
+  ;; linear pattern
+  (signals error
+    (macroexpand
+     '(multiple-value-match (values 1 2)
+       ((x x) t))))
+  (is-true (multiple-value-match 1
              ((_ _) t))))
 
 (test ematch
