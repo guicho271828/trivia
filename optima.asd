@@ -165,7 +165,7 @@ Syntax:
 
     structure-constructor-pattern ::= (structure CONC-NAME slot*)
                                     | (CONC-NAME slot*)
-
+    
     slot ::= SLOT-NAME
            | (SLOT-NAME PATTERN*)
 
@@ -301,7 +301,6 @@ Expansion of TYPEP derived patterns:
   :author "Tomohiro Matsuyama"
   :license "LLGPL"
   :depends-on (:alexandria
-               :anaphora
                :closer-mop)
   :components ((:module "src"
                 :serial t
