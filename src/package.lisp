@@ -10,12 +10,9 @@
                 #:required-argument
                 #:with-unique-names
                 #:once-only
+		#:if-let
                 #:when-let
                 #:destructuring-case)
-  (:import-from :anaphora
-                #:aif
-                #:awhen
-                #:it)
   (:import-from :closer-mop
                 #:slot-definition-name
                 #:class-slots)

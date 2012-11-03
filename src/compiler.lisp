@@ -151,23 +151,23 @@
 (defun compile-match-group (vars group else)
   (let ((fail '(fail)))
     (compile-match-fail
-     (aif (and vars (caaar group))
-          (etypecase it
-            (variable-pattern
-             (compile-match-variable-group vars group fail))
-            (place-pattern
-             (compile-match-place-group vars group fail))
-            (constant-pattern
-             (compile-match-constant-group vars group fail))
-            (constructor-pattern
-             (compile-match-constructor-group vars group fail))
-            (not-pattern
-             (compile-match-not-group vars group fail))
-            (or-pattern
-             (compile-match-or-group vars group fail))
-            (and-pattern
-             (compile-match-and-group vars group fail)))
-          (compile-match-empty-group group fail))
+     (if-let (it (and vars (caaar group)))
+       (etypecase it
+	 (variable-pattern
+	  (compile-match-variable-group vars group fail))
+	 (place-pattern
+	  (compile-match-place-group vars group fail))
+	 (constant-pattern
+	  (compile-match-constant-group vars group fail))
+	 (constructor-pattern
+	  (compile-match-constructor-group vars group fail))
+	 (not-pattern
+	  (compile-match-not-group vars group fail))
+	 (or-pattern
+	  (compile-match-or-group vars group fail))
+	 (and-pattern
+	  (compile-match-and-group vars group fail)))
+       (compile-match-empty-group group fail))
      else)))
 
 (defun compile-match-groups (vars groups else)
