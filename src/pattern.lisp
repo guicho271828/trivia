@@ -116,8 +116,8 @@ an error will be raised."
 
 (defun pattern-expand-1 (pattern)
   (if-let (it (and (consp pattern)
-		   (symbolp (car pattern))
-		   (pattern-expand-function (car pattern))))
+                   (symbolp (car pattern))
+                   (pattern-expand-function (car pattern))))
     (apply it (cdr pattern))
     pattern))
 

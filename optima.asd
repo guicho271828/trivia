@@ -23,25 +23,25 @@ specifiers are defined as follows:
                         | or-pattern
                         | and-pattern
                         | derived-pattern
-
+    
     constant-pattern ::= t | nil
                        | atom-except-symbol
                        | (quote VALUE)
-
+    
     variable-pattern ::= SYMBOL | (variable SYMBOL)
-
+    
     place-pattern ::= (place SYMBOL)
-
+    
     constructor-pattern ::= (NAME ARG*)
-
+    
     guard-pattern ::= (guard PATTERN TEST-FORM)
-
+    
     not-pattern ::= (not PATTERN)
-
+    
     or-pattern ::= (or PATTERN*)
-
+    
     and-pattern ::= (and PATTERN*)
-
+    
     derived-pattern ::= (NAME PATTERN*)
 
 ### Constant-Pattern
@@ -131,7 +131,7 @@ Syntax:
 
     class-constructor-pattern ::= (class NAME slot*)
                                 | (NAME slot*)
-
+    
     slot ::= SLOT-NAME
            | (SLOT-NAME PATTERN*)
 
@@ -165,7 +165,7 @@ Syntax:
 
     structure-constructor-pattern ::= (structure CONC-NAME slot*)
                                     | (CONC-NAME slot*)
-
+    
     slot ::= SLOT-NAME
            | (SLOT-NAME PATTERN*)
 
