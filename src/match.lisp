@@ -12,11 +12,6 @@
                      (match-error-values condition)
                      (match-error-patterns condition)))))
 
-(defun extract-patterns (clauses)
-  (loop for clause in clauses
-        unless (symbolp clause)
-          collect (car clause)))
-
 (defmacro match (arg &body clauses)
   "Matches ARG with CLAUSES. CLAUSES is a list of the form of (PATTERN
 . BODY) where PATTERN is a pattern specifier and BODY is an implicit
@@ -33,19 +28,7 @@ will be used to introduce a guard for PATTERN. That is,
 will be translated to
 
     (match list ((and (list x) (when (oddp x))) x))
-    (match list ((and (list x) (unless (evenp x))) x))
-
-CLAUSES can contain a symbol. This is analogous to TAGBODY. In this
-case, it is possible to GO to the symbol within the clause body. For
-example,
-
-    (match 1
-      (1 (go fail))
-      (_ 2)
-      fail
-      (1 3))
-
-will evaluate to 3 not 2."
+    (match list ((and (list x) (unless (evenp x))) x))"
   (compile-match-1 arg clauses nil))
 
 (defmacro multiple-value-match (values-form &body clauses)
@@ -66,7 +49,7 @@ Examples:
   "Same as MATCH, except MATCH-ERROR will be raised if not matched."
   (let ((else `(error 'match-error
                       :values (list ,arg)
-                      :patterns ',(extract-patterns clauses))))
+                      :patterns ',(mapcar #'car clauses))))
     (compile-match-1 arg clauses else)))
 
 (defmacro multiple-value-ematch (values-form &body clauses)
@@ -74,7 +57,7 @@ Examples:
 not matched."
   (let ((else `(error 'match-error
                       :values (list ,values-form)
-                      :patterns ',(extract-patterns clauses))))
+                      :patterns ',(mapcar #'car clauses))))
     (compile-multiple-value-match values-form clauses else)))
 
 (defmacro cmatch (arg &body clauses)
@@ -83,7 +66,7 @@ matched."
   (let ((else `(cerror "Continue."
                        'match-error
                        :values (list ,arg)
-                       :patterns ',(extract-patterns clauses))))
+                       :patterns ',(mapcar #'car clauses))))
     (compile-match-1 arg clauses else)))
 
 (defmacro multiple-value-cmatch (values-form &body clauses)
@@ -92,5 +75,5 @@ be raised if not matched."
   (let ((else `(cerror "Continue."
                        'match-error
                        :values (list ,values-form)
-                       :patterns ',(extract-patterns clauses))))
+                       :patterns ',(mapcar #'car clauses))))
     (compile-multiple-value-match values-form clauses else)))

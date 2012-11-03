@@ -321,18 +321,6 @@ will be translated to
     (match list ((and (list x) (when (oddp x))) x))
     (match list ((and (list x) (unless (evenp x))) x))
 
-CLAUSES can contain a symbol. This is analogous to TAGBODY. In this
-case, it is possible to GO to the symbol within the clause body. For
-example,
-
-    (match 1
-      (1 (go fail))
-      (_ 2)
-      fail
-      (1 3))
-
-will evaluate to 3 not 2.
-
 ## [Macro] multiple-value-match
 
     multiple-value-match values-form &body clauses

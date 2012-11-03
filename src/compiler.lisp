@@ -202,69 +202,46 @@
      else)))
 
 (defun compile-match-groups (vars groups else)
-  (flet ((tag-group-p (g) (symbolp (first g))))
-    (if (some #'tag-group-p groups)
-        (let* ((block (gensym "MATCH"))
-               (body
-                 (reduce (lambda (group body)
-                           (if (tag-group-p group)
-                               (cons (first group) body)
-                               (let* ((tag (gensym "MATCH-FAIL"))
-                                      (form (compile-match-group vars group `(go ,tag))))
-                                 (list* `(return-from ,block ,form)
-                                        tag
-                                        body))))
-                         groups
-                         :initial-value (list `(return-from ,block ,else))
-                         :from-end t)))
-          `(block ,block (tagbody ,.body)))
-        (reduce (lambda (group else) (compile-match-group vars group else))
-                groups
-                :initial-value else
-                :from-end t))))
+  (reduce (lambda (group else) (compile-match-group vars group else))
+          groups
+          :initial-value else
+          :from-end t))
 
 (defun group-match-clauses (clauses)
-  (flet ((same-group-p (c d)
-           (and (consp c) (consp d)
-                (let ((x (caar c)) (y (caar d)))
-                  (and (eq (type-of x) (type-of y))
-                       (typecase x
-                         (constant-pattern
-                          (%equal (constant-pattern-value x)
-                                  (constant-pattern-value y)))
-                         (constructor-pattern
-                          (equal (constructor-pattern-signature x)
-                                 (constructor-pattern-signature y)))
-                         ((or guard-pattern not-pattern or-pattern and-pattern)
-                          nil)
-                         (otherwise t)))))))
-    (group clauses :test #'same-group-p)))
-
-(defun desugar-match-clause (clause)
-  (if (and (consp clause)
-           (car clause))
-      (destructuring-bind ((pattern . rest) . then) clause
-        ;; Desugar WHEN/UNLESS.
-        (when (and (>= (length then) 2)
-                   (or (eq (first then) 'when)
-                       (eq (first then) 'unless)))
-          (setq pattern `(and ,pattern (,(first then) ,(second then)))
-                then (cddr then)))
-        (setq pattern (parse-pattern pattern))
-        `((,pattern . ,rest) . ,then))
-      clause))
+  (flet ((same-group-p (x y)
+           (and (eq (type-of x) (type-of y))
+                (typecase x
+                  (constant-pattern
+                   (%equal (constant-pattern-value x)
+                           (constant-pattern-value y)))
+                  (constructor-pattern
+                   (equal (constructor-pattern-signature x)
+                          (constructor-pattern-signature y)))
+                  ((or guard-pattern not-pattern or-pattern and-pattern)
+                   nil)
+                  (otherwise t)))))
+    (group clauses :test #'same-group-p :key #'caar)))
 
 (defun compile-match (vars clauses else)
-  (let* ((clauses (mapcar #'desugar-match-clause clauses))
+  (let* ((clauses
+           (mapcar (lambda (clause)
+                     (when (car clause)
+                       (destructuring-bind ((pattern . rest) . then) clause
+                         ;; Desugar WHEN.
+                         (when (and (>= (length then) 2)
+                                    (or (eq (first then) 'when)
+                                        (eq (first then) 'unless)))
+                           (setq pattern `(and ,pattern (,(first then) ,(second then)))
+                                 then (cddr then)))
+                         (setq pattern (parse-pattern pattern))
+                         (setq clause `((,pattern . ,rest) . ,then))))
+                     clause)
+                   clauses))
          (groups (group-match-clauses clauses)))
     (compile-match-groups vars groups else)))
 
 (defun compile-match-1 (form clauses else)
-  (let ((clauses (mapcar (lambda (c)
-                           (if (consp c)
-                               (cons (list (car c)) (cdr c))
-                               c))
-                         clauses)))
+  (let ((clauses (mapcar (lambda (c) (cons (list (car c)) (cdr c))) clauses)))
     (if (symbolp form)
         (compile-match (list form) clauses else)
         (let ((form-var (gensym "FORM")))
@@ -273,10 +250,8 @@
              ,(compile-match (list form-var) clauses else))))))
 
 (defun compile-multiple-value-match (values-form clauses else)
-  (let* ((arity (loop for clause in clauses
-                      maximize (if (consp clause)
-                                   (length (car clause))
-                                   0)))
+  (let* ((arity (loop for (patterns . nil) in clauses
+                      maximize (length patterns)))
          (vars (make-gensym-list arity "VAR")))
     `(multiple-value-bind ,vars ,values-form
        ,(compile-match vars clauses else))))

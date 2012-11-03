@@ -177,81 +177,23 @@
   (is (null (match 1)))
   ;; values
   (is (equal (multiple-value-list (match 1 (1 (values 1 2 3))))
-             '(1 2 3)))
-  ;; tags
-  (is (null (match 1
-              (1 (go fail))
-              fail)))
-  (is-true (match 1
-             (1 (go fail))
-             fail
-             (1 t)))
-  (is-true (match 1
-             (1 (go fail1))
-             fail1
-             (1 (go fail2))
-             fail2
-             (_ t)))
-  (is-true (match 1
-             (1 (go fail))
-             (_ nil)
-             fail
-             (_ t)))
-  (is-true (match 1
-             (1 (go tag1))
-             tag3
-             (_ t)
-             tag2
-             (_ (go tag3))
-             tag1
-             (2 nil)
-             (1 (go tag2))))
-  (is (eql (match (cons 1 2)
-             ((cons x y)
-              (if (= x 1)
-                  (go fail)
-                  y))
-             (_ 3)
-             fail
-             ((cons x 2)
-              x))
-           1)))
-  
+             '(1 2 3))))
+
 (test multiple-value-match
   (is (eql (multiple-value-match (values 1 2)
              ((2) 1)
              ((1 y) y))
-           2))
-  ;; tags
-  (is-true (multiple-value-match (values 1 2)
-             ((1 2) (go fail))
-             fail
-             ((_ _) t))))
+           2)))
 
 (test ematch
   (is-true (ematch 1 (1 t)))
   (signals match-error
-    (ematch 1 (2 t)))
-  ;; tags
-  (is-true (ematch 1
-             (1 (go fail))
-             fail
-             (_ t)))
-  (signals match-error
-    (ematch 1
-      (1 (go fail))
-      (1 t)
-      fail)))
+    (ematch 1 (2 t))))
 
 (test multiple-value-ematch
   (signals match-error
     (multiple-value-ematch (values 1 2)
-      ((2 1) t)))
-  ;; tags
-  (signals match-error
-    (multiple-value-ematch (values 1 2)
-      ((1 2) (go fail))
-      fail)))
+      ((2 1) t))))
 
 (test cmatch
   (is-true (cmatch 1 (1 t)))
