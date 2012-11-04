@@ -297,7 +297,7 @@ Expansion of EQ, EQL, EQUAL, EQUALP derived patterns:
 Expansion of TYPEP derived patterns:
 
     (TYPEP type) => (when (typep * 'type))"
-  :version "0.1"
+  :version "0.2"
   :author "Tomohiro Matsuyama"
   :license "LLGPL"
   :depends-on (:alexandria
