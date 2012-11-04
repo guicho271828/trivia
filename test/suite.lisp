@@ -1,5 +1,5 @@
 (defpackage :optima.test
-  (:use :cl :optima :eos)
+  (:use :cl :eos :optima :optima.contrib)
   (:shadowing-import-from :optima #:fail))
 (in-package :optima.test)
 
@@ -302,6 +302,21 @@
                  (match-error (e)
                    (first (match-error-values e))))
                1)))))
+
+;;; Contrib tests
+
+(test ppcre
+  (is-match "a" (ppcre "^a$"))
+  (is-not-match "a" (ppcre "^b$"))
+  (is-true (match "a"
+             ((ppcre "^(.)$")
+              t)))
+  (is (equal (match "2012-11-04"
+               ((ppcre "^(\\d+)-(\\d+)-(\\d+)$" year month day)
+                (list year month day)))
+             '("2012" "11" "04"))))
+
+;;; Regression tests
 
 (test issue39
   (is (eql (match '(0) ((list x) x))

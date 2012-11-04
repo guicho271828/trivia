@@ -58,36 +58,46 @@
   (with-slots (arguments predicate accessor) (caaar clauses)
     (let* ((arity (length arguments))
            (var (car vars))
-           (test-form (funcall predicate var))
            (new-vars (make-gensym-list arity))
            (then `(%match ,(append new-vars (cdr vars))
                           ,(loop for ((pattern . rest) . then) in clauses
                                  for args = (constructor-pattern-arguments pattern)
                                  collect `((,@args ,.rest) ,.then))
-                          ,else)))
-      (loop for i from 0 below arity
-            for new-var in new-vars
-            for access = (funcall accessor var i)
-            for binding = `(,new-var ,access)
-            if (loop for ((pattern . nil) . nil) in clauses
-                     for arg = (nth i (constructor-pattern-arguments pattern))
-                     never (place-pattern-included-p arg))
-              collect binding into let-bindings
-            else
-              collect binding into symbol-bindings
-            finally
-               (when symbol-bindings
-                 (setq then `(symbol-macrolet ,symbol-bindings
-                               (declare (ignorable ,@(mapcar #'car symbol-bindings)))
-                               ,then)))
-               (when let-bindings
-                 (setq then `(let ,let-bindings
-                               (declare (ignorable ,@(mapcar #'car let-bindings)))
-                               ,then)))
-               (return
-                 `(iff ,test-form
-                       ,then
-                       ,else))))))
+                          ,else))
+           (wrap #'identity))
+      (multiple-value-bind (test-form bind-var-p)
+          (funcall predicate var)
+        ;; FIXME: BIND-VAR-P is ugly...
+        (when bind-var-p
+          (let ((new-var (gensym))
+                (test test-form))
+            (setq wrap (lambda (form) `(let ((,new-var ,test)) ,form))
+                  var new-var
+                  test-form new-var)))
+        (loop for i from 0 below arity
+              for new-var in new-vars
+              for access = (funcall accessor var i)
+              for binding = `(,new-var ,access)
+              if (loop for ((pattern . nil) . nil) in clauses
+                       for arg = (nth i (constructor-pattern-arguments pattern))
+                       never (place-pattern-included-p arg))
+                collect binding into let-bindings
+              else
+                collect binding into symbol-bindings
+              finally
+                 (when symbol-bindings
+                   (setq then `(symbol-macrolet ,symbol-bindings
+                                 (declare (ignorable ,@(mapcar #'car symbol-bindings)))
+                                 ,then)))
+                 (when let-bindings
+                   (setq then `(let ,let-bindings
+                                 (declare (ignorable ,@(mapcar #'car let-bindings)))
+                                 ,then)))
+                 (return
+                   (funcall wrap
+                            `(iff ,test-form
+                                  ,then
+                                  ,else))))))))
 
 (defun compile-match-or-group (vars clauses else)
   (assert (= (length clauses) 1))

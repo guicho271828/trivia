@@ -166,7 +166,7 @@ Syntax:
 
     structure-constructor-pattern ::= (structure CONC-NAME slot*)
                                     | (CONC-NAME slot*)
-
+    
     slot ::= SLOT-NAME
            | (SLOT-NAME PATTERN*)
 
@@ -550,6 +550,41 @@ Examples:
     (match '((:one . 1) (:two . 2) (:three . 3))
       ((alist (:one . 1) (:two . x)) x))
     => 2
+
+Authors
+-------
+
+* Tomohiro Matsuyama
+
+License
+-------
+
+LLGPL
+
+optima.contrib - Contribution library for optima
+================================================
+
+Contribution library for optima.
+
+Available Patterns
+------------------
+
+### PPCRE
+
+    (ppcre REGEXP PATTERN*)
+
+Matches REGEXP against the target string. Sub-PATTERNs will be used to
+match the matched groups, if REGEXP matched.
+
+Examples:
+
+    (match "2012-11-04"
+      ((ppcre "^\\d{4}-\\d{2}-\\d{2}$" year month day)
+       (list year month day)))
+    => ("2012" "11" "04")
+
+[Package] optima.contrib
+------------------------
 
 Authors
 -------
