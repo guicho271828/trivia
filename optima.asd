@@ -315,6 +315,6 @@ Expansion of TYPEP derived patterns:
                              (:file "macros")))))
 
 (defmethod asdf:perform ((op asdf:test-op) (system (eql (asdf:find-system :optima))))
-  (asdf:load-system :optima-test)
+  (asdf:load-system :optima.test)
   (eval (read-from-string "(eos:run! 'optima.test::optima-test)"))
   t)
