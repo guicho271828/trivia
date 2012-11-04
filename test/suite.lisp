@@ -188,6 +188,11 @@
   ;; values
   (is (equal (multiple-value-list (match 1 (1 (values 1 2 3))))
              '(1 2 3)))
+  ;; mixture
+  (is-true (match (cons 1 2)
+             ((cons 2 1) 2)
+             (_ t)
+             ((cons 1 2) nil)))
   ;; fail
   (is-false (match 1
               (1 (fail))))
