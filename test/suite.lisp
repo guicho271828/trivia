@@ -1,7 +1,7 @@
-(defpackage :optima-test
+(defpackage :optima.test
   (:use :cl :optima :eos)
   (:shadowing-import-from :optima #:fail))
-(in-package :optima-test)
+(in-package :optima.test)
 
 (def-suite optima-test)
 (in-suite optima-test)
