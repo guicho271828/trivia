@@ -196,12 +196,12 @@
         (cond ((and (>= (length then) 2)
                     (eq (first then) 'when))
                (setq then `((if ,(second then)
-                                (progn ,.(cddr then))
+                                ,(compile-clause-body (cddr then))
                                 (fail)))))
               ((and (>= (length then) 2)
                     (eq (first then) 'unless))
                (setq then `((if (not ,(second then))
-                                (progn ,.(cddr then))
+                                ,(compile-clause-body (cddr then))
                                 (fail))))))
         (let ((pattern (first patterns))
               (rest (rest patterns)))
@@ -219,7 +219,7 @@
           ;; Recursively expand GUARD pattern here.
           (loop while (guard-pattern-p pattern) do
             (setq then `((if ,(guard-pattern-test-form pattern)
-                             (progn ,.then)
+                             ,(compile-clause-body then)
                              (fail)))
                   pattern (guard-pattern-sub-pattern pattern)))
           `((,pattern ,.rest) ,.then)))
