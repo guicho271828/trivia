@@ -236,7 +236,14 @@
      '(match 1
        ((and x x) t))))
   (is-match 1 (and _ _))
-  (is-match 1 (or * *)))
+  (is-match 1 (or * *))
+  ;; declarations
+  (is-true (match 1
+             (1 (declare (ignore)) t)))
+  (is-true (match 1
+             (1 when t (declare (ignore)) t)))
+  (is-true (match 1
+             ((guard 1 t) (declare (ignore)) t))))
 
 (test multiple-value-match
   (is (eql (multiple-value-match (values 1 2)
