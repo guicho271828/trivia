@@ -264,7 +264,7 @@ Expansion of LIST* derived patterns:
 
 Expansion of WHEN dervied patterns:
 
-    (when test) => (guard #G0 (let ((* G0)) test))
+    (when test) => (guard #G0 (let ((* #G0)) test))
 
 As you see in the expansion above, you can use a special symbol * to
 access the value being matched.
