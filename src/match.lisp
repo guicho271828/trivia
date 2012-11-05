@@ -19,17 +19,6 @@ progn. If ARG is matched with some PATTERN, then evaluates
 corresponding BODY and returns the evaluated value. Otherwise, returns
 NIL.
 
-If BODY starts with the symbols WHEN or UNLESS, then the next form
-will be used to introduce a guard for PATTERN. That is,
-
-    (match list ((list x) when (oddp x) x))
-    (match list ((list x) unless (evenp x) x))
-
-will be translated to
-
-    (match list ((and (list x) (when (oddp x))) x))
-    (match list ((and (list x) (unless (evenp x))) x))
-
 Evaluating a form (FAIL) in the clause body causes the latest pattern
 matching be failed. For example,
 
@@ -41,6 +30,17 @@ matching be failed. For example,
 
 returns OK, because the form (FAIL) in the first clause is
 evaluated.
+
+If BODY starts with the symbols WHEN or UNLESS, then the next form
+will be used to introduce (FAIL). That is,
+
+    (match list ((list x) when (oddp x) x))
+    (match list ((list x) unless (evenp x) x))
+
+will be translated to
+
+    (match list ((list x) (if (oddp x) x (fail))))
+    (match list ((list x) (if (evenp x) (fail) x)))
 
 Examples:
 

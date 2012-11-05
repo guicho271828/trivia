@@ -123,22 +123,6 @@
                         (fail)))
               ,else)))))
 
-(defun compile-match-and-group (vars clauses else)
-  (assert (= (length clauses) 1))
-  (destructuring-bind ((pattern . rest) . then)
-      (first clauses)
-    (let ((patterns (and-pattern-sub-patterns pattern)))
-      (unless patterns
-        (return-from compile-match-and-group else))
-      `(%match ,(append (make-list (length patterns)
-                                   :initial-element (first vars))
-                        (cdr vars))
-               ;; Reverse patterns here so that the pattern matching is
-               ;; executed in order of the patterns. This is important
-               ;; especially for guard patterns.
-               (((,@(reverse patterns) ,.rest) ,.then))
-               ,else))))
-
 (defun compile-match-not-group (vars clauses else)
   (assert (= (length clauses) 1))
   (destructuring-bind ((pattern . rest) . then)
@@ -174,9 +158,7 @@
          (not-pattern
           (compile-match-not-group vars group fail))
          (or-pattern
-          (compile-match-or-group vars group fail))
-         (and-pattern
-          (compile-match-and-group vars group fail)))
+          (compile-match-or-group vars group fail)))
        (compile-match-empty-group group fail))
      else)))
 
@@ -196,45 +178,101 @@
                   (constructor-pattern
                    (equal (constructor-pattern-signature x)
                           (constructor-pattern-signature y)))
-                  (guard-pattern
+                  ((or guard-pattern and-pattern)
                    (error "Something wrong."))
-                  ((or not-pattern or-pattern and-pattern)
+                  ((or not-pattern or-pattern)
                    nil)
                   (otherwise t)))))
     (group clauses :test #'same-group-p :key #'caar)))
 
+(defun preprocess-match-clause (clause)
+  (if (and (consp clause)
+           (car clause))
+      (destructuring-bind (patterns . then) clause
+        ;; Parse and check patterns here.
+        (setq patterns (mapcar #'parse-pattern patterns))
+        (check-patterns patterns)
+        ;; Desugar WHEN/UNLESS here.
+        (cond ((and (>= (length then) 2)
+                    (eq (first then) 'when))
+               (setq then `((if ,(second then)
+                                (progn ,.(cddr then))
+                                (fail)))))
+              ((and (>= (length then) 2)
+                    (eq (first then) 'unless))
+               (setq then `((if (not ,(second then))
+                                (progn ,.(cddr then))
+                                (fail))))))
+        (let ((pattern (first patterns))
+              (rest (rest patterns)))
+          ;; Recursively expand AND pattern here like:
+          ;; 
+          ;;     (AND)   => _
+          ;;     (AND x) => x
+          ;; 
+          (loop while (and-pattern-p pattern)
+                for sub-patterns = (and-pattern-sub-patterns pattern)
+                do (case (length sub-patterns)
+                     (0 (setq pattern (parse-pattern '_)))
+                     (1 (setq pattern (first sub-patterns)))
+                     (t (return))))
+          ;; Recursively expand GUARD pattern here.
+          (loop while (guard-pattern-p pattern) do
+            (setq then `((if ,(guard-pattern-test-form pattern)
+                             (progn ,.then)
+                             (fail)))
+                  pattern (guard-pattern-sub-pattern pattern)))
+          `((,pattern ,.rest) ,.then)))
+      clause))
+
+(defun preprocess-match-clauses (vars clauses)
+  (let* ((clauses (mapcar #'preprocess-match-clause clauses))
+         (and-clauses
+           (loop for clause in clauses
+                 for (patterns . nil) = clause
+                 if (and patterns (and-pattern-p (first patterns)))
+                   collect clause)))
+    (if and-clauses
+        ;; Recursively expand AND patterns here like:
+        ;; 
+        ;;     (((AND x y) z)
+        ;;      ((AND a b c) d)
+        ;;      (p))
+        ;; =>
+        ;;      ((x y _ z)
+        ;;       (a b c d)
+        ;;       (p _ _ _))
+        ;;    
+        (loop with arity
+                = (loop for ((pattern . nil) . nil) in and-clauses
+                        maximize (length (and-pattern-sub-patterns pattern)))
+              for clause in clauses
+              for (patterns . then) = clause
+              for pattern = (if patterns (first patterns))
+              for prefix
+                = (cond ((and-pattern-p pattern)
+                         (and-pattern-sub-patterns pattern))
+                        (pattern
+                         (list pattern)))
+              for postfix
+                = (make-list (- arity (length prefix))
+                             :initial-element (parse-pattern '_))
+              for new-patterns = (append prefix postfix)
+              collect `(,new-patterns ,.then) into new-clauses
+              finally (let ((new-vars
+                              (and vars
+                                   (append (make-list arity
+                                                      :initial-element (first vars))
+                                           (rest vars)))))
+                        (return (preprocess-match-clauses new-vars new-clauses))))
+        ;; Otherwise, just return the variables and the clauses.
+        (list vars clauses))))
+
 (defun compile-match (vars clauses else)
-  (flet ((process-clause (clause)
-           (if (and (consp clause)
-                    (car clause))
-               (destructuring-bind (patterns . then) clause
-                 ;; Parse patterns here.
-                 ;; FIXME: parse-pattern here is redundant.
-                 (setq patterns (mapcar #'parse-pattern patterns))
-                 (check-patterns patterns)
-                 ;; Desugar WHEN/UNLESS here.
-                 (cond ((and (>= (length then) 2)
-                             (eq (first then) 'when))
-                        (setq then `((if ,(second then)
-                                         (progn ,.(cddr then))
-                                         (fail)))))
-                       ((and (>= (length then) 2)
-                             (eq (first then) 'unless))
-                        (setq then `((if (not ,(second then))
-                                         (progn ,.(cddr then))
-                                         (fail))))))
-                 (let ((pattern (first patterns))
-                       (rest (rest patterns)))
-                   ;; Expand guard pattern here.
-                   (loop while (guard-pattern-p pattern) do
-                     (setq then `((if ,(guard-pattern-test-form pattern)
-                                      (progn ,.then)
-                                      (fail)))
-                           pattern (guard-pattern-sub-pattern pattern)))
-                   `((,pattern ,.rest) ,.then)))
-               clause)))
-    (let* ((clauses (mapcar #'process-clause clauses))
-           (groups (group-match-clauses clauses)))
+  ;; FIXME: don't call PREPROCESS-MATCH-CLAUSES two or more times
+  (destructuring-bind (vars clauses)
+      (preprocess-match-clauses vars clauses)
+    (let ((groups (group-match-clauses clauses)))
       (compile-match-groups vars groups else))))
 
 (defun compile-match-1 (form clauses else)
