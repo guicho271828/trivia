@@ -230,7 +230,7 @@
          (and-clauses
            (loop for clause in clauses
                  for (patterns . nil) = clause
-                 if (and patterns (and-pattern-p (first patterns)))
+                 if (and-pattern-p (first patterns))
                    collect clause)))
     (if and-clauses
         ;; Recursively expand AND patterns here like:
@@ -248,7 +248,7 @@
                         maximize (length (and-pattern-sub-patterns pattern)))
               for clause in clauses
               for (patterns . then) = clause
-              for pattern = (if patterns (first patterns))
+              for pattern = (first patterns)
               for prefix
                 = (cond ((and-pattern-p pattern)
                          (and-pattern-sub-patterns pattern))
@@ -257,7 +257,7 @@
               for postfix
                 = (make-list (- arity (length prefix))
                              :initial-element (parse-pattern '_))
-              for new-patterns = (append prefix postfix)
+              for new-patterns = (append prefix postfix (rest patterns))
               collect `(,new-patterns ,.then) into new-clauses
               finally (let ((new-vars
                               (and vars

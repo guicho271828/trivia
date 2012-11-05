@@ -183,11 +183,24 @@
   (is-match 1 (and (and 1)))
   (is (eql (match 1 ((and 1 x) x)) 1))
   (is-not-match 1 (and (and (not 1))))
+  (is-match 1 (and (typep number) (typep integer)))
   ;; complex
   (is-true (match 1
              ((and 1 2) nil)
              (1 t)
-             (2 nil))))
+             (2 nil)))
+  (is (eql (match (list 1 2)
+             ((list (and 1 x) 2) x))
+           1))
+  (is-true (match (list 1 2 3)
+             ((list (and 1 2 3 4 5) 2))
+             ((list (and 1 (typep number)) 3 3))
+             ((list (and 1 (typep number)) 2 3) t)))
+  (is-true (match (list 2 2)
+             ((list (and 2 (typep number)) 3))
+             ((list (and 2 (typep number)) 2 3))
+             ((list (and 1 (typep number)) 2))
+             ((list (and 2 (typep number)) 2) t))))
 
 (test match
   ;; empty
