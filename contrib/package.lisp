@@ -1,3 +1,8 @@
 (defpackage :optima.contrib
-  (:use :cl)
-  (:export #:ppcre))
+  (:use :cl :optima)
+  (:import-from :alexandria
+                #:plist-alist)
+  (:export #:alist
+           #:plist
+
+           #:ppcre))

@@ -98,6 +98,27 @@ Examples:
       ((cons a b) (+ a b)))
      => 3
 
+#### ASSOC
+
+Syntax:
+
+    assoc-constructor-pattern ::= (assoc KEY PATTERN &key key test)
+
+Examples:
+
+    (match '((1 . :one))
+      ((assoc 1 x) x))
+    => :ONE
+    (match '((1 . :one) (2 . :two))
+      ((assoc 2 x) x))
+    => :TWO
+    (match '(1 (2 . 3))
+      ((assoc 2 x) x))
+    => 3
+    (match '((\"a\" . 123))
+      ((assoc \"A\" 123 :test #'string-equal) t))
+    => T
+
 #### VECTOR
 
 Syntax:
@@ -306,9 +327,8 @@ Expansion of TYPEP derived patterns:
                 :serial t
                 :components ((:file "package")
                              (:file "util")
-                             (:file "equal")
+                             (:file "runtime")
                              (:file "pattern")
-                             (:file "extra")
                              (:file "fail")
                              (:file "compiler")
                              (:file "match")

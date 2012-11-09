@@ -99,6 +99,27 @@ Examples:
       ((cons a b) (+ a b)))
      => 3
 
+#### ASSOC
+
+Syntax:
+
+    assoc-constructor-pattern ::= (assoc KEY PATTERN &key key test)
+
+Examples:
+
+    (match '((1 . :one))
+      ((assoc 1 x) x))
+    => :ONE
+    (match '((1 . :one) (2 . :two))
+      ((assoc 2 x) x))
+    => :TWO
+    (match '(1 (2 . 3))
+      ((assoc 2 x) x))
+    => 3
+    (match '(("a" . 123))
+      ((assoc "A" 123 :test #'string-equal) t))
+    => T
+
 #### VECTOR
 
 Syntax:
@@ -521,36 +542,6 @@ Equivalent to `(defun-ematch name (PATTERN BODY...)).
 
 Equivalent to `(defun-cmatch name (PATTERN BODY...)).
 
-[Package] optima.extra
-----------------------
-
-This package contains derived and constructor patterns with
-designators not from COMMON-LISP package.
-
-#### PLIST
-
-Syntax:
-
-    plist-constructor-pattern ::= (plist (key PATTERN)*)
-
-Examples:
-
-    (match '(:one 1 :two 2 :three 3)
-      ((plist :one 1 :two x) x))
-    => 2
-
-#### ALIST
-
-Syntax:
-
-    alist-constructor-pattern ::= (alist (key . PATTERN)*)
-
-Examples:
-
-    (match '((:one . 1) (:two . 2) (:three . 3))
-      ((alist (:one . 1) (:two . x)) x))
-    => 2
-
 Authors
 -------
 
@@ -569,7 +560,41 @@ Contribution library for optima.
 Available Patterns
 ------------------
 
+### ALIST
+
+Syntax:
+
+    (alist (KEY . PATTERN)*)
+
+Expansion:
+
+    (alist (k . p)*) => (and (assoc k p)*)
+
+Examples:
+
+    (match '((1 . :one) (2 . :two) (3 . :three))
+      ((alist (1 . x) (3 . y)) (list x y)))
+    => (:ONE :THREE)
+
+### PLIST
+
+Syntax:
+
+    (plist {KEY PATTERN}*)
+
+Expansion:
+
+    (plist {k p}*) => (and (passoc k p)*)
+
+Examples:
+
+    (match '(:name "John" :age 23)
+      ((plist :name "John" :age age) age))
+    => 23
+
 ### PPCRE
+
+Syntax:
 
     (ppcre REGEXP PATTERN*)
 

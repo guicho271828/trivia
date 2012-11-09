@@ -23,3 +23,25 @@ the comparison form to some specific form as follows:
         ((literalp value) `(eql ,var ,value))
         ((consp value) `(%equal ,var ',value))
         (t `(%equal ,var ,value))))
+
+(defun %assoc (item alist &key (key #'identity) (test #'eql))
+  "Safe ASSOC."
+  (declare (optimize (speed 3) (safety 0) (space 0)))
+  (loop
+    (unless (consp alist) (return))
+    (let ((cons (car alist)))
+      (when (and (consp cons)
+                 (funcall test item (funcall key (car cons))))
+        (return cons)))
+    (setq alist (cdr alist))))
+
+(defun %passoc (item plist)
+  "Safe plist assoc."
+  (declare (optimize (speed 3) (safety 0) (space 0)))
+  (loop
+    (unless (consp plist) (return))
+    (let ((cons (cdr plist)))
+      (unless (consp cons) (return))
+      (when (eql item (car plist))
+        (return plist))
+      (setq plist (cdr cons)))))

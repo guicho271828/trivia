@@ -70,6 +70,14 @@
 (test constructor-pattern
   ;; cons
   (is-match (cons 1 2) (cons 1 2))
+  ;; assoc
+  (is-match '((1 . 2)) (assoc 1 2))
+  (is-match '((1 . 2) (3 . 4)) (assoc 3 4))
+  (is-match '(1 (2 . 3)) (assoc 2 3))
+  (is-not-match 1 (assoc 1 2))
+  (is-not-match '((1 . 2)) (assoc 3 4))
+  (is-not-match '((1 . 2) (3 . 4)) (assoc 3 5))
+  (is-match '(("a" . 1)) (assoc "A" 1 :test #'string-equal))
   ;; vector
   (is-match (vector 1 2) (vector 1 2))
   ;; simple-vector
@@ -106,7 +114,13 @@
 
 (test derived-pattern
   ;; list
-  (is-match (list 1 2 3) (list 1 2 3))
+  (is-match '(1 2 3) (list 1 2 3))
+  ;; list*
+  (is-match '(1 2 3) (list* 1 2 (list 3)))
+  ;; alist
+  (is-match '((1 . 2) (2 . 3) (3 . 4)) (alist (3 . 4) (1 . 2)))
+  ;; plist
+  (is-match '(:a 1 :b 2 :c 3) (plist :c 3 :a 1))
   ;; satisfies
   (is-match 1 (satisfies numberp))
   (is-not-match 1 (satisfies stringp))
