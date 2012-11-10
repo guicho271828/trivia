@@ -18,11 +18,12 @@ the comparison form to some specific form as follows:
     (equals x 'foo)   => (eq x 'foo)
     (equals x 123)    => (eql x 123)
     (equals x '(a b)) => (%equals x '(a b))"
-  (cond ((null value) `(null ,var))
-        ((symbolp value) `(eq ,var ',value))
-        ((literalp value) `(eql ,var ,value))
-        ((consp value) `(%equal ,var ',value))
-        (t `(%equal ,var ,value))))
+  (typecase value
+    (null                  `(null ,var))
+    (symbol                `(eq ,var ',value))
+    ((or number character) `(eql ,var ,value))
+    (cons                  `(%equal ,var ',value))
+    (t                     `(%equal ,var ,value))))
 
 (defun %assoc (item alist &key (key #'identity) (test #'eql))
   "Safe ASSOC."

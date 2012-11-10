@@ -1,8 +1,5 @@
 (in-package :optima)
 
-(defun literalp (value)
-  (typep value '(or symbol number character)))
-
 (defun set-equal (set1 set2)
   (and (null (set-difference set1 set2))
        (null (set-difference set2 set1))))
