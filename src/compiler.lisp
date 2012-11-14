@@ -17,9 +17,9 @@
 
 (defun compile-match-fail (form else)
   (if (equal else '(fail))
-      ;; No need to introduce OR* anymore.
+      ;; No need to introduce %OR anymore.
       form
-      `(or* ,form ,else)))
+      `(%or ,form ,else)))
 
 (defun compile-match-variable-group (vars clauses else)
   (let ((clauses
@@ -46,7 +46,7 @@
              ,else)))
 
 (defun compile-match-constant-group (vars clauses else)
-  `(if* ,(with-slots (value) (caaar clauses)
+  `(%if ,(with-slots (value) (caaar clauses)
            `(equals ,(car vars) ,value))
         (%match ,(cdr vars)
                 ,(loop for ((nil . rest) . then) in clauses
@@ -95,7 +95,7 @@
                                  ,then)))
                  (return
                    (funcall wrap
-                            `(if* ,test-form
+                            `(%if ,test-form
                                   ,then
                                   ,else))))))))
 
@@ -113,7 +113,7 @@
                 do (error "Or-pattern must share the same set of variables: ~S, ~S"
                           (sort vars #'string<)
                           (sort new-vars #'string<)))
-        `(or* (multiple-value-bind ,new-vars
+        `(%or (multiple-value-bind ,new-vars
                   (%match (,(first vars))
                           ,(loop for pattern in patterns
                                  collect `((,pattern) (values ,@new-vars)))
@@ -137,7 +137,7 @@
            ,else))))
 
 (defun compile-match-empty-group (clauses else)
-  `(or* ,@(loop for (nil . then) in clauses
+  `(%or ,@(loop for (nil . then) in clauses
                 collect (compile-clause-body then))
         ,else))
 
