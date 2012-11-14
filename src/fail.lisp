@@ -1,26 +1,27 @@
 (in-package :optima)
 
-(defmacro try (form else)
-  "Tries to evaluate FORM. If a form (FAIL) found in FORM, then go to
-ELSE branch for evaluation."
-  (if (equal else '(fail))
-      ;; Pass through.
-      form
-      ;; Introduce try-fail block.
-      (let ((block (gensym "MATCH-TRY"))
-            (tag (gensym "MATCH-FAIL")))
-        `(block ,block
-           (tagbody
-              (return-from ,block
-                (macrolet ((fail () `(go ,',tag)))
-                  ,form))
-              ,tag
-              (return-from ,block ,else))))))
+(defmacro or* (&rest forms)
+  "Similar to OR except OR* also allows to call (FAIL) in each branch
+to jump to its next branch."
+  (setq forms (remove '(fail) forms :test #'equal))
+  (cond ((null forms) '(fail))
+        ((null (rest forms)) (first forms))
+        (t
+         (let ((block (gensym "BLOCK")))
+           `(block ,block
+              (tagbody
+                 ,@(loop for form in (butlast forms)
+                         for tag = (gensym "FAIL")
+                         collect `(return-from ,block
+                                    (macrolet ((fail () `(go ,',tag)))
+                                      ,form))
+                         collect tag)
+                 (return-from ,block ,(car (last forms)))))))))
 
-(defmacro iff (test then else)
-  "Similar to IF except IFF also allows to go to ELSE branch from THEN
-branch with (FAIL) form."
-  `(try (if ,test ,then (fail)) ,else))
+(defmacro if* (test then else)
+  "Similar to IF except IF* also allows to call (FAIL) in THEN branch
+to jump to ELSE branch."
+  `(or* (if ,test ,then (fail)) ,else))
 
 (defmacro fail ()
   "Causes the latest pattern matching be failed and continue to do the

@@ -12,6 +12,9 @@
 (defmacro is-not-match (arg pattern)
   `(is-false (match ,arg (,pattern t))))
 
+(test empty
+  (is-true (match 1 (_ (fail)) (_ t))))
+
 (test constant-pattern
   ;; integer
   (is-match 1 1)
@@ -230,13 +233,13 @@
   ;; fail
   (is-false (match 1
               (1 (fail))))
-  (is-false (match 1
+  (is-true (match 1
               (1 (fail))
               (1 t)))
   (is-true (match 1
              (1 (fail))
-             (1 nil)
-             (_ t)))
+             (1 t)
+             (_ nil)))
   (is (eql (match (cons 1 2)
              ((cons x y)
               (if (eql x 1)
@@ -300,7 +303,7 @@
   (signals match-error
     (ematch 1
       (1 (fail))
-      (1 t)))
+      (1 (fail))))
   ;; only once
   (let ((count 0))
     (flet ((f () (incf count)))

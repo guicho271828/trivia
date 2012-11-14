@@ -17,9 +17,9 @@
 
 (defun compile-match-fail (form else)
   (if (equal else '(fail))
-      ;; No need to introduce TRY anymore.
+      ;; No need to introduce OR* anymore.
       form
-      `(try ,form ,else)))
+      `(or* ,form ,else)))
 
 (defun compile-match-variable-group (vars clauses else)
   (let ((clauses
@@ -46,7 +46,7 @@
              ,else)))
 
 (defun compile-match-constant-group (vars clauses else)
-  `(iff ,(with-slots (value) (caaar clauses)
+  `(if* ,(with-slots (value) (caaar clauses)
            `(equals ,(car vars) ,value))
         (%match ,(cdr vars)
                 ,(loop for ((nil . rest) . then) in clauses
@@ -95,7 +95,7 @@
                                  ,then)))
                  (return
                    (funcall wrap
-                            `(iff ,test-form
+                            `(if* ,test-form
                                   ,then
                                   ,else))))))))
 
@@ -113,7 +113,7 @@
                 do (error "Or-pattern must share the same set of variables: ~S, ~S"
                           (sort vars #'string<)
                           (sort new-vars #'string<)))
-        `(try (multiple-value-bind ,new-vars
+        `(or* (multiple-value-bind ,new-vars
                   (%match (,(first vars))
                           ,(loop for pattern in patterns
                                  collect `((,pattern) (values ,@new-vars)))
@@ -137,29 +137,28 @@
            ,else))))
 
 (defun compile-match-empty-group (clauses else)
-  (loop for (pattern . then) in clauses
-        if (null pattern)
-          do (return (compile-clause-body then))
-        finally (return else)))
+  `(or* ,@(loop for (nil . then) in clauses
+                collect (compile-clause-body then))
+        ,else))
 
 (defun compile-match-group (vars group else)
   (let ((fail '(fail)))
     (compile-match-fail
      (if-let (it (and vars (caaar group)))
-       (etypecase it
-         (variable-pattern
-          (compile-match-variable-group vars group fail))
-         (place-pattern
-          (compile-match-place-group vars group fail))
-         (constant-pattern
-          (compile-match-constant-group vars group fail))
-         (constructor-pattern
-          (compile-match-constructor-group vars group fail))
-         (not-pattern
-          (compile-match-not-group vars group fail))
-         (or-pattern
-          (compile-match-or-group vars group fail)))
-       (compile-match-empty-group group fail))
+             (etypecase it
+               (variable-pattern
+                (compile-match-variable-group vars group fail))
+               (place-pattern
+                (compile-match-place-group vars group fail))
+               (constant-pattern
+                (compile-match-constant-group vars group fail))
+               (constructor-pattern
+                (compile-match-constructor-group vars group fail))
+               (not-pattern
+                (compile-match-not-group vars group fail))
+               (or-pattern
+                (compile-match-or-group vars group fail)))
+             (compile-match-empty-group group fail))
      else)))
 
 (defun compile-match-groups (vars groups else)
