@@ -385,3 +385,9 @@
                     (list* y x z))
                 (list x y z)))
              '(2 1 (3 4)))))
+
+(test issue68
+  (is (equal (match 1
+               ((guard x (equal x 2)) (list :a x))
+               (x (list :b x)))
+             '(:b 1))))
