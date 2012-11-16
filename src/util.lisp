@@ -1,5 +1,8 @@
 (in-package :optima)
 
+(defun self-evaluating-object-p (object)
+  (typep object '(and (not cons) (or (not symbol) (member t nil)))))
+
 (defun set-equal (set1 set2)
   (and (null (set-difference set1 set2))
        (null (set-difference set2 set1))))

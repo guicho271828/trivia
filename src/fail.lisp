@@ -4,8 +4,12 @@
   "Similar to OR except %OR also allows to call (FAIL) in each branch
 to jump to its next branch."
   (setq forms (remove '(fail) forms :test #'equal))
-  (cond ((null forms) '(fail))
-        ((null (rest forms)) (first forms))
+  (cond ((null forms)
+         '(fail))
+        ((null (rest forms))
+         (first forms))
+        ((self-evaluating-object-p (first forms))
+         (first forms))
         (t
          (let ((block (gensym "BLOCK")))
            `(block ,block
