@@ -263,18 +263,18 @@ Examples:
      :predicate (lambda (var) `(consp ,var))
      :accessor (lambda (var i) `(,(ecase i (0 'car) (1 'cdr)) ,var)))))
 
-(defmethod optima::parse-constructor-pattern ((name (eql 'assoc)) &rest args)
+(defmethod parse-constructor-pattern ((name (eql 'assoc)) &rest args)
   (destructuring-bind (key value . assoc-args) args
-    (optima::make-constructor-pattern
+    (make-constructor-pattern
      :specifier `(assoc ,@args)
      :signature `(assoc ,key ,@assoc-args)
      :arguments (list (parse-pattern value))
      :predicate (lambda (var) (values `(%assoc ,key ,var ,@assoc-args) t))
      :accessor (lambda (var i) (assert (zerop i)) `(cdr ,var)))))
 
-(defmethod optima::parse-constructor-pattern ((name (eql 'passoc)) &rest args)
+(defmethod parse-constructor-pattern ((name (eql 'passoc)) &rest args)
   (destructuring-bind (key value) args
-    (optima::make-constructor-pattern
+    (make-constructor-pattern
      :specifier `(passoc ,@args)
      :signature `(passoc ,key)
      :arguments (list (parse-pattern value))
