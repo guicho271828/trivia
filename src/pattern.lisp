@@ -217,9 +217,6 @@ Examples:
        ((place name)
         (make-place-pattern :specifier pattern
                             :name name))
-       ((symbol-macrolet name)
-        (make-place-pattern :specifier pattern
-                            :name name))
        ((quote value)
         (make-constant-pattern :specifier `(quote ,value)
                                :value value))
