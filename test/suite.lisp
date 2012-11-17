@@ -80,7 +80,7 @@
   (is-not-match 1 (assoc 1 2))
   (is-not-match '((1 . 2)) (assoc 3 4))
   (is-not-match '((1 . 2) (3 . 4)) (assoc 3 5))
-  (is-match '(("a" . 1)) (assoc "A" 1 :test #'string-equal))
+  (is-match '(("a" . 1)) (assoc "A" 1 :test string-equal))
   ;; vector
   (is-match (vector 1 2) (vector 1 2))
   ;; simple-vector
@@ -360,6 +360,10 @@
   (is-true (match "a"
              ((ppcre "^(.)$")
               t)))
+  (is (equal (match "a"
+               ((ppcre "(a)" x y)
+                (list x y)))
+             '("a" nil)))
   (is (equal (match "2012-11-04"
                ((ppcre "^(\\d+)-(\\d+)-(\\d+)$" year month day)
                 (list year month day)))

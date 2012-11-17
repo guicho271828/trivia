@@ -1,10 +1,19 @@
 (in-package :optima.contrib)
 
+(defstruct (ppcre-pattern (:include optima::constructor-pattern)
+                          (:constructor make-ppcre-pattern (regex &rest subpatterns)))
+  regex)
+
+(defmethod optima::destructor-equal ((x ppcre-pattern) (y ppcre-pattern))
+  (equal (ppcre-pattern-regex x) (ppcre-pattern-regex y)))
+
+(defmethod optima::destructor-predicate-form ((pattern ppcre-pattern) var)
+  (values `(nth-value 1 (ppcre:scan-to-strings ,(ppcre-pattern-regex pattern) ,var)) t))
+
+(defmethod optima::destructor-forms ((pattern ppcre-pattern) var)
+  (loop for i from 0 below (optima::constructor-pattern-arity pattern)
+        collect `(optima::%svref ,var ,i)))
+
 (defmethod optima::parse-constructor-pattern ((name (eql 'ppcre)) &rest args)
-  (destructuring-bind (re . patterns) args
-    (optima::make-constructor-pattern
-     :specifier `(ppcre ,@args)
-     :signature `(ppcre ,re)
-     :arguments (mapcar #'optima::parse-pattern patterns)
-     :predicate (lambda (var) (values `(nth-value 1 (ppcre:scan-to-strings ,re ,var)) t))
-     :accessor (lambda (var i) `(svref ,var ,i)))))
+  (apply #'make-ppcre-pattern (first args)
+         (mapcar #'optima::parse-pattern (rest args))))

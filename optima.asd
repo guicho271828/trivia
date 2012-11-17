@@ -17,11 +17,11 @@ specifiers are defined as follows:
     pattern-specifier ::= constant-pattern
                         | variable-pattern
                         | place-pattern
-                        | constructor-pattern
                         | guard-pattern
                         | not-pattern
                         | or-pattern
                         | and-pattern
+                        | constructor-pattern
                         | derived-pattern
     
     constant-pattern ::= t | nil
@@ -32,8 +32,6 @@ specifiers are defined as follows:
     
     place-pattern ::= (place SYMBOL)
     
-    constructor-pattern ::= (NAME ARG*)
-    
     guard-pattern ::= (guard PATTERN TEST-FORM)
     
     not-pattern ::= (not PATTERN)
@@ -41,6 +39,8 @@ specifiers are defined as follows:
     or-pattern ::= (or PATTERN*)
     
     and-pattern ::= (and PATTERN*)
+    
+    constructor-pattern ::= (NAME ARG*)
     
     derived-pattern ::= (NAME PATTERN*)
 
@@ -80,6 +80,49 @@ Examples:
     (match c ((cons (place x) y) (incf x) (incf y)))
     c
      => (2 . 2)
+
+### Guard-Pattern
+
+A guard-pattern is a special pattern that also tests whether TEST-FORM
+satisfies in the current matching context.
+
+Examples:
+
+    (match 1 ((guard x (eql x 2)) t))
+    => NIL
+    (match 1 ((guard x (eql x 1)) t))
+    => T
+
+### Not-Pattern
+
+A not-pattern matches a value that is not matched with sub-PATTERN.
+
+Examples:
+
+    (match 1 ((not 2) 3)) => 3
+    (match 1 ((not (not 1)) 1)) => 1
+
+### Or-Pattern
+
+An or-pattern matches a value that is matched with one of
+sub-PATTERNs. There is a restriction that every pattern of
+sub-PATTERNs must have same set of variables.
+
+Examples:
+
+    (match '(2 . 1) ((or (cons 1 x) (cons 2 x)) x))
+    => 1
+
+### And-Pattern
+
+An and-pattern matches a value that is matched with all of
+sub-PATTERNs. The most common use case is to match a value and bind
+the value to a variable.
+
+Examples:
+
+    (match 1 ((and 1 x) x))
+    => 1
 
 ### Constructor-Pattern
 
@@ -220,49 +263,6 @@ Examples:
     (match (make-person :name \"foo\" :age 30)
       ((p- name age) (list name age)))
     => (\"foo\" 30)
-
-### Guard-Pattern
-
-A guard-pattern is a special pattern that also tests whether TEST-FORM
-satisfies in the current matching context.
-
-Examples:
-
-    (match 1 ((guard x (eql x 2)) t))
-    => NIL
-    (match 1 ((guard x (eql x 1)) t))
-    => T
-
-### Not-Pattern
-
-A not-pattern matches a value that is not matched with sub-PATTERN.
-
-Examples:
-
-    (match 1 ((not 2) 3)) => 3
-    (match 1 ((not (not 1)) 1)) => 1
-
-### Or-Pattern
-
-An or-pattern matches a value that is matched with one of
-sub-PATTERNs. There is a restriction that every pattern of
-sub-PATTERNs must have same set of variables.
-
-Examples:
-
-    (match '(2 . 1) ((or (cons 1 x) (cons 2 x)) x))
-    => 1
-
-### And-Pattern
-
-An and-pattern matches a value that is matched with all of
-sub-PATTERNs. The most common use case is to match a value and bind
-the value to a variable.
-
-Examples:
-
-    (match 1 ((and 1 x) x))
-    => 1
 
 ### Derived-Pattern
 

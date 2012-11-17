@@ -55,55 +55,55 @@
         ,else))
 
 (defun compile-match-constructor-group (vars clauses else)
-  (with-slots (arguments predicate accessor) (caaar clauses)
-    (let* ((arity (length arguments))
-           (var (car vars))
-           (new-vars (make-gensym-list arity))
-           (then `(%match ,(append new-vars (cdr vars))
-                          ,(loop for ((pattern . rest) . then) in clauses
-                                 for args = (constructor-pattern-arguments pattern)
-                                 collect `((,@args ,.rest) ,.then))
-                          ,else))
-           (wrap #'identity))
-      (multiple-value-bind (test-form bind-var-p)
-          (funcall predicate var)
-        ;; FIXME: BIND-VAR-P is ugly...
-        (when bind-var-p
-          (let ((new-var (gensym))
-                (test test-form))
-            (setq wrap (lambda (form) `(let ((,new-var ,test)) ,form))
-                  var new-var
-                  test-form new-var)))
-        (loop for i from 0 below arity
-              for new-var in new-vars
-              for access = (funcall accessor var i)
-              for binding = `(,new-var ,access)
-              if (loop for ((pattern . nil) . nil) in clauses
-                       for arg = (nth i (constructor-pattern-arguments pattern))
-                       never (place-pattern-included-p arg))
-                collect binding into let-bindings
-              else
-                collect binding into symbol-bindings
-              finally
-                 (when symbol-bindings
-                   (setq then `(symbol-macrolet ,symbol-bindings
-                                 (declare (ignorable ,@(mapcar #'car symbol-bindings)))
-                                 ,then)))
-                 (when let-bindings
-                   (setq then `(let ,let-bindings
-                                 (declare (ignorable ,@(mapcar #'car let-bindings)))
-                                 ,then)))
-                 (return
-                   (funcall wrap
-                            `(%if ,test-form
-                                  ,then
-                                  ,else))))))))
+  (let* ((pattern (caaar clauses))
+         (arity (constructor-pattern-arity pattern))
+         (var (car vars))
+         (new-vars (make-gensym-list arity))
+         (then `(%match ,(append new-vars (cdr vars))
+                        ,(loop for ((pattern . rest) . then) in clauses
+                               for subpatterns = (constructor-pattern-subpatterns pattern)
+                               collect `((,@subpatterns ,.rest) ,.then))
+                        ,else))
+         (wrap #'identity))
+    (multiple-value-bind (predicate-form bind-var-p)
+        (destructor-predicate-form pattern var)
+      ;; FIXME: BIND-VAR-P is ugly...
+      (when bind-var-p
+        (let ((new-var (gensym))
+              (predicate predicate-form))
+          (setq wrap (lambda (form) `(let ((,new-var ,predicate)) ,form))
+                var new-var
+                predicate-form new-var)))
+      (loop for i from 0 below arity
+            for new-var in new-vars
+            for form in (destructor-forms pattern var)
+            for binding = `(,new-var ,form)
+            if (loop for ((pattern . nil) . nil) in clauses
+                     for arg = (nth i (constructor-pattern-subpatterns pattern))
+                     never (place-pattern-included-p arg))
+              collect binding into let-bindings
+            else
+              collect binding into symbol-bindings
+            finally
+               (when symbol-bindings
+                 (setq then `(symbol-macrolet ,symbol-bindings
+                               (declare (ignorable ,@(mapcar #'car symbol-bindings)))
+                               ,then)))
+               (when let-bindings
+                 (setq then `(let ,let-bindings
+                               (declare (ignorable ,@(mapcar #'car let-bindings)))
+                               ,then)))
+               (return
+                 (funcall wrap
+                          `(%if ,predicate-form
+                                ,then
+                                ,else)))))))
 
 (defun compile-match-or-group (vars clauses else)
   (assert (= (length clauses) 1))
   (destructuring-bind ((pattern . rest) . then)
       (first clauses)
-    (let ((patterns (or-pattern-sub-patterns pattern)))
+    (let ((patterns (or-pattern-subpatterns pattern)))
       (unless patterns
         (return-from compile-match-or-group else))
       (let ((new-vars (pattern-variables (car patterns))))
@@ -127,7 +127,7 @@
   (assert (= (length clauses) 1))
   (destructuring-bind ((pattern . rest) . then)
       (first clauses)
-    (let ((pattern (not-pattern-sub-pattern pattern)))
+    (let ((pattern (not-pattern-subpattern pattern)))
       `(if (%match (,(first vars))
                    (((,pattern) nil))
                    t)
@@ -175,8 +175,7 @@
                    (%equal (constant-pattern-value x)
                            (constant-pattern-value y)))
                   (constructor-pattern
-                   (equal (constructor-pattern-signature x)
-                          (constructor-pattern-signature y)))
+                   (destructor-equal x y))
                   ((or guard-pattern and-pattern)
                    (error "Something wrong."))
                   ((or not-pattern or-pattern)
@@ -210,7 +209,7 @@
           ;;     (AND x) => x
           ;; 
           (loop while (and-pattern-p pattern)
-                for sub-patterns = (and-pattern-sub-patterns pattern)
+                for sub-patterns = (and-pattern-subpatterns pattern)
                 do (case (length sub-patterns)
                      (0 (setq pattern (parse-pattern '_)))
                      (1 (setq pattern (first sub-patterns)))
@@ -220,7 +219,7 @@
             (setq then `((if ,(guard-pattern-test-form pattern)
                              ,(compile-clause-body then)
                              (fail)))
-                  pattern (guard-pattern-sub-pattern pattern)))
+                  pattern (guard-pattern-subpattern pattern)))
           `((,pattern ,.rest) ,.then)))
       clause))
 
@@ -244,13 +243,13 @@
         ;;    
         (loop with arity
                 = (loop for ((pattern . nil) . nil) in and-clauses
-                        maximize (length (and-pattern-sub-patterns pattern)))
+                        maximize (length (and-pattern-subpatterns pattern)))
               for clause in clauses
               for (patterns . then) = clause
               for pattern = (first patterns)
               for prefix
                 = (cond ((and-pattern-p pattern)
-                         (and-pattern-sub-patterns pattern))
+                         (and-pattern-subpatterns pattern))
                         (pattern
                          (list pattern)))
               for postfix

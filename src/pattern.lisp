@@ -1,51 +1,200 @@
 (in-package :optima)
 
+;;; Data Destructor
+
+(defgeneric destructor-equal (dtor1 dtor2))
+(defgeneric destructor-predicate-form (dtor var))
+(defgeneric destructor-forms (dtor var))
+
 ;;; Pattern Data Structure
 
-(defstruct pattern
-  ;; The original pattern specifier
-  (specifier (required-argument)))
+(defstruct pattern)
 
-(defmethod print-object ((pattern pattern) stream)
-  ;; Note: printing the pattern specifier might not be valid but this
-  ;; is useful for debugging the process of pattern matching compiler.
-  (format stream "~S" (pattern-specifier pattern)))
-
-(defstruct (variable-pattern (:include pattern))
+(defstruct (variable-pattern (:include pattern)
+                             (:constructor %make-variable-pattern (name)))
   name)
 
-(defstruct (place-pattern (:include pattern))
+(defun make-variable-pattern (&optional name)
+  (when (or (eq name 'otherwise)
+            (string= name "_"))
+    (setq name nil))
+  (%make-variable-pattern name))
+
+(defstruct (place-pattern (:include pattern)
+                          (:constructor make-place-pattern (name)))
   name)
 
-(defstruct (constant-pattern (:include pattern))
+(defstruct (constant-pattern (:include pattern)
+                             (:constructor make-constant-pattern (value)))
   value)
 
-(defstruct (constructor-pattern (:include pattern))
-  "A constructor-pattern matches not a value itself but a structure of
-the value
-  SIGNATURE - a mostly-unique data structure
-  ARGUMENTS - List of subpatterns
-  PREDICATE - lambda-predicate returning T if the currently matched data (its argument)
-              can be matched by this constructor pattern without regard for subpatterns
-  ACCESSOR - lambda of two arguments: the data and the currently matched subpattern
-             index. Should return the corresponding piece of data structure to be matched
-             by this subpattern"
-  signature
-  arguments
-  predicate
-  accessor)
+(defstruct (complex-pattern (:include pattern))
+  subpatterns)
 
-(defstruct (guard-pattern (:include pattern))
-  sub-pattern test-form)
+(defstruct (guard-pattern (:include complex-pattern)
+                          (:constructor make-guard-pattern (subpattern test-form
+                                                            &aux (subpatterns (list subpattern)))))
+  test-form)
 
-(defstruct (not-pattern (:include pattern))
-  sub-pattern)
+(defun guard-pattern-subpattern (pattern)
+  (first (complex-pattern-subpatterns pattern)))
 
-(defstruct (or-pattern (:include pattern))
-  sub-patterns)
+(defstruct (not-pattern (:include complex-pattern)
+                        (:constructor make-not-pattern (subpattern
+                                                        &aux (subpatterns (list subpattern))))))
 
-(defstruct (and-pattern (:include pattern))
-  sub-patterns)
+(defun not-pattern-subpattern (pattern)
+  (first (complex-pattern-subpatterns pattern)))
+
+(defstruct (or-pattern (:include complex-pattern)
+                       (:constructor make-or-pattern (&rest subpatterns))))
+
+(defstruct (and-pattern (:include complex-pattern)
+                        (:constructor make-and-pattern (&rest subpatterns))))
+
+(defstruct (constructor-pattern (:include complex-pattern)))
+
+(defun constructor-pattern-arity (pattern)
+  (length (constructor-pattern-subpatterns pattern)))
+
+(defstruct (cons-pattern (:include constructor-pattern)
+                         (:constructor make-cons-pattern (car-pattern cdr-pattern
+                                                          &aux (subpatterns (list car-pattern
+                                                                                  cdr-pattern))))))
+
+(defun cons-pattern-car-pattern (pattern)
+  (first (constructor-pattern-subpatterns pattern)))
+
+(defun cons-pattern-cdr-pattern (pattern)
+  (second (constructor-pattern-subpatterns pattern)))
+
+(defmethod destructor-equal ((x cons-pattern) (y cons-pattern))
+  t)
+
+(defmethod destructor-predicate-form ((pattern cons-pattern) var)
+  `(consp ,var))
+
+(defmethod destructor-forms ((pattern cons-pattern) var)
+  (list `(car ,var) `(cdr ,var)))
+
+(defstruct (assoc-pattern (:include constructor-pattern)
+                          (:constructor make-assoc-pattern (item value-pattern
+                                                            &key key test
+                                                            &aux (subpatterns (list value-pattern)))))
+  item key test)
+
+(defun assoc-pattern-value-pattern (pattern)
+  (first (constructor-pattern-subpatterns pattern)))
+
+(defmethod destructor-equal ((x assoc-pattern) (y assoc-pattern))
+  (and (eq (assoc-pattern-key x)
+           (assoc-pattern-key y))
+       (eq (assoc-pattern-test x)
+           (assoc-pattern-test y))
+       ;; FIXME: Don't use EQL
+       (eql (assoc-pattern-item x)
+            (assoc-pattern-item y))))
+
+(defmethod destructor-predicate-form ((pattern assoc-pattern) var)
+  (with-slots (item key test) pattern
+    (values `(%assoc ,item ,var
+                     ,@(when key `(:key #',key))
+                     ,@(when test `(:test #',test)))
+            t)))
+
+(defmethod destructor-forms ((pattern assoc-pattern) var)
+  (list `(cdr ,var)))
+
+(defstruct (passoc-pattern (:include constructor-pattern)
+                           (:constructor make-passoc-pattern (item value-pattern
+                                                              &aux (subpatterns (list value-pattern)))))
+  item)
+
+(defun passoc-pattern-value-pattern (pattern)
+  (first (constructor-pattern-subpatterns pattern)))
+
+(defmethod destructor-equal ((x passoc-pattern) (y passoc-pattern))
+  (eq (passoc-pattern-item x) (passoc-pattern-item y)))
+
+(defmethod destructor-predicate-form ((pattern passoc-pattern) var)
+  (with-slots (item) pattern
+    (values `(%passoc ,item ,var) t)))
+
+(defmethod destructor-forms ((pattern passoc-pattern) var)
+  (list `(cadr ,var)))
+
+(defstruct (vector-pattern (:include constructor-pattern)
+                           (:constructor make-vector-pattern (&rest subpatterns))))
+
+(defmethod destructor-equal ((x vector-pattern) (y vector-pattern))
+  (= (constructor-pattern-arity x)
+     (constructor-pattern-arity y)))
+
+(defmethod destructor-predicate-form ((pattern vector-pattern) var)
+  `(typep ,var '(vector * ,(constructor-pattern-arity pattern))))
+
+(defmethod destructor-forms ((pattern vector-pattern) var)
+  (loop for i from 0 below (constructor-pattern-arity pattern)
+        collect `(aref ,var ,i)))
+
+(defstruct (simple-vector-pattern (:include constructor-pattern)
+                                  (:constructor make-simple-vector-pattern (&rest subpatterns))))
+
+(defmethod destructor-equal ((x simple-vector-pattern) (y simple-vector-pattern))
+  (= (constructor-pattern-arity x)
+     (constructor-pattern-arity y)))
+
+(defmethod destructor-predicate-form ((pattern simple-vector-pattern) var)
+  `(typep ,var '(simple-vector ,(constructor-pattern-arity pattern))))
+
+(defmethod destructor-forms ((pattern simple-vector-pattern) var)
+  (loop for i from 0 below (constructor-pattern-arity pattern)
+        collect `(svref ,var ,i)))
+
+(defstruct (class-pattern (:include constructor-pattern)
+                          (:constructor %make-class-pattern))
+  class-name slot-names)
+
+(defun make-class-pattern (class-name &rest slot-specs)
+  (%make-class-pattern :class-name class-name
+                       :slot-names (mapcar #'first slot-specs)
+                       :subpatterns (mapcar #'second slot-specs)))
+
+(defmethod destructor-equal ((x class-pattern) (y class-pattern))
+  (and (eq (class-pattern-class-name x)
+           (class-pattern-class-name y))
+       (equal (class-pattern-slot-names x)
+              (class-pattern-slot-names y))))
+
+(defmethod destructor-predicate-form ((pattern class-pattern) var)
+  `(typep ,var ',(class-pattern-class-name pattern)))
+
+(defmethod destructor-forms ((pattern class-pattern) var)
+  (loop for slot-name in (class-pattern-slot-names pattern)
+        collect `(slot-value ,var ',slot-name)))
+
+(defstruct (structure-pattern (:include constructor-pattern)
+                              (:constructor %make-structure-pattern))
+  conc-name slot-names)
+
+(defun make-structure-pattern (conc-name &rest slot-specs)
+  (%make-structure-pattern :conc-name conc-name
+                           :slot-names (mapcar #'first slot-specs)
+                           :subpatterns (mapcar #'second slot-specs)))
+
+(defmethod destructor-equal ((x structure-pattern) (y structure-pattern))
+  (and (string= (structure-pattern-conc-name x)
+                (structure-pattern-conc-name y))
+       (equal (structure-pattern-slot-names x)
+              (structure-pattern-slot-names y))))
+
+(defmethod destructor-predicate-form ((pattern structure-pattern) var)
+  `(,(symbolicate (structure-pattern-conc-name pattern) :p) ,var))
+
+(defmethod destructor-forms ((pattern structure-pattern) var)
+  (loop with conc-name = (structure-pattern-conc-name pattern)
+        for slot-name in (structure-pattern-slot-names pattern)
+        collect `(,(symbolicate conc-name slot-name) ,var)))
 
 ;;; Pattern Utilities
 
@@ -66,7 +215,7 @@ an error will be raised."
            (loop for var in vars
                  if (find var seen)
                    do (error "Non-linear pattern: ~S"
-                             (pattern-specifier pattern))
+                             (unparse-pattern pattern))
                  collect var into seen
                  finally (return vars))))
     (typecase pattern
@@ -74,35 +223,25 @@ an error will be raised."
        (let ((name (variable-pattern-name pattern)))
          (when (and name (not (temporary-variable-p name)))
            (list name))))
-      (constructor-pattern
-       (check (mappend #'pattern-variables (constructor-pattern-arguments pattern))))
-      ((or guard-pattern not-pattern)
-       (check (pattern-variables (slot-value pattern 'sub-pattern))))
       (or-pattern
-       (let ((vars-list (mappend #'pattern-variables
-                                 (slot-value pattern 'sub-patterns))))
+       (let ((vars-list (mappend #'pattern-variables (or-pattern-subpatterns pattern))))
          (check (remove-duplicates vars-list))))
-      (and-pattern
-       (check (mappend #'pattern-variables (slot-value pattern 'sub-patterns)))))))
+      (complex-pattern
+       (check (mappend #'pattern-variables (complex-pattern-subpatterns pattern)))))))
 
 (defun place-pattern-included-p (pattern)
   (typecase pattern
     (place-pattern t)
-    (constructor-pattern
+    (complex-pattern
      (some #'place-pattern-included-p
-           (constructor-pattern-arguments pattern)))
-    ((or guard-pattern not-pattern)
-     (place-pattern-included-p (slot-value pattern 'sub-pattern)))
-    ((or or-pattern and-pattern)
-     (some #'place-pattern-included-p
-           (slot-value pattern 'sub-patterns)))))
+           (complex-pattern-subpatterns pattern)))))
 
 (defun check-patterns (patterns)
   "Check if PATTERNS are valid. Otherwise, an error will be raised."
   (loop for var in (mappend #'pattern-variables patterns)
         if (find var seen)
           do (error "Non-linear patterns: ~S"
-                    (mapcar #'pattern-specifier patterns))
+                    (mapcar #'unparse-pattern patterns))
         collect var into seen
         finally (return t)))
 
@@ -192,163 +331,158 @@ Examples:
 
 ;;; Pattern Specifier Parser
 
-(defun make-bind-pattern (name)
-  (flet ((var-name (name)
-           (unless (or (eq name 'otherwise)
-                       (string= name "_"))
-             name)))
-    (make-variable-pattern :specifier name
-                           :name (var-name name))))
-
 (defun parse-pattern (pattern)
   (when (pattern-p pattern)
     (return-from parse-pattern pattern))
   (setq pattern (pattern-expand pattern))
   (typecase pattern
     ((or (eql t) null keyword)
-     (make-constant-pattern :specifier pattern
-                            :value pattern))
+     (make-constant-pattern pattern))
     (symbol
-     (make-bind-pattern pattern))
+     (make-variable-pattern pattern))
     (cons
      (destructuring-case pattern
        ((variable name)
-        (make-bind-pattern name))
+        (make-variable-pattern name))
        ((place name)
-        (make-place-pattern :specifier pattern
-                            :name name))
+        (make-place-pattern name))
        ((quote value)
-        (make-constant-pattern :specifier `(quote ,value)
-                               :value value))
-       ((guard sub-pattern test-form)
-        (make-guard-pattern :specifier pattern
-                            :sub-pattern (parse-pattern sub-pattern)
-                            :test-form test-form))
-       ((not sub-pattern)
-        (make-not-pattern :specifier pattern
-                          :sub-pattern (parse-pattern sub-pattern)))
-       ((or &rest sub-patterns)
-        (if (= (length sub-patterns) 1)
-            (parse-pattern (first sub-patterns))
-            (let ((sub-patterns (mapcar #'parse-pattern sub-patterns)))
-              (when (some #'place-pattern-included-p sub-patterns)
+        (make-constant-pattern value))
+       ((guard subpattern test-form)
+        (make-guard-pattern (parse-pattern subpattern) test-form))
+       ((not subpattern)
+        (make-not-pattern (parse-pattern subpattern)))
+       ((or &rest subpatterns)
+        (if (= (length subpatterns) 1)
+            (parse-pattern (first subpatterns))
+            (let ((subpatterns (mapcar #'parse-pattern subpatterns)))
+              (when (some #'place-pattern-included-p subpatterns)
                 (error "Or-pattern can't include place-patterns."))
-              (make-or-pattern :specifier pattern
-                               :sub-patterns sub-patterns))))
-       ((and &rest sub-patterns)
-        (if (= (length sub-patterns) 1)
-            (parse-pattern (first sub-patterns))
-            (make-and-pattern :specifier pattern
-                              :sub-patterns (mapcar #'parse-pattern sub-patterns))))
+              (apply #'make-or-pattern subpatterns))))
+       ((and &rest subpatterns)
+        (if (= (length subpatterns) 1)
+            (parse-pattern (first subpatterns))
+            (apply #'make-and-pattern (mapcar #'parse-pattern subpatterns))))
        ((otherwise &rest args)
         (apply #'parse-constructor-pattern (car pattern) args))))
     (otherwise
-     (make-constant-pattern :specifier pattern
-                            :value pattern))))
+     (make-constant-pattern pattern))))
 
 (defgeneric parse-constructor-pattern (name &rest args))
 
 (defmethod parse-constructor-pattern ((name (eql 'cons)) &rest args)
   (unless (= (length args) 2)
-    (error "Invalid number of arguments: ~D" (length args)))
-  (destructuring-bind (car-pattern cdr-pattern)
-      (mapcar #'parse-pattern args)
-    (make-constructor-pattern
-     :specifier `(cons ,@args)
-     :signature '(cons car cdr)
-     :arguments (list car-pattern cdr-pattern)
-     :predicate (lambda (var) `(consp ,var))
-     :accessor (lambda (var i) `(,(ecase i (0 'car) (1 'cdr)) ,var)))))
+    (error "Malformed pattern: ~S" (list* 'cons args)))
+  (apply #'make-cons-pattern (mapcar #'parse-pattern args)))
 
 (defmethod parse-constructor-pattern ((name (eql 'assoc)) &rest args)
-  (destructuring-bind (key value . assoc-args) args
-    (make-constructor-pattern
-     :specifier `(assoc ,@args)
-     :signature `(assoc ,key ,@assoc-args)
-     :arguments (list (parse-pattern value))
-     :predicate (lambda (var) (values `(%assoc ,key ,var ,@assoc-args) t))
-     :accessor (lambda (var i) (assert (zerop i)) `(cdr ,var)))))
+  (destructuring-bind (item pattern &key key test) args
+    (make-assoc-pattern item (parse-pattern pattern) :key key :test test)))
 
 (defmethod parse-constructor-pattern ((name (eql 'passoc)) &rest args)
-  (destructuring-bind (key value) args
-    (make-constructor-pattern
-     :specifier `(passoc ,@args)
-     :signature `(passoc ,key)
-     :arguments (list (parse-pattern value))
-     :predicate (lambda (var) (values `(%passoc ,key ,var) t))
-     :accessor (lambda (var i) (assert (zerop i)) `(cadr ,var)))))
+  (destructuring-bind (item pattern) args
+    (make-passoc-pattern item (parse-pattern pattern))))
 
 (defmethod parse-constructor-pattern ((name (eql 'vector)) &rest args)
-  (let* ((args (mapcar #'parse-pattern args))
-         (arity (length args)))
-    (make-constructor-pattern
-     :specifier `(vector ,@args)
-     :signature `(vector ,arity)
-     :arguments args
-     :predicate (lambda (var) `(typep ,var '(vector * ,arity)))
-     :accessor (lambda (var i) `(aref ,var ,i)))))
+  (apply #'make-vector-pattern (mapcar #'parse-pattern args)))
 
 (defmethod parse-constructor-pattern ((name (eql 'simple-vector)) &rest args)
-  (let* ((args (mapcar #'parse-pattern args))
-         (arity (length args)))
-    (make-constructor-pattern
-     :specifier `(simple-vector ,@args)
-     :signature `(simple-vector ,arity)
-     :arguments args
-     :predicate (lambda (var) `(typep ,var '(simple-vector ,arity)))
-     :accessor (lambda (var i) `(svref ,var ,i)))))
+  (apply #'make-simple-vector-pattern (mapcar #'parse-pattern args)))
 
-(defun parse-class-constructor-pattern (class-name &rest slot-patterns)
-  (setq slot-patterns (mapcar #'ensure-list slot-patterns))
-  (let* ((class (find-class class-name))
-         (slot-defs (class-slots class))
-         (slot-names (mapcar #'slot-definition-name slot-defs)))
-    (when-let (it (first (set-difference (mapcar #'car slot-patterns) slot-names)))
-      (error "Unknown slot name ~A for ~A" it class-name))
-    (let ((signature
-            `(,class-name ,@(mapcar #'car slot-patterns)))
-          (arguments
-            (loop for (slot-name . slot-sub-pats) in slot-patterns
-                  if slot-sub-pats
-                    collect (parse-pattern `(and ,@slot-sub-pats))
-                  else
-                    collect (make-bind-pattern slot-name)))
-          (predicate
-            (lambda (var)
-              `(typep ,var ',class-name)))
-          (accessor
-            (lambda (var i)
-              `(slot-value ,var ',(car (nth i slot-patterns))))))
-      (make-constructor-pattern :specifier `(class ,class-name ,@slot-patterns)
-                                :signature signature
-                                :arguments arguments
-                                :predicate predicate
-                                :accessor accessor))))
+(defun parse-class-pattern (class-name &rest slot-specs)
+  (apply #'make-class-pattern class-name
+         (loop for slot-spec in slot-specs
+               do (setq slot-spec (ensure-list slot-spec))
+               collect (let ((slot-name (first slot-spec)))
+                         (list slot-name
+                               (if (rest slot-spec)
+                                   (parse-pattern `(and ,@(rest slot-spec)))
+                                   (make-variable-pattern slot-name)))))))
 
-(defun parse-struct-constructor-pattern (conc-name &rest slot-patterns)
-  (setq slot-patterns (mapcar #'ensure-list slot-patterns))
-  (let* ((slot-names (mapcar #'car slot-patterns))
-         (arguments
-           (loop for slot-pattern in slot-patterns
-                 collect
-                 (if (cdr slot-pattern)
-                     (parse-pattern `(and ,@(cdr slot-pattern)))
-                     (make-bind-pattern (car slot-pattern)))))
-         (predicate (lambda (var) `(,(symbolicate conc-name :p) ,var)))
-         (accessor (lambda (var i) `(,(symbolicate conc-name (nth i slot-names)) ,var))))
-    (make-constructor-pattern :specifier `(,conc-name ,@slot-patterns)
-                              :signature `(,conc-name ,@slot-names)
-                              :arguments arguments
-                              :predicate predicate
-                              :accessor accessor)))
+(defun parse-structure-pattern (conc-name &rest slot-specs)
+  (apply #'make-structure-pattern conc-name
+         (loop for slot-spec in slot-specs
+               do (setq slot-spec (ensure-list slot-spec))
+               collect (let ((slot-name (first slot-spec)))
+                         (list slot-name
+                               (if (rest slot-spec)
+                                   (parse-pattern `(and ,@(rest slot-spec)))
+                                   (make-variable-pattern slot-name)))))))
 
 (defmethod parse-constructor-pattern ((name (eql 'class)) &rest args)
-  (apply #'parse-class-constructor-pattern args))
+  (apply #'parse-class-pattern args))
 
 (defmethod parse-constructor-pattern ((name (eql 'structure)) &rest args)
-  (apply #'parse-struct-constructor-pattern args))
+  (apply #'parse-structure-pattern args))
 
-(defmethod parse-constructor-pattern (name &rest slot-patterns)
+(defmethod parse-constructor-pattern (name &rest slot-specs)
   (if (find-class name nil)
-      (apply #'parse-class-constructor-pattern name slot-patterns)
-      (apply #'parse-struct-constructor-pattern name slot-patterns)))
+      (apply #'parse-class-pattern name slot-specs)
+      (apply #'parse-structure-pattern name slot-specs)))
+
+;;; Pattern Specifier Parser
+
+(defgeneric unparse-pattern (pattern))
+
+(defmethod unparse-pattern ((pattern variable-pattern))
+  (or (variable-pattern-name pattern) '_))
+
+(defmethod unparse-pattern ((pattern place-pattern))
+  `(place ,(place-pattern-name pattern)))
+
+(defmethod unparse-pattern ((pattern constant-pattern))
+  (with-slots (value) pattern
+    (if (atom value)
+        value
+        `(quote ,value))))
+
+(defmethod unparse-pattern ((pattern guard-pattern))
+  `(guard ,(unparse-pattern (guard-pattern-subpattern pattern))
+          ,(guard-pattern-test-form pattern)))
+
+(defmethod unparse-pattern ((pattern not-pattern))
+  `(not ,(unparse-pattern (not-pattern-subpattern pattern))))
+
+(defmethod unparse-pattern ((pattern or-pattern))
+  `(or ,@(mapcar #'unparse-pattern (or-pattern-subpatterns pattern))))
+
+(defmethod unparse-pattern ((pattern and-pattern))
+  `(and ,@(mapcar #'unparse-pattern (and-pattern-subpatterns pattern))))
+
+(defmethod unparse-pattern ((pattern cons-pattern))
+  `(cons ,(unparse-pattern (cons-pattern-car-pattern pattern))
+         ,(unparse-pattern (cons-pattern-cdr-pattern pattern))))
+
+(defmethod unparse-pattern ((pattern assoc-pattern))
+  (with-slots (item key test) pattern
+    `(assoc ,item
+            ,(unparse-pattern (assoc-pattern-value-pattern pattern))
+            ,@(when key (list :key key))
+            ,@(when test (list :test test)))))
+
+(defmethod unparse-pattern ((pattern passoc-pattern))
+  `(passoc ,(passoc-pattern-item pattern)
+           ,(unparse-pattern (passoc-pattern-value-pattern pattern))))
+
+(defmethod unparse-pattern ((pattern vector-pattern))
+  `(vector ,@(mapcar #'unparse-pattern (vector-pattern-subpatterns pattern))))
+
+(defmethod unparse-pattern ((pattern simple-vector-pattern))
+  `(simple-vector ,@(mapcar #'unparse-pattern (simple-vector-pattern-subpatterns pattern))))
+
+(defmethod unparse-pattern ((pattern class-pattern))
+  `(class ,(class-pattern-class-name pattern)
+          ,@(loop for slot-name in (class-pattern-slot-names pattern)
+                  for subpattern in (class-pattern-subpatterns pattern)
+                  collect (list slot-name (unparse-pattern subpattern)))))
+
+(defmethod unparse-pattern ((pattern structure-pattern))
+  `(structure ,(structure-pattern-conc-name pattern)
+              ,@(loop for slot-name in (structure-pattern-slot-names pattern)
+                      for subpattern in (structure-pattern-subpatterns pattern)
+                      collect (list slot-name (unparse-pattern subpattern)))))
+
+(defmethod print-object ((pattern pattern) stream)
+  ;; NOTE: printing the pattern specifier might not be valid but this
+  ;; is useful for debugging the process of pattern matching compiler.
+  (format stream "~S" (unparse-pattern pattern)))

@@ -25,14 +25,20 @@ the comparison form to some specific form as follows:
     (cons                  `(%equal ,var ',value))
     (t                     `(%equal ,var ,value))))
 
-(defun %assoc (item alist &key (key #'identity) (test #'eql))
+(defun %svref (simple-vector index)
+  "Safe SVREF."
+  (declare (optimize (speed 3) (safety 0) (space 0)))
+  (when (< index (length simple-vector))
+    (svref simple-vector index)))
+
+(defun %assoc (item alist &key (test #'eql))
   "Safe ASSOC."
   (declare (optimize (speed 3) (safety 0) (space 0)))
   (loop
     (unless (consp alist) (return))
     (let ((cons (car alist)))
       (when (and (consp cons)
-                 (funcall test item (funcall key (car cons))))
+                 (funcall test item (car cons)))
         (return cons)))
     (setq alist (cdr alist))))
 
