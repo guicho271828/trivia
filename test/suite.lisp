@@ -146,6 +146,26 @@
   (is-not-match 1 (guard 1 nil))
   (is-not-match 1 (guard 2 t))
   (is-match 1 (guard x (eql x 1)))
+  ;; lift
+  (is-match 1 (and x (guard y (eql x y))))
+  (is-match 1 (and (guard x (eql x y)) y))
+  (is-not-match 1 (and x (guard 2 (eql x 1))))
+  (is-not-match 1 (and x (guard y (not (eql x y)))))
+  (is-match '(1 1) (list x (guard y (eql x y))))
+  (is-match '(1 1) (list (guard x (oddp x)) (guard y (eql x y))))
+  (is-not-match '(1 2) (list (guard x (oddp x)) (guard y (eql x y))))
+  (is-match '(1 (1)) (list x (guard (list (guard y (eql x y))) (eql x 1))))
+  (is-not-match '(1 (1)) (list x (guard (list (guard y (eql x y))) (eql x 2))))
+  (is-match 1 (or (list x) (guard x (oddp x))))
+  (is-match '(1) (or (list x) (guard x (oddp x))))
+  (is-not-match 1 (or (list x) (guard x (evenp x))))
+  (is-match '(1) (list (or (list x) (guard x (oddp x)))))
+  #+FIXME
+  (is-match '(1) (or (list (or (list x) (guard x (evenp x))))
+                     (list (guard x (eql x 2)))))
+  #+FIXME
+  (is-match '(2) (or (list (or (list x) (guard x (evenp x))))
+                     (list (guard x (eql x 2)))))
   ;; when/unless
   (is-match 1 (when t))
   (is-not-match 1 (when nil))
@@ -159,10 +179,7 @@
   (is-match 1 (and x (unless (eql x 2))))
   ;; when bind
   (is-match 1 (when (eql * 1)))
-  (is-match 1 (unless (eql * 2)))
-  ;; syntax sugar
-  (is-true (match 1 (_ when t t)))
-  (is-true (match 1 (_ unless nil t))))
+  (is-match 1 (unless (eql * 2))))
 
 (test not-pattern
   (is-match 1 (not 2))
@@ -273,7 +290,10 @@
   (is-true (match 1
              (1 when t (declare (ignore)) t)))
   (is-true (match 1
-             ((guard 1 t) (declare (ignore)) t))))
+             ((guard 1 t) (declare (ignore)) t)))
+  ;; syntax sugar
+  (is-true (match 1 (_ when t t)))
+  (is-true (match 1 (_ unless nil t))))
 
 (test multiple-value-match
   (is (eql (multiple-value-match (values 1 2)

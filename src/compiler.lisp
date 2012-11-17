@@ -103,21 +103,30 @@
   (assert (= (length clauses) 1))
   (destructuring-bind ((pattern . rest) . then)
       (first clauses)
-    (let ((patterns (or-pattern-subpatterns pattern)))
-      (unless patterns
+    (let ((tag (or-pattern-tag pattern))
+          (subpatterns (or-pattern-subpatterns pattern)))
+      (unless subpatterns
         (return-from compile-match-or-group else))
-      (let ((new-vars (pattern-variables (car patterns))))
-        (loop for pattern in (cdr patterns)
-              for vars = (pattern-variables pattern)
+      (let ((new-vars (pattern-variables (first subpatterns))))
+        (loop for subpattern in (rest subpatterns)
+              for vars = (pattern-variables subpattern)
               unless (set-equal new-vars vars)
-                do (error "Or-pattern must share the same set of variables: ~S, ~S"
+                do (error "OR pattern must share the same set of variables: ~S, ~S"
                           (sort vars #'string<)
                           (sort new-vars #'string<)))
-        `(%or (multiple-value-bind ,new-vars
+        `(%or (multiple-value-bind ,(if tag
+                                        (list* tag new-vars)
+                                        new-vars)
                   (%match (,(first vars))
-                          ,(loop for pattern in patterns
-                                 collect `((,pattern) (values ,@new-vars)))
+                          ,(loop for i from 0
+                                 for subpattern in subpatterns
+                                 if tag
+                                   collect `((,subpattern) (values ,i ,@new-vars))
+                                 else
+                                   collect `((,subpattern) (values ,@new-vars)))
                           (fail))
+                ,@(when tag
+                    (list `(declare (ignorable ,tag))))
                 (%match ,(cdr vars)
                         ((,rest ,.then))
                         (fail)))
@@ -214,7 +223,10 @@
                      (0 (setq pattern (parse-pattern '_)))
                      (1 (setq pattern (first sub-patterns)))
                      (t (return))))
+          ;; Lift GUARD patterns here.
+          (setq pattern (lift-guard-patterns pattern))
           ;; Recursively expand GUARD pattern here.
+          ;; FIXME: AND patterns?
           (loop while (guard-pattern-p pattern) do
             (setq then `((if ,(guard-pattern-test-form pattern)
                              ,(compile-clause-body then)
