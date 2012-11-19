@@ -27,7 +27,9 @@
                 for name = (variable-pattern-name pattern)
                 collect
                 (if name
-                    `(,rest (let ((,name ,(car vars))) ,.then))
+                    `(,rest (let ((,name ,(car vars)))
+                              (declare (ignorable ,name))
+                              ,.then))
                     `(,rest ,.then)))))
     `(%match ,(cdr vars)
              ,clauses
@@ -117,6 +119,7 @@
                                          collect (if (member var vars) var))
                                collect `((,subpattern) (values ,@vals)))
                         (fail))
+              (declare (ignorable ,@new-vars))
               (%match ,(cdr vars)
                       ((,rest ,.then))
                       (fail)))
