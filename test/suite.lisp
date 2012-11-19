@@ -200,11 +200,13 @@
   (is-match 1 (or 2 (or 1)))
   (is-match 1 (or (or 1)))
   (is-not-match 1 (or (or (not 1))))
-  ;; share check
-  (signals error
-    (macroexpand '(match (cons 1 2) ((or (cons x 2) (cons y 2))))))
-  (is (not (null (macroexpand '(match (cons 1 2)
-                                ((or (cons x 2) (cons x 2)))))))))
+  ;; unshared variables
+  (is (equal (match 1 ((or 1 (list x) y) (list x y)))
+             '(nil nil)))
+  (is (equal (match 2 ((or 1 (list x) y) (list x y)))
+             '(nil 2)))
+  (is (equal (match '(1) ((or 1 (list x) y) (list x y)))
+             '(1 nil))))
 
 (test and-pattern
   (is-match 1 (and))

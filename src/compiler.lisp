@@ -104,33 +104,31 @@
   (destructuring-bind ((pattern . rest) . then)
       (first clauses)
     (let ((tag (or-pattern-tag pattern))
-          (subpatterns (or-pattern-subpatterns pattern)))
+          (subpatterns (or-pattern-subpatterns pattern))
+          (new-vars (pattern-variables pattern)))
       (unless subpatterns
         (return-from compile-match-or-group else))
-      (let ((new-vars (pattern-variables (first subpatterns))))
-        (loop for subpattern in (rest subpatterns)
-              for vars = (pattern-variables subpattern)
-              unless (set-equal new-vars vars)
-                do (error "OR pattern must share the same set of variables: ~S, ~S"
-                          (sort vars #'string<)
-                          (sort new-vars #'string<)))
-        `(%or (multiple-value-bind ,(if tag
-                                        (list* tag new-vars)
-                                        new-vars)
-                  (%match (,(first vars))
-                          ,(loop for i from 0
-                                 for subpattern in subpatterns
-                                 if tag
-                                   collect `((,subpattern) (values ,i ,@new-vars))
-                                 else
-                                   collect `((,subpattern) (values ,@new-vars)))
-                          (fail))
-                ,@(when tag
-                    (list `(declare (ignorable ,tag))))
-                (%match ,(cdr vars)
-                        ((,rest ,.then))
-                        (fail)))
-              ,else)))))
+      `(%or (multiple-value-bind ,(if tag
+                                      (list* tag new-vars)
+                                      new-vars)
+                (%match (,(first vars))
+                        ,(loop for i from 0
+                               for subpattern in subpatterns
+                               for vars = (pattern-variables subpattern)
+                               for vals
+                                 = (loop for var in new-vars
+                                         collect (if (member var vars) var))
+                               if tag
+                                 collect `((,subpattern) (values ,i ,@vals))
+                               else
+                                 collect `((,subpattern) (values ,@vals)))
+                        (fail))
+              ,@(when tag
+                  (list `(declare (ignorable ,tag))))
+              (%match ,(cdr vars)
+                      ((,rest ,.then))
+                      (fail)))
+            ,else))))
 
 (defun compile-match-not-group (vars clauses else)
   (assert (= (length clauses) 1))
