@@ -296,7 +296,7 @@ occurence like:
     (t pattern)))
 
 (defun lift-guard-patterns-2 (pattern)
-  "OR patterns that include guards are lifted like:
+  "Lifts OR patterns that include guards like:
 
        (list 3 (or 1 (guard x (evenp x))))
     => (or (list 3 1) (list 3 (guard x (evenp x))))
