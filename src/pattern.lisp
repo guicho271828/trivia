@@ -47,17 +47,7 @@
   (first (complex-pattern-subpatterns pattern)))
 
 (defstruct (or-pattern (:include complex-pattern)
-                       (:constructor %make-or-pattern))
-  ;; A symbol that describes which branch is matched. The value is an
-  ;; integer which starts from zero. This is used by compiler
-  ;; internally.
-  tag)
-
-(defun make-or-pattern (&rest subpatterns)
-  (%make-or-pattern :subpatterns subpatterns))
-
-(defun make-or*-pattern (tag &rest subpatterns)
-  (%make-or-pattern :tag tag :subpatterns subpatterns))
+                       (:constructor make-or-pattern (&rest subpatterns))))
 
 (defstruct (and-pattern (:include complex-pattern)
                         (:constructor make-and-pattern (&rest subpatterns))))
@@ -234,8 +224,8 @@ an error will be raised."
          (when (and name (not (temporary-variable-p name)))
            (list name))))
       (or-pattern
-       (let ((vars-list (mappend #'pattern-variables (or-pattern-subpatterns pattern))))
-         (check (remove-duplicates vars-list))))
+       (let ((vars (mappend #'pattern-variables (or-pattern-subpatterns pattern))))
+         (check (remove-duplicates vars))))
       (complex-pattern
        (check (mappend #'pattern-variables (complex-pattern-subpatterns pattern)))))))
 
@@ -255,9 +245,9 @@ an error will be raised."
         collect var into seen
         finally (return t)))
 
-(defun lift-guard-patterns (pattern)
-  "Lifts GUARD patterns in PATTERN so that the guards can see any
-variables in PATTERN. The transform looks like:
+(defun lift-guard-patterns-1 (pattern)
+  "Lifts GUARD patterns in PATTERN so that the guards can see
+any variables in PATTERN. The transform looks like:
 
        (list x (guard y (equal x y)))
     => (guard (list x y) (equal x y))
@@ -268,48 +258,25 @@ occurence like:
        (list (guard x (consp x)) (guard y (eq y (car x))))
     => (guard (list x (guard y (eq y (car x)))) (consp x))
     => (guard (guard (list x y) (eq y (car x))) (consp x))
-    => (guard (list x y) (and (consp x) (eq y (car x))))
-
-OR patterns that include guards are handled specially using OR*
-pattern like:
-
-       (or 1 (guard x (evenp x)))
-    => (guard (or* tag 1 x) (case tag (1 (evenp x)) (t t)))"
+    => (guard (list x y) (and (consp x) (eq y (car x))))"
   (cond
     ((guard-pattern-p pattern)
-     (let ((subpattern (guard-pattern-subpattern pattern))
+     (let ((subpattern (lift-guard-patterns (guard-pattern-subpattern pattern)))
            (test-form (guard-pattern-test-form pattern)))
-       (setq subpattern (lift-guard-patterns subpattern))
-       (when (typep subpattern 'guard-pattern)
-         ;; Connect with conjunction like:
-         ;; (guard (guard p g2) g1) => (guard p (and g1 g2))
-         (setq test-form `(and ,test-form ,(guard-pattern-test-form subpattern))
-               subpattern (guard-pattern-subpattern subpattern)))
-       (make-guard-pattern subpattern test-form)))
-    ((or-pattern-p pattern)
-     ;; We assume that if the OR pattern has non-nil tag, then the
-     ;; pattern has been already lifted.
-     (when (or-pattern-tag pattern)
-       (return-from lift-guard-patterns pattern))
-     ;; Otherwise, try to lift the pattern.
-     (let ((subpatterns (mapcar #'lift-guard-patterns (or-pattern-subpatterns pattern))))
-       (if (some #'guard-pattern-p subpatterns)
-           ;; Lift guard patterns like:
-           ;; (or ... (guard p g) ...) => (guard (or* tag ... p ...) (case tag (n g) (t t))
-           ;; Here, a tag is a symbol which describes which branch is matched.
-           (loop with tag = (gensym "TAG")
-                 for i from 0
-                 for subpattern in subpatterns
-                 if (guard-pattern-p subpattern)
-                   collect (list i (guard-pattern-test-form subpattern)) into case-clauses
-                   and do (setq subpattern (guard-pattern-subpattern subpattern))
-                 collect subpattern into new-subpatterns
-                 finally
-                    (return
-                      (make-guard-pattern (apply #'make-or*-pattern tag new-subpatterns)
-                                          `(case ,tag ,@case-clauses (t t)))))
-           ;; Otherwise, just return the original pattern.
+       (if (guard-pattern-p subpattern)
+           ;; Connect with conjunction like:
+           ;; (guard (guard p g2) g1) => (guard p (and g1 g2))
+           (let ((test-form `(and ,test-form ,(guard-pattern-test-form subpattern)))
+                 (subpattern (guard-pattern-subpattern subpattern)))
+             (make-guard-pattern subpattern test-form))
            pattern)))
+    ((or-pattern-p pattern)
+     ;; OR local lift.
+     (let* ((subpatterns (or-pattern-subpatterns pattern))
+            (lifted-subpatterns (mapcar #'lift-guard-patterns subpatterns)))
+       (if (every #'eq subpatterns lifted-subpatterns)
+           pattern
+           (apply #'make-or-pattern lifted-subpatterns))))
     ((complex-pattern-p pattern)
      (let ((subpatterns (mapcar #'lift-guard-patterns (complex-pattern-subpatterns pattern))))
        (if (some #'guard-pattern-p subpatterns)
@@ -324,9 +291,55 @@ pattern like:
                     (let ((pattern (copy-structure pattern)))
                       (setf (complex-pattern-subpatterns pattern) new-subpatterns)
                       (return (make-guard-pattern pattern `(and ,.test-forms)))))
-           ;; Otherwise, just return the original pattern.
+           ;; Otherwise, just return the original pattern
            pattern)))
     (t pattern)))
+
+(defun lift-guard-patterns-2 (pattern)
+  "OR patterns that include guards are lifted like:
+
+       (list 3 (or 1 (guard x (evenp x))))
+    => (or (list 3 1) (list 3 (guard x (evenp x))))
+    => (or (list 3 1) (guard (list 3 x) (evenp x)))"
+  (flet ((guards-or-pattern-p (p)
+           (and (or-pattern-p p)
+                (some #'guard-pattern-p (or-pattern-subpatterns p)))))
+    (cond
+      ((or-pattern-p pattern)
+       (let ((subpatterns (mapcar #'lift-guard-patterns (or-pattern-subpatterns pattern))))
+         (if (some #'or-pattern-p subpatterns)
+             ;; Expand nested OR patterns
+             (loop for subpattern in subpatterns
+                   if (or-pattern-p subpattern)
+                     append (or-pattern-subpatterns subpattern) into new-subpatterns
+                   else
+                     collect subpattern into new-subpatterns
+                   finally (return (lift-guard-patterns (apply #'make-or-pattern new-subpatterns))))
+             pattern)))
+      ((complex-pattern-p pattern)
+       (let ((subpatterns (mapcar #'lift-guard-patterns (complex-pattern-subpatterns pattern))))
+         (if (some #'guards-or-pattern-p subpatterns)
+             ;; Lift fitst OR pattern that include GUARD patterns like:
+             ;; (c ... (or ... (guard p g) ...) ...) => (or ... (c ... (guard p g) ...) ...)
+             (loop for i from 0
+                   for subpattern in subpatterns
+                   if (guards-or-pattern-p subpattern)
+                     return (loop for subpat in (or-pattern-subpatterns subpattern)
+                                  for pat = (copy-structure pattern)
+                                  for pat-subpats = (copy-list (complex-pattern-subpatterns pat))
+                                  do (setf (nth i pat-subpats) subpat
+                                           (complex-pattern-subpatterns pat) pat-subpats)
+                                  collect pat into new-pats
+                                  finally (return (lift-guard-patterns (apply #'make-or-pattern new-pats)))))
+             ;; Otherwise, just return the original pattern
+             pattern)))
+      (t pattern))))
+
+(defun lift-guard-patterns (pattern)
+  (let ((new-pattern (lift-guard-patterns-1 (lift-guard-patterns-2 (lift-guard-patterns-1 pattern)))))
+    (if (eq pattern new-pattern)
+        new-pattern
+        (lift-guard-patterns new-pattern))))
 
 ;;; Pattern Specifier
 
@@ -442,8 +455,6 @@ Examples:
               (when (some #'place-pattern-included-p subpatterns)
                 (error "Or-pattern can't include place-patterns."))
               (apply #'make-or-pattern subpatterns))))
-       ((or* tag &rest subpatterns)
-        (apply #'make-or*-pattern tag (mapcar #'parse-pattern subpatterns)))
        ((and &rest subpatterns)
         (if (= (length subpatterns) 1)
             (parse-pattern (first subpatterns))
@@ -529,11 +540,7 @@ Examples:
   `(not ,(unparse-pattern (not-pattern-subpattern pattern))))
 
 (defmethod unparse-pattern ((pattern or-pattern))
-  (let ((subpatterns (mapcar #'unparse-pattern (or-pattern-subpatterns pattern))))
-    (with-slots (tag) pattern
-      (if tag
-          `(or* ,tag ,.subpatterns)
-          `(or ,.subpatterns)))))
+  `(or ,@(mapcar #'unparse-pattern (or-pattern-subpatterns pattern))))
 
 (defmethod unparse-pattern ((pattern and-pattern))
   `(and ,@(mapcar #'unparse-pattern (and-pattern-subpatterns pattern))))
