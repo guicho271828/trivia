@@ -175,6 +175,11 @@
                       (or (guard x (eql x 3))
                           (or (guard x (eql x 4))
                               (guard x (eql x 5)))))))
+  (is-match '(((1)))
+            (list (or (guard x (eql x 1))
+                      (list (or (guard x (eql x 1))
+                                (list (or (guard x (eql x 1))
+                                          (list))))))))
   ;; when/unless
   (is-match 1 (when t))
   (is-not-match 1 (when nil))
