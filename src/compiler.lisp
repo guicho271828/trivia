@@ -117,6 +117,7 @@
                                          collect (if (member var vars) var))
                                collect `((,subpattern) (values ,@vals)))
                         (fail))
+              (declare (ignorable ,@new-vars))
               (%match ,(cdr vars)
                       ((,rest ,.then))
                       (fail)))
