@@ -50,5 +50,5 @@ the comparison form to some specific form as follows:
     (let ((cons (cdr plist)))
       (unless (consp cons) (return))
       (when (eql item (car plist))
-        (return plist))
+        (return (cdr plist)))
       (setq plist (cdr cons)))))

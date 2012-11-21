@@ -31,4 +31,5 @@
 
            #:place
            #:guard
+           #:property
            #:defpattern))

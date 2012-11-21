@@ -105,23 +105,23 @@
 (defmethod destructor-forms ((pattern assoc-pattern) var)
   (list `(cdr ,var)))
 
-(defstruct (passoc-pattern (:include constructor-pattern)
-                           (:constructor make-passoc-pattern (item value-pattern
-                                                              &aux (subpatterns (list value-pattern)))))
+(defstruct (property-pattern (:include constructor-pattern)
+                             (:constructor make-property-pattern (item value-pattern
+                                                                  &aux (subpatterns (list value-pattern)))))
   item)
 
-(defun passoc-pattern-value-pattern (pattern)
+(defun property-pattern-value-pattern (pattern)
   (first (constructor-pattern-subpatterns pattern)))
 
-(defmethod destructor-equal ((x passoc-pattern) (y passoc-pattern))
-  (eq (passoc-pattern-item x) (passoc-pattern-item y)))
+(defmethod destructor-equal ((x property-pattern) (y property-pattern))
+  (eq (property-pattern-item x) (property-pattern-item y)))
 
-(defmethod destructor-predicate-form ((pattern passoc-pattern) var)
+(defmethod destructor-predicate-form ((pattern property-pattern) var)
   (with-slots (item) pattern
-    (values `(%passoc ,item ,var) t)))
+    (values `(%get-property ,item ,var) t)))
 
-(defmethod destructor-forms ((pattern passoc-pattern) var)
-  (list `(cadr ,var)))
+(defmethod destructor-forms ((pattern property-pattern) var)
+  (list `(car ,var)))
 
 (defstruct (vector-pattern (:include constructor-pattern)
                            (:constructor make-vector-pattern (&rest subpatterns))))
@@ -456,9 +456,9 @@ Examples:
   (destructuring-bind (item pattern &key key test) args
     (make-assoc-pattern item (parse-pattern pattern) :key key :test test)))
 
-(defmethod parse-constructor-pattern ((name (eql 'passoc)) &rest args)
+(defmethod parse-constructor-pattern ((name (eql 'property)) &rest args)
   (destructuring-bind (item pattern) args
-    (make-passoc-pattern item (parse-pattern pattern))))
+    (make-property-pattern item (parse-pattern pattern))))
 
 (defmethod parse-constructor-pattern ((name (eql 'vector)) &rest args)
   (apply #'make-vector-pattern (mapcar #'parse-pattern args)))
@@ -537,9 +537,9 @@ Examples:
             ,@(when key (list :key key))
             ,@(when test (list :test test)))))
 
-(defmethod unparse-pattern ((pattern passoc-pattern))
-  `(passoc ,(passoc-pattern-item pattern)
-           ,(unparse-pattern (passoc-pattern-value-pattern pattern))))
+(defmethod unparse-pattern ((pattern property-pattern))
+  `(property ,(property-pattern-item pattern)
+             ,(unparse-pattern (property-pattern-value-pattern pattern))))
 
 (defmethod unparse-pattern ((pattern vector-pattern))
   `(vector ,@(mapcar #'unparse-pattern (vector-pattern-subpatterns pattern))))

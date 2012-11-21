@@ -81,6 +81,14 @@
   (is-not-match '((1 . 2)) (assoc 3 4))
   (is-not-match '((1 . 2) (3 . 4)) (assoc 3 5))
   (is-match '(("a" . 1)) (assoc "A" 1 :test string-equal))
+  ;; property
+  (is-match '(:a 1) (property :a 1))
+  (is-match '(:a 1 :b 2) (property :a 1))
+  (is-match '(:a 1 2) (property :a 1))
+  (is-match '(1 2 :b 3) (property :b 3))
+  (is-not-match 1 (property :a 1))
+  (is-not-match '(:a 1) (property :b 1))
+  (is-not-match '(:a 1 :b 2) (property :b 3))
   ;; vector
   (is-match (vector 1 2) (vector 1 2))
   ;; simple-vector

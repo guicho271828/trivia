@@ -146,7 +146,7 @@ Examples:
 
 Syntax:
 
-    assoc-constructor-pattern ::= (assoc KEY PATTERN &key key test)
+    assoc-constructor-pattern ::= (assoc ITEM PATTERN &key key test)
 
 Examples:
 
@@ -162,6 +162,24 @@ Examples:
     (match '(("a" . 123))
       ((assoc "A" 123 :test #'string-equal) t))
     => T
+
+#### PROPERTY
+
+Syntax:
+
+    property-constructor-pattern ::= (property KEY PATTERN)
+
+Examples:
+
+    (match '(:a 1)
+      ((property :a x) x))
+    => 1
+    (match '(:a 1 :b 2)
+      ((property :b x) x))
+    => 2
+    (match '(:a 1 2)
+      ((property :a x) x))
+    => 1
 
 #### VECTOR
 

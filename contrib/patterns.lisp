@@ -6,4 +6,4 @@
 
 (defpattern plist (&rest args)
   `(and ,@(loop for (key . value) in (plist-alist args)
-                collect `(optima::passoc ,key ,value))))
+                collect `(property ,key ,value))))
