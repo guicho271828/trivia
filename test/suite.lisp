@@ -179,21 +179,7 @@
             (list (or (guard x (eql x 1))
                       (list (or (guard x (eql x 1))
                                 (list (or (guard x (eql x 1))
-                                          (list))))))))
-  ;; when/unless
-  (is-match 1 (when t))
-  (is-not-match 1 (when nil))
-  (is-match 1 (unless nil))
-  (is-match (cons 1 2) (cons _ (when (numberp *))))
-  (is-not-match (cons 1 2) (cons _ (unless (numberp *))))
-  (is-not-match 1 (unless t))
-  #+FIXME
-  (is-match 1 (and x (when (eql x 1))))
-  #+FIXME
-  (is-match 1 (and x (unless (eql x 2))))
-  ;; when bind
-  (is-match 1 (when (eql * 1)))
-  (is-match 1 (unless (eql * 2))))
+                                          (list)))))))))
 
 (test not-pattern
   (is-match 1 (not 2))
@@ -410,15 +396,13 @@
 (test issue39
   (is (eql (match '(0) ((list x) x))
            0))
-  #+FIXME
-  (is (eql (match '(0) ((list (and x (when (numberp x)))) x))
+  (is (eql (match '(0) ((list (and x (guard it (numberp it)))) x))
            0)))
 
 (test issue38
   (signals error
     (macroexpand '(match 1 ((or (place x) (place x)))))))
 
-#+FIXME
 (test issue31
   (is (equal (match '(1 2 3 4)
                ((or (list* (and (typep symbol) x) y z)

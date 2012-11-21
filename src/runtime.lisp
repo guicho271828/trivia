@@ -42,8 +42,8 @@ the comparison form to some specific form as follows:
         (return cons)))
     (setq alist (cdr alist))))
 
-(defun %passoc (item plist)
-  "Safe plist assoc."
+(defun %get-property (item plist)
+  "Safe GETF."
   (declare (optimize (speed 3) (safety 0) (space 0)))
   (loop
     (unless (consp plist) (return))

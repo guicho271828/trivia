@@ -198,16 +198,6 @@
 
 ;;; Pattern Utilities
 
-(defun gentempvar ()
-  "Generate a temporary pattern variable which is able to be accessed
-through matching test."
-  (let ((var (gensym)))
-    (setf (get var 'temporary) t)
-    var))
-
-(defun temporary-variable-p (var)
-  (eq (get var 'temporary) t))
-
 (defun pattern-variables (pattern)
   "Returns the set of variables in PATTERN. If PATTERN is not linear,
 an error will be raised."
@@ -220,9 +210,8 @@ an error will be raised."
                  finally (return vars))))
     (typecase pattern
       (variable-pattern
-       (let ((name (variable-pattern-name pattern)))
-         (when (and name (not (temporary-variable-p name)))
-           (list name))))
+       (if-let ((name (variable-pattern-name pattern)))
+         (list name)))
       (or-pattern
        (let ((vars (mappend #'pattern-variables (or-pattern-subpatterns pattern))))
          (check (remove-duplicates vars))))
@@ -393,37 +382,29 @@ Examples:
                 (t
                  `(list* ,(car args) ,@(cdr args))))))
 
-(defpattern when (test)
-  (let* ((var (gentempvar))
-         (test `(let ((* ,var))
-                  (declare (ignorable *))
-                  ,test)))
-    `(guard ,var ,test)))
-
-(defpattern unless (test)
-  (let* ((var (gentempvar))
-         (test `(let ((* ,var))
-                  (declare (ignorable *))
-                  (not ,test))))
-    `(guard ,var ,test)))
-
 (defpattern satisfies (predicate-name)
-  `(when (,predicate-name *)))
+  (with-unique-names (it)
+    `(guard ,it (,predicate-name ,it))))
 
 (defpattern eq (arg)
-  `(when (eq * ,arg)))
+  (with-unique-names (it)
+    `(guard ,it (eq ,it ,arg))))
 
 (defpattern eql (arg)
-  `(when (eql * ,arg)))
+  (with-unique-names (it)
+    `(guard ,it (eql ,it ,arg))))
 
 (defpattern equal (arg)
-  `(when (equal * ,arg)))
+  (with-unique-names (it)
+    `(guard ,it (equal ,it ,arg))))
 
 (defpattern equalp (arg)
-  `(when (equalp * ,arg)))
+  (with-unique-names (it)
+    `(guard ,it (equalp ,it ,arg))))
 
 (defpattern typep (type-specifier)
-  `(when (typep * ',type-specifier)))
+  (with-unique-names (it)
+    `(guard ,it (typep ,it ',type-specifier))))
 
 ;;; Pattern Specifier Parser
 

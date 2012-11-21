@@ -282,37 +282,20 @@ Expansion of LIST* derived patterns:
 
     (list a b c) => (cons a (cons b c))
 
-#### WHEN
-
-Expansion of WHEN dervied patterns:
-
-    (when test) => (guard #G0 (let ((* #G0)) test))
-
-As you see in the expansion above, you can use a special symbol * to
-access the value being matched.
-
-#### UNLESS
-
-Expansion of UNLESS dervied patterns:
-
-    (unless test) => (guard #G0 (let ((* G0)) (not test)))
-
-Same as WHEN derived patterns, but satisfies if TEST is not satisfied.
-
 #### SATISFIES
 
 Expansion of SATISFIES derived patterns:
 
-    (satisfies f) => (when (f *))
+    (satisfies f) => (guard it (f it))
 
 #### EQ, EQL, EQUAL, EQUALP
 
 Expansion of EQ, EQL, EQUAL, EQUALP derived patterns:
 
-    (eq 'foo) => (satisfies eq 'foo)
-    (eql 123) => (satisfies eql 123)
-    (equal '(1 2)) => (satisfies equal '(1 2))
-    (equalp "foo") => (satisfies equalp "foo")
+    (eq 'foo) => (guard it (eq it 'foo))
+    (eql 123) => (guard it (eql it 123))
+    (equal '(1 2)) => (guard it (equal it '(1 2)))
+    (equalp "foo") => (guard it (equalp it "foo"))
 
 #### TYPEP
 
