@@ -333,7 +333,7 @@ Expansion of TYPEP derived patterns:
                              (:file "fail")
                              (:file "compiler")
                              (:file "match")
-                             (:file "macros")))))
+                             (:file "extras")))))
 
 (defmethod asdf:perform ((op asdf:test-op) (system (eql (asdf:find-system :optima))))
   (asdf:load-system :optima.test)

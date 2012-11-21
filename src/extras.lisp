@@ -15,7 +15,3 @@
   `(match ,arg
      (,pattern)
      (otherwise ,@body)))
-
-(defmacro with-match (pattern arg &body body)
-  "Equivalent to (ematch ARG (PATTERN BODY...))."
-  `(ematch ,arg (,pattern ,@body)))
