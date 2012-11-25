@@ -46,4 +46,36 @@
            #:unless-match
            #:let-match
            #:let-match*
-           #:let-match1))
+           #:let-match1)
+  (:documentation "
+### [Pattern] alist
+
+Syntax:
+
+    (alist (KEY . PATTERN)*)
+
+Expansion:
+
+    (alist (k . p)*) => (and (assoc k p)*)
+
+Examples:
+
+    (match '((1 . :one) (2 . :two) (3 . :three))
+      ((alist (1 . x) (3 . y)) (list x y)))
+    => (:ONE :THREE)
+
+### [Pattern] plist
+
+Syntax:
+
+    (plist {KEY PATTERN}*)
+
+Expansion:
+
+    (plist {k p}*) => (and (passoc k p)*)
+
+Examples:
+
+    (match '(:name \"John\" :age 23)
+      ((plist :name \"John\" :age age) age))
+    => 23"))
