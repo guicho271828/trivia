@@ -72,7 +72,7 @@ Syntax:
 
 Expansion:
 
-    (plist {k p}*) => (and (passoc k p)*)
+    (plist {k p}*) => (and (property k p)*)
 
 Examples:
 
