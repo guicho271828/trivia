@@ -36,3 +36,6 @@ Examples:
 (defmethod optima::parse-constructor-pattern ((name (eql 'ppcre)) &rest args)
   (apply #'make-ppcre-pattern (first args)
          (mapcar #'optima::parse-pattern (rest args))))
+
+(defmethod optima::unparse-pattern ((pattern ppcre-pattern))
+  `(ppcre ,(ppcre-pattern-regex pattern)))
