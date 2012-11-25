@@ -447,6 +447,46 @@ Examples:
       (when args
         `(cons ,(car args) (list ,@(cdr args)))))
 
+[Package] optima.extra
+----------------------
+
+## [Macro] if-match
+
+    if-match pattern arg &body (then &optional else)
+
+Equivalent to (match ARG (PATTERN THEN) (otherwise ELSE)).
+
+## [Macro] when-match
+
+    when-match pattern arg &body body
+
+Equivalent to (match ARG (PATTERN BODY...)).
+
+## [Macro] unless-match
+
+    unless-match pattern arg &body body
+
+Equivalent to (match ARG (PATTERN) (otherwise BODY...)).
+
+## [Macro] let-match
+
+    let-match bindings &body body
+
+Similar to LET, except not only a variable but also a pattern can
+be used in BINDINGS.
+
+## [Macro] let-match*
+
+    let-match* bindings &body body
+
+Similar to LET-MATCH but matches sequentially.
+
+## [Macro] let-match1
+
+    let-match1 pattern arg &body body
+
+Equivalent to (let-match ((PATTERN ARG)) BODY...).
+
 Authors
 -------
 

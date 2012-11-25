@@ -235,7 +235,7 @@
                    collect clause)))
     (if and-clauses
         ;; Recursively expand AND patterns here like:
-        ;; 
+        ;;
         ;;     (((AND x y) z)
         ;;      ((AND a b c) d)
         ;;      (p))
@@ -243,7 +243,7 @@
         ;;      ((x y _ z)
         ;;       (a b c d)
         ;;       (p _ _ _))
-        ;;    
+        ;;
         (loop with arity
                 = (loop for ((pattern . nil) . nil) in and-clauses
                         maximize (length (and-pattern-subpatterns pattern)))
@@ -270,20 +270,21 @@
         (list vars clauses))))
 
 (defun compile-match (vars clauses else)
-  ;; FIXME: don't call PREPROCESS-MATCH-CLAUSES two or more times
+  ;; FIXME: don't call PREPROCESS-MATCH-CLAUSES two
+  ;; or more times
   (destructuring-bind (vars clauses)
       (preprocess-match-clauses vars clauses)
     (let ((groups (group-match-clauses clauses)))
       (compile-match-groups vars groups else))))
 
 (defun compile-match-1 (form clauses else)
-  (let ((clauses (mapcar (lambda (c) (cons (list (car c)) (cdr c))) clauses)))
-    (if (symbolp form)
-        (compile-match (list form) clauses else)
-        (let ((form-var (gensym "FORM")))
-          `(let ((,form-var ,form))
-             (declare (ignorable ,form-var))
-             ,(compile-match (list form-var) clauses else))))))
+  (setq clauses (mapcar (lambda (c) (cons (list (car c)) (cdr c))) clauses))
+  (if (symbolp form)
+      (compile-match (list form) clauses else)
+      (with-unique-names (var)
+        `(let ((,var ,form))
+           (declare (ignorable ,var))
+           ,(compile-match (list var) clauses else)))))
 
 (defun compile-multiple-value-match (values-form clauses else)
   (let* ((arity (loop for (patterns . nil) in clauses

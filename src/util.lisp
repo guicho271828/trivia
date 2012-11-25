@@ -23,3 +23,21 @@
         while list
         do (multiple-value-setq (span list) (span list :test test :key key))
         collect span))
+
+(defmacro once-only* (symbol &body body)
+  (with-unique-names (form var vars bindings)
+    `(let (,vars ,bindings)
+       (dolist (,form ,symbol)
+         (if (symbolp ,form)
+             (push ,form ,vars)
+             (let ((,var (gensym "VAR")))
+               (push ,var ,vars)
+               (push (list ,var ,form) ,bindings))))
+       (setq ,vars (nreverse ,vars)
+             ,bindings (nreverse ,bindings))
+       (if ,bindings
+           `(let ,,bindings
+              ;(declare (ignorable ,@(mapcar #'car ,bindings)))
+              ,(let ((,symbol ,vars))
+                 ,@body))
+           (progn ,@body)))))

@@ -55,6 +55,10 @@ Examples:
     => 6"
   (compile-match-1 arg clauses nil))
 
+(defmacro match* (args &body clauses)
+  (once-only* args
+    (compile-match args clauses nil)))
+
 (defmacro multiple-value-match (values-form &body clauses)
   "Matches the multiple values of VALUES-FORM with CLAUSES. Unlike
 MATCH, CLAUSES have to have the form of (PATTERNS . BODY), where
@@ -77,6 +81,13 @@ Examples:
                         :patterns ',(mapcar (lambda (c) (list (car c))) clauses))))
       (compile-match-1 arg clauses else))))
 
+(defmacro ematch* (args &body clauses)
+  (once-only* args
+    (let ((else `(error 'match-error
+                        :values (list ,@args)
+                        :patterns ',(mapcar #'car clauses))))
+      (compile-match args clauses else))))
+
 (defmacro multiple-value-ematch (values-form &body clauses)
   "Same as MULTIPLE-VALUE-MATCH, except MATCH-ERROR will be raised if
 not matched."
@@ -97,6 +108,14 @@ matched."
                          :values (list ,arg)
                          :patterns ',(mapcar (lambda (c) (list (car c))) clauses))))
       (compile-match-1 arg clauses else))))
+
+(defmacro cmatch* (args &body clauses)
+  (once-only* args
+    (let ((else `(cerror "Continue."
+                         'match-error
+                         :values (list ,@args)
+                         :patterns ',(mapcar #'car clauses))))
+      (compile-match args clauses else))))
 
 (defmacro multiple-value-cmatch (values-form &body clauses)
   "Same as MULTIPLE-VALUE-MATCH, except continuable MATCH-ERROR will

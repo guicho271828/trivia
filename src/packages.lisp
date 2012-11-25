@@ -33,3 +33,12 @@
            #:guard
            #:property
            #:defpattern))
+
+(defpackage :optima.extra
+  (:use :cl :optima)
+  (:export #:if-match
+           #:when-match
+           #:unless-match
+           #:let-match
+           #:let-match*
+           #:let-match1))

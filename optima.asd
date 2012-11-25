@@ -326,14 +326,14 @@ Expansion of TYPEP derived patterns:
                :closer-mop)
   :components ((:module "src"
                 :serial t
-                :components ((:file "package")
+                :components ((:file "packages")
                              (:file "util")
                              (:file "runtime")
                              (:file "pattern")
                              (:file "fail")
                              (:file "compiler")
                              (:file "match")
-                             (:file "extras")))))
+                             (:file "extra")))))
 
 (defmethod asdf:perform ((op asdf:test-op) (system (eql (asdf:find-system :optima))))
   (asdf:load-system :optima.test)
