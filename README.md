@@ -450,6 +450,39 @@ Examples:
 [Package] optima.extra
 ----------------------
 
+
+### [Pattern] alist
+
+Syntax:
+
+    (alist (KEY . PATTERN)*)
+
+Expansion:
+
+    (alist (k . p)*) => (and (assoc k p)*)
+
+Examples:
+
+    (match '((1 . :one) (2 . :two) (3 . :three))
+      ((alist (1 . x) (3 . y)) (list x y)))
+    => (:ONE :THREE)
+
+### [Pattern] plist
+
+Syntax:
+
+    (plist {KEY PATTERN}*)
+
+Expansion:
+
+    (plist {k p}*) => (and (passoc k p)*)
+
+Examples:
+
+    (match '(:name "John" :age 23)
+      ((plist :name "John" :age age) age))
+    => 23
+
 ## [Macro] if-match
 
     if-match pattern arg &body (then &optional else)
@@ -497,47 +530,14 @@ License
 
 LLGPL
 
-optima.contrib - Contribution library for optima
-================================================
+optima.ppcre - CL-PPCRE support for optima
+==========================================
 
-Contribution library for optima.
+[Package] optima.ppcre
+----------------------
 
-Available Patterns
-------------------
 
-### ALIST
-
-Syntax:
-
-    (alist (KEY . PATTERN)*)
-
-Expansion:
-
-    (alist (k . p)*) => (and (assoc k p)*)
-
-Examples:
-
-    (match '((1 . :one) (2 . :two) (3 . :three))
-      ((alist (1 . x) (3 . y)) (list x y)))
-    => (:ONE :THREE)
-
-### PLIST
-
-Syntax:
-
-    (plist {KEY PATTERN}*)
-
-Expansion:
-
-    (plist {k p}*) => (and (passoc k p)*)
-
-Examples:
-
-    (match '(:name "John" :age 23)
-      ((plist :name "John" :age age) age))
-    => 23
-
-### PPCRE
+### [Pattern] ppcre
 
 Syntax:
 
@@ -552,9 +552,6 @@ Examples:
       ((ppcre "^\\d{4}-\\d{2}-\\d{2}$" year month day)
        (list year month day)))
     => ("2012" "11" "04")
-
-[Package] optima.contrib
-------------------------
 
 Authors
 -------

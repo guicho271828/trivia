@@ -1,5 +1,5 @@
 (defpackage :optima.test
-  (:use :cl :eos :optima :optima.extra :optima.contrib)
+  (:use :cl :eos :optima :optima.extra :optima.ppcre)
   (:shadowing-import-from :optima #:fail))
 (in-package :optima.test)
 

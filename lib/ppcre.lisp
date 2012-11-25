@@ -1,4 +1,23 @@
-(in-package :optima.contrib)
+(defpackage :optima.ppcre
+  (:use :cl :optima)
+  (:export #:ppcre)
+  (:documentation "
+### [Pattern] ppcre
+
+Syntax:
+
+    (ppcre REGEXP PATTERN*)
+
+Matches REGEXP against the target string. Sub-PATTERNs will be used to
+match the matched groups, if REGEXP matched.
+
+Examples:
+
+    (match \"2012-11-04\"
+      ((ppcre \"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\" year month day)
+       (list year month day)))
+    => (\"2012\" \"11\" \"04\")"))
+(in-package :optima.ppcre)
 
 (defstruct (ppcre-pattern (:include optima::constructor-pattern)
                           (:constructor make-ppcre-pattern (regex &rest subpatterns)))
