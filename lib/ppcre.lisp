@@ -38,4 +38,4 @@ Examples:
          (mapcar #'optima::parse-pattern (rest args))))
 
 (defmethod optima::unparse-pattern ((pattern ppcre-pattern))
-  `(ppcre ,(ppcre-pattern-regex pattern)))
+  `(ppcre ,(ppcre-pattern-regex pattern) ,@(ppcre-pattern-subpatterns pattern)))
