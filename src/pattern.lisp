@@ -97,7 +97,7 @@
 
 (defmethod destructor-predicate-form ((pattern assoc-pattern) var)
   (with-slots (item key test) pattern
-    (values `(%assoc ,item ,var
+    (values `(%assoc ',item ,var
                      ,@(when key `(:key #',key))
                      ,@(when test `(:test #',test)))
             t)))
@@ -118,7 +118,7 @@
 
 (defmethod destructor-predicate-form ((pattern property-pattern) var)
   (with-slots (item) pattern
-    (values `(%get-property ,item ,var) t)))
+    (values `(%get-property ',item ,var) t)))
 
 (defmethod destructor-forms ((pattern property-pattern) var)
   (list `(car ,var)))
