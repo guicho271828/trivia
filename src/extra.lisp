@@ -1,5 +1,17 @@
 (in-package :optima.extra)
 
+;;; Extra patterns
+
+(defpattern alist (&rest args)
+  `(and ,@(loop for (key . value) in args
+                collect `(assoc ,key ,value))))
+
+(defpattern plist (&rest args)
+  `(and ,@(loop for (key . value) in (plist-alist args)
+                collect `(property ,key ,value))))
+
+;;; Extra macros
+
 (defmacro if-match (pattern arg &body (then &optional else))
   "Equivalent to (match ARG (PATTERN THEN) (otherwise ELSE))."
   `(match ,arg

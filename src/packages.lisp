@@ -36,7 +36,12 @@
 
 (defpackage :optima.extra
   (:use :cl :optima)
-  (:export #:if-match
+  (:import-from :alexandria
+                #:plist-alist)
+  (:export #:alist
+           #:plist
+
+           #:if-match
            #:when-match
            #:unless-match
            #:let-match

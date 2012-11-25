@@ -60,5 +60,4 @@ Examples:
   :components ((:module "contrib"
                 :serial t
                 :components ((:file "package")
-                             (:file "patterns")
                              (:file "ppcre")))))
