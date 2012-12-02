@@ -402,7 +402,7 @@ Examples:
   (with-unique-names (it)
     `(guard ,it (equalp ,it ,arg))))
 
-(defpattern typep (type-specifier)
+(defpattern type (type-specifier)
   (with-unique-names (it)
     `(guard ,it (typep ,it ',type-specifier))))
 

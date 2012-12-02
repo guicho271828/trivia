@@ -142,12 +142,12 @@
   (is-match 1 (eql 1))
   (is-match "foo" (equal "foo"))
   (is-match #(1) (equalp #(1)))
-  ;; typep
-  (is-match 1 (typep number))
-  (is-match "foo" (typep string))
-  (is-match :foo (typep (eql :foo)))
-  (is-match 1 (typep (or string number)))
-  (is-not-match 1 (typep (not t))))
+  ;; type
+  (is-match 1 (type number))
+  (is-match "foo" (type string))
+  (is-match :foo (type (eql :foo)))
+  (is-match 1 (type (or string number)))
+  (is-not-match 1 (type (not t))))
 
 (test guard-pattern
   (is-match 1 (guard _ t))
@@ -229,7 +229,7 @@
   (is-match 1 (and (and 1)))
   (is (eql (match 1 ((and 1 x) x)) 1))
   (is-not-match 1 (and (and (not 1))))
-  (is-match 1 (and (typep number) (typep integer)))
+  (is-match 1 (and (type number) (type integer)))
   ;; complex
   (is-true (match 1
              ((and 1 2) nil)
@@ -240,13 +240,13 @@
            1))
   (is-true (match (list 1 2 3)
              ((list (and 1 2 3 4 5) 2))
-             ((list (and 1 (typep number)) 3 3))
-             ((list (and 1 (typep number)) 2 3) t)))
+             ((list (and 1 (type number)) 3 3))
+             ((list (and 1 (type number)) 2 3) t)))
   (is-true (match (list 2 2)
-             ((list (and 2 (typep number)) 3))
-             ((list (and 2 (typep number)) 2 3))
-             ((list (and 1 (typep number)) 2))
-             ((list (and 2 (typep number)) 2) t))))
+             ((list (and 2 (type number)) 3))
+             ((list (and 2 (type number)) 2 3))
+             ((list (and 1 (type number)) 2))
+             ((list (and 2 (type number)) 2) t))))
 
 (test match
   ;; empty
@@ -415,7 +415,7 @@
 
 (test issue31
   (is (equal (match '(1 2 3 4)
-               ((or (list* (and (typep symbol) x) y z)
+               ((or (list* (and (type symbol) x) y z)
                     (list* y x z))
                 (list x y z)))
              '(2 1 (3 4)))))

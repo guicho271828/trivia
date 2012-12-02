@@ -314,11 +314,11 @@ Expansion of EQ, EQL, EQUAL, EQUALP derived patterns:
     (equal '(1 2)) => (guard it (equal it '(1 2)))
     (equalp \"foo\") => (guard it (equalp it \"foo\"))
 
-#### TYPEP
+#### TYPE
 
-Expansion of TYPEP derived patterns:
+Expansion of TYPE derived patterns:
 
-    (TYPEP type) => (when (typep * 'type))"
+    (TYPE type) => (when (typep * 'type))"
   :version "0.2"
   :author "Tomohiro Matsuyama"
   :license "LLGPL"
