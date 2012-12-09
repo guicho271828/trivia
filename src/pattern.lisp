@@ -335,8 +335,9 @@ occurence like:
 (defun pattern-expand-function (name)
   (get name 'pattern-expand-function))
 
-(defun (setf pattern-expand-function) (function name)
-  (setf (get name 'pattern-expand-function) function))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun (setf pattern-expand-function) (function name)
+    (setf (get name 'pattern-expand-function) function)))
 
 (defun pattern-expand-1 (pattern)
   (if-let (it (and (consp pattern)
@@ -368,7 +369,8 @@ Examples:
     (defpattern list (&rest args)
       (when args
         `(cons ,(car args) (list ,@(cdr args)))))"
-  `(setf (pattern-expand-function ',name) (lambda ,lambda-list ,@body)))
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (setf (pattern-expand-function ',name) (lambda ,lambda-list ,@body))))
 
 (defpattern list (&rest args)
   (when args
