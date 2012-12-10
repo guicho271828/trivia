@@ -106,7 +106,10 @@
     (is-match person (person (age 31)))
     (is-not-match person (person (name "Alice")))
     (is-not-match person (person (age 49)))
-    (is-not-match 1 (person)))
+    (is-not-match 1 (person))
+    ;; make-instance style
+    (is-match person (person :name "Bob" :age 31))
+    (is-not-match person (person :name "Bob" :age 49)))
   ;; structure
   (let ((point (make-point :x 1 :y 2)))
     (is (equal (match point
@@ -123,7 +126,10 @@
     (is-match point (point- (x 1)))
     (is-match point (point- (y 2)))
     (is-not-match point (point- (x 2)))
-    (is-not-match 1 (point-))))
+    (is-not-match 1 (point-))
+    ;; make-instance style
+    (is-match point (point- :x 1 :y 2))
+    (is-not-match point (point- :x 2 :y 2))))
 
 (test derived-pattern
   ;; list

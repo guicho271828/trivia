@@ -240,6 +240,17 @@ Examples:
       ((person name age) (list name age)))
     => ("foo" 30)
 
+You can also use MAKE-INSTANCE style pattern syntax like:
+
+    (match foo
+      ((person :name name :age age) (list name age)))
+    => ("foo" 30)
+
+This is equal to the example above except this implicitly resolves the
+slot names using Meta Object Protocol. In this case, you have to make
+sure the slot names can be determined uniquely during the
+compilation. Otherwise, you will get a compilation error.
+
 #### STRUCTURE
 
 Matches any structure value, and its slot values.
@@ -282,6 +293,13 @@ Examples:
     (match (make-person :name "foo" :age 30)
       ((p- name age) (list name age)))
     => ("foo" 30)
+
+Same as class constructor-pattern, you can also use MAKE-INSTANCE
+style pattern syntax like:
+
+    (match (cons 1 2)
+      ((point- :x x :y y) (list x y)))
+    => (1 2)
 
 ### Derived-Pattern
 
