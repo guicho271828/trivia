@@ -117,7 +117,8 @@
                                          collect (if (member var vars) var))
                                collect `((,subpattern) (values ,@vals)))
                         (fail))
-              (declare (ignorable ,@new-vars))
+              ,@(when new-vars
+                  `((declare (ignorable ,@new-vars))))
               (%match ,(cdr vars)
                       ((,rest ,.then))
                       (fail)))
@@ -208,12 +209,12 @@
           ;;     (AND)   => _
           ;;     (AND x) => x
           ;; 
-          (loop while (and-pattern-p pattern)
-                for sub-patterns = (and-pattern-subpatterns pattern)
-                do (case (length sub-patterns)
-                     (0 (setq pattern (parse-pattern '_)))
-                     (1 (setq pattern (first sub-patterns)))
-                     (t (return))))
+          (loop while (and-pattern-p pattern) do
+            (let ((sub-patterns (and-pattern-subpatterns pattern)))
+              (case (length sub-patterns)
+                (0 (setq pattern (parse-pattern '_)))
+                (1 (setq pattern (first sub-patterns)))
+                (t (return)))))
           ;; Lift GUARD patterns here.
           (setq pattern (lift-guard-patterns pattern))
           ;; Recursively expand GUARD pattern here.
@@ -291,7 +292,8 @@
                       maximize (length patterns)))
          (vars (make-gensym-list arity "VAR")))
     `(multiple-value-bind ,vars ,values-form
-       (declare (ignorable ,@vars))
+       ,@(when vars
+           `((declare (ignorable ,@vars))))
        ,(compile-match vars clauses else))))
 
 (defmacro %match (vars clauses else)

@@ -20,7 +20,7 @@ Examples:
 (in-package :optima.ppcre)
 
 (defstruct (ppcre-pattern (:include optima::constructor-pattern)
-                          (:constructor make-ppcre-pattern (regex &rest subpatterns)))
+                          (:constructor make-ppcre-pattern (regex &rest optima::subpatterns)))
   regex)
 
 (defmethod optima::destructor-equal ((x ppcre-pattern) (y ppcre-pattern))

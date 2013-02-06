@@ -301,7 +301,7 @@
      '(match 1
        ((and x x) t))))
   (is-match 1 (and _ _))
-  (is-match 1 (or * *))
+  (is-match 1 (or _ _))
   ;; declarations
   (is-true (match 1
              (1 (declare (ignore)) t)))
