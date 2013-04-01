@@ -259,6 +259,14 @@ occurence like:
                  (subpattern (guard-pattern-subpattern subpattern)))
              (make-guard-pattern subpattern test-form))
            pattern)))
+    ((not-pattern-p pattern)
+     ;; Stop lifting on not pattern.
+     (let* ((subpattern (not-pattern-subpattern pattern))
+            (lifted-subpattern (lift-guard-patterns subpattern)))
+       (if (and (not (guard-pattern-p subpattern))
+                (guard-pattern-p lifted-subpattern))
+           (make-not-pattern lifted-subpattern)
+           pattern)))
     ((or-pattern-p pattern)
      ;; OR local lift.
      (let* ((subpatterns (or-pattern-subpatterns pattern))

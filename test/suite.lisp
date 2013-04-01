@@ -202,7 +202,12 @@
   (is-not-match 1 (not 1))
   ;; double negation
   (is-not-match 1 (not (not (not 1))))
-  (is-match 1 (not (not (not (not 1))))))
+  (is-match 1 (not (not (not (not 1)))))
+  ;; complex
+  (is-match 1 (not (guard it (consp it))))
+  (is (equal (let ((it 1))
+               (match 2 ((not (guard it (eql it 3))) it)))
+             1)))
 
 (test or-pattern
   (is-not-match 1 (or))
