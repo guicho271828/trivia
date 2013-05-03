@@ -27,7 +27,9 @@ Examples:
   (equal (ppcre-pattern-regex x) (ppcre-pattern-regex y)))
 
 (defmethod optima::destructor-predicate-form ((pattern ppcre-pattern) var)
-  (values `(nth-value 1 (ppcre:scan-to-strings ,(ppcre-pattern-regex pattern) ,var)) t))
+  (values `(and (stringp ,var)
+                (nth-value 1 (ppcre:scan-to-strings ,(ppcre-pattern-regex pattern) ,var)))
+          t))
 
 (defmethod optima::destructor-forms ((pattern ppcre-pattern) var)
   (loop for i from 0 below (optima::constructor-pattern-arity pattern)

@@ -400,6 +400,8 @@
 (test ppcre
   (is-match "a" (ppcre "^a$"))
   (is-not-match "a" (ppcre "^b$"))
+  (is-not-match 1 (ppcre "a"))
+  (is-not-match :A (ppcre "A"))
   (is-true (match "a"
              ((ppcre "^(.)$")
               t)))
