@@ -336,7 +336,20 @@ Expansion of EQ, EQL, EQUAL, EQUALP derived patterns:
 
 Expansion of TYPE derived patterns:
 
-    (TYPE type) => (guard it (typep it 'type))"
+    (TYPE type) => (guard it (typep it 'type))
+
+Quasiquotation
+--------------
+
+You may want to use a quasiquote in a pattern specifier like:
+
+    (match '(1 2 3 4)
+      (`(1 ,x ,@y) (list x y)))
+
+To do so, you need to use a specific quasiquote reader, for example
+[fare-quasiquote](http://cliki.net/fare-quasiquote) with loading
+fare-quasiquote-optima system, because an expanded form of a
+quasiquote reader is not standardized."
   :version "0.2"
   :author "Tomohiro Matsuyama"
   :license "LLGPL"
