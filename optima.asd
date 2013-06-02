@@ -25,6 +25,7 @@ specifiers are defined as follows:
                         | derived-pattern
     
     constant-pattern ::= t | nil
+                       | keyword
                        | atom-except-symbol
                        | (quote VALUE)
     
