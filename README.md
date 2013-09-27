@@ -581,7 +581,7 @@ match the matched groups, if REGEXP matched.
 Examples:
 
     (match "2012-11-04"
-      ((ppcre "^\\d{4}-\\d{2}-\\d{2}$" year month day)
+      ((ppcre "^(\\d{4})-(\\d{2})-(\\d{2})$" year month day)
        (list year month day)))
     => ("2012" "11" "04")
 
