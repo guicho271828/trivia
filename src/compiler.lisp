@@ -107,22 +107,26 @@
           (new-vars (pattern-variables pattern)))
       (unless subpatterns
         (return-from compile-match-or-group else))
-      `(%or (multiple-value-bind ,new-vars
-                (%match (,(first vars))
-                        ,(loop for i from 0
-                               for subpattern in subpatterns
-                               for vars = (pattern-variables subpattern)
-                               for vals
-                                 = (loop for var in new-vars
-                                         collect (if (member var vars) var))
-                               collect `((,subpattern) (values ,@vals)))
-                        (fail))
-              ,@(when new-vars
-                  `((declare (ignorable ,@new-vars))))
-              (%match ,(cdr vars)
-                      ((,rest ,.then))
-                      (fail)))
-            ,else))))
+      (let ((bind-form
+              `(%match (,(first vars))
+                       ,(loop for i from 0
+                              for subpattern in subpatterns
+                              for vars = (pattern-variables subpattern)
+                              for vals
+                                = (loop for var in new-vars
+                                        collect (if (member var vars) var))
+                              collect `((,subpattern) (values ,@vals)))
+                       (fail)))
+            (body
+              `(%match ,(cdr vars)
+                       ((,rest ,.then))
+                       (fail))))
+        (if new-vars
+            `(%or (multiple-value-bind ,new-vars ,bind-form
+                    (declare (ignorable ,@new-vars))
+                    ,body)
+                  ,else)
+            `(%or (progn ,bind-form ,body) ,else))))))
 
 (defun compile-match-not-group (vars clauses else)
   (assert (= (length clauses) 1))
