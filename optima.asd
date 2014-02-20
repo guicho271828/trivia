@@ -350,7 +350,48 @@ You may want to use a quasiquote in a pattern specifier like:
 To do so, you need to use a specific quasiquote reader, for example
 [fare-quasiquote](http://cliki.net/fare-quasiquote) with loading
 fare-quasiquote-optima system, because an expanded form of a
-quasiquote reader is not standardized."
+quasiquote reader is not standardized.
+
+Define Constructor Patterns
+---------------------------
+
+You can define your own constructor patterns by using `OPTIMA.CORE`
+package.  Firstly, define a data structore for the constructor
+pattern.
+
+    (defstruct (my-cons-pattern (:include constructor-pattern)
+                                (:constructor make-cons-pattern (car-pattern cdr-pattern
+                                                                 &aux (subpatterns (list car-pattern
+                                                                                         cdr-pattern))))))
+
+Note that you must keep `SUBPATTERNS` of the constructor pattern in
+sync so that optima can take care of them.  Secondly, specify a
+condition when destructor of the constructor patterns can be shared.
+Sharing destructors removes redundant data checks, that is,
+pattern-matching can get more faster.
+
+
+    (defmethod constructor-pattern-destructor-sharable-p ((x my-cons-pattern) (y my-cons-pattern))
+      t)
+
+Thirdly, define a destructor generator for the constructor pattern,
+whichs generate a destructor that specifies how to check the the
+data (`PREDICATE-FORM`) and how to access the data (`ACCESSOR-FORMS`).
+
+    (defmethod constructor-pattern-make-destructor ((pattern my-cons-pattern) var)
+      (make-destructor :predicate-form `(consp ,var)
+                       :accessor-forms (list `(car ,var) `(cdr ,var))))
+
+Finally, define a parser and an unparser for the constructor pattern.
+
+    (defmethod parse-constructor-pattern ((name (eql 'my-cons)) &rest args)
+      (apply #'make-my-cons-pattern (mapcar #'parse-pattern args)))
+    
+    (defmethod unparse-pattern ((pattern my-cons-pattern))
+      `(cons ,(unparse-pattern (my-cons-pattern-car-pattern pattern))
+             ,(unparse-pattern (my-cons-pattern-cdr-pattern pattern))))
+
+See the source code for more detail."
   :version "0.2"
   :author "Tomohiro Matsuyama"
   :license "LLGPL"

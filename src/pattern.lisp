@@ -2,9 +2,10 @@
 
 ;;; Data Destructor
 
-(defgeneric destructor-equal (dtor1 dtor2))
-(defgeneric destructor-predicate-form (dtor var))
-(defgeneric destructor-forms (dtor var))
+(defstruct destructor
+  bindings
+  predicate-form
+  accessor-forms)
 
 ;;; Pattern Data Structure
 
@@ -57,6 +58,9 @@
 (defun constructor-pattern-arity (pattern)
   (length (constructor-pattern-subpatterns pattern)))
 
+(defgeneric constructor-pattern-destructor-sharable-p (x y))
+(defgeneric constructor-pattern-make-destructor (pattern var))
+
 (defstruct (cons-pattern (:include constructor-pattern)
                          (:constructor make-cons-pattern (car-pattern cdr-pattern
                                                           &aux (subpatterns (list car-pattern
@@ -68,14 +72,12 @@
 (defun cons-pattern-cdr-pattern (pattern)
   (second (constructor-pattern-subpatterns pattern)))
 
-(defmethod destructor-equal ((x cons-pattern) (y cons-pattern))
+(defmethod constructor-pattern-destructor-sharable-p ((x cons-pattern) (y cons-pattern))
   t)
 
-(defmethod destructor-predicate-form ((pattern cons-pattern) var)
-  `(consp ,var))
-
-(defmethod destructor-forms ((pattern cons-pattern) var)
-  (list `(car ,var) `(cdr ,var)))
+(defmethod constructor-pattern-make-destructor ((pattern cons-pattern) var)
+  (make-destructor :predicate-form `(consp ,var)
+                   :accessor-forms (list `(car ,var) `(cdr ,var))))
 
 (defstruct (assoc-pattern (:include constructor-pattern)
                           (:constructor make-assoc-pattern (item value-pattern
@@ -86,7 +88,7 @@
 (defun assoc-pattern-value-pattern (pattern)
   (first (constructor-pattern-subpatterns pattern)))
 
-(defmethod destructor-equal ((x assoc-pattern) (y assoc-pattern))
+(defmethod constructor-pattern-destructor-sharable-p ((x assoc-pattern) (y assoc-pattern))
   (and (eq (assoc-pattern-key x)
            (assoc-pattern-key y))
        (eq (assoc-pattern-test x)
@@ -95,15 +97,14 @@
        (eql (assoc-pattern-item x)
             (assoc-pattern-item y))))
 
-(defmethod destructor-predicate-form ((pattern assoc-pattern) var)
+(defmethod constructor-pattern-make-destructor ((pattern assoc-pattern) var)
   (with-slots (item key test) pattern
-    (values `(%assoc ',item ,var
-                     ,@(when key `(:key #',key))
-                     ,@(when test `(:test #',test)))
-            t)))
-
-(defmethod destructor-forms ((pattern assoc-pattern) var)
-  (list `(cdr ,var)))
+    (with-unique-names (it)
+      (make-destructor :bindings `((,it (%assoc ',item ,var
+                                                ,@(when key `(:key #',key))
+                                                ,@(when test `(:test #',test)))))
+                       :predicate-form it
+                       :accessor-forms (list `(cdr ,it))))))
 
 (defstruct (property-pattern (:include constructor-pattern)
                              (:constructor make-property-pattern (item value-pattern
@@ -113,43 +114,39 @@
 (defun property-pattern-value-pattern (pattern)
   (first (constructor-pattern-subpatterns pattern)))
 
-(defmethod destructor-equal ((x property-pattern) (y property-pattern))
+(defmethod constructor-pattern-destructor-sharable-p ((x property-pattern) (y property-pattern))
   (eq (property-pattern-item x) (property-pattern-item y)))
 
-(defmethod destructor-predicate-form ((pattern property-pattern) var)
+(defmethod constructor-pattern-make-destructor ((pattern property-pattern) var)
   (with-slots (item) pattern
-    (values `(%get-property ',item ,var) t)))
-
-(defmethod destructor-forms ((pattern property-pattern) var)
-  (list `(car ,var)))
+    (with-unique-names (it)
+      (make-destructor :bindings `((,it (%get-property ',item ,var)))
+                       :predicate-form it
+                       :accessor-forms (list `(car ,it))))))
 
 (defstruct (vector-pattern (:include constructor-pattern)
                            (:constructor make-vector-pattern (&rest subpatterns))))
 
-(defmethod destructor-equal ((x vector-pattern) (y vector-pattern))
+(defmethod constructor-pattern-destructor-sharable-p ((x vector-pattern) (y vector-pattern))
   (= (constructor-pattern-arity x)
      (constructor-pattern-arity y)))
 
-(defmethod destructor-predicate-form ((pattern vector-pattern) var)
-  `(typep ,var '(vector * ,(constructor-pattern-arity pattern))))
-
-(defmethod destructor-forms ((pattern vector-pattern) var)
-  (loop for i from 0 below (constructor-pattern-arity pattern)
-        collect `(aref ,var ,i)))
+(defmethod constructor-pattern-make-destructor ((pattern vector-pattern) var)
+  (make-destructor :predicate-form `(typep ,var '(vector * ,(constructor-pattern-arity pattern)))
+                   :accessor-forms (loop for i from 0 below (constructor-pattern-arity pattern)
+                                         collect `(aref ,var ,i))))
 
 (defstruct (simple-vector-pattern (:include constructor-pattern)
                                   (:constructor make-simple-vector-pattern (&rest subpatterns))))
 
-(defmethod destructor-equal ((x simple-vector-pattern) (y simple-vector-pattern))
+(defmethod constructor-pattern-destructor-sharable-p ((x simple-vector-pattern) (y simple-vector-pattern))
   (= (constructor-pattern-arity x)
      (constructor-pattern-arity y)))
 
-(defmethod destructor-predicate-form ((pattern simple-vector-pattern) var)
-  `(typep ,var '(simple-vector ,(constructor-pattern-arity pattern))))
-
-(defmethod destructor-forms ((pattern simple-vector-pattern) var)
-  (loop for i from 0 below (constructor-pattern-arity pattern)
-        collect `(svref ,var ,i)))
+(defmethod constructor-pattern-make-destructor ((pattern simple-vector-pattern) var)
+  (make-destructor :predicate-form `(typep ,var '(simple-vector ,(constructor-pattern-arity pattern)))
+                   :accessor-forms (loop for i from 0 below (constructor-pattern-arity pattern)
+                                         collect `(svref ,var ,i))))
 
 (defstruct (class-pattern (:include constructor-pattern)
                           (:constructor %make-class-pattern))
@@ -160,18 +157,16 @@
                        :slot-names (mapcar #'first slot-specs)
                        :subpatterns (mapcar #'second slot-specs)))
 
-(defmethod destructor-equal ((x class-pattern) (y class-pattern))
+(defmethod constructor-pattern-destructor-sharable-p ((x class-pattern) (y class-pattern))
   (and (eq (class-pattern-class-name x)
            (class-pattern-class-name y))
        (equal (class-pattern-slot-names x)
               (class-pattern-slot-names y))))
 
-(defmethod destructor-predicate-form ((pattern class-pattern) var)
-  `(typep ,var ',(class-pattern-class-name pattern)))
-
-(defmethod destructor-forms ((pattern class-pattern) var)
-  (loop for slot-name in (class-pattern-slot-names pattern)
-        collect `(slot-value ,var ',slot-name)))
+(defmethod constructor-pattern-make-destructor ((pattern class-pattern) var)
+  (make-destructor :predicate-form `(typep ,var ',(class-pattern-class-name pattern))
+                   :accessor-forms (loop for slot-name in (class-pattern-slot-names pattern)
+                                         collect `(slot-value ,var ',slot-name))))
 
 (defstruct (structure-pattern (:include constructor-pattern)
                               (:constructor %make-structure-pattern))
@@ -182,19 +177,17 @@
                            :slot-names (mapcar #'first slot-specs)
                            :subpatterns (mapcar #'second slot-specs)))
 
-(defmethod destructor-equal ((x structure-pattern) (y structure-pattern))
+(defmethod constructor-pattern-destructor-sharable-p ((x structure-pattern) (y structure-pattern))
   (and (string= (structure-pattern-conc-name x)
                 (structure-pattern-conc-name y))
        (equal (structure-pattern-slot-names x)
               (structure-pattern-slot-names y))))
 
-(defmethod destructor-predicate-form ((pattern structure-pattern) var)
-  `(,(symbolicate (structure-pattern-conc-name pattern) :p) ,var))
-
-(defmethod destructor-forms ((pattern structure-pattern) var)
-  (loop with conc-name = (structure-pattern-conc-name pattern)
-        for slot-name in (structure-pattern-slot-names pattern)
-        collect `(,(symbolicate conc-name slot-name) ,var)))
+(defmethod constructor-pattern-make-destructor ((pattern structure-pattern) var)
+  (make-destructor :predicate-form `(,(symbolicate (structure-pattern-conc-name pattern) :p) ,var)
+                   :accessor-forms (loop with conc-name = (structure-pattern-conc-name pattern)
+                                         for slot-name in (structure-pattern-slot-names pattern)
+                                         collect `(,(symbolicate conc-name slot-name) ,var))))
 
 ;;; Pattern Utilities
 

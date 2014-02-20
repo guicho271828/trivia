@@ -1,5 +1,7 @@
 (defpackage :optima.ppcre
-  (:use :cl :optima)
+  (:use :cl :optima.core)
+  (:import-from :alexandria
+                #:with-unique-names)
   (:export #:ppcre)
   (:documentation "
 ### [Pattern] ppcre
@@ -19,25 +21,24 @@ Examples:
     => (\"2012\" \"11\" \"04\")"))
 (in-package :optima.ppcre)
 
-(defstruct (ppcre-pattern (:include optima::constructor-pattern)
-                          (:constructor make-ppcre-pattern (regex &rest optima::subpatterns)))
+(defstruct (ppcre-pattern (:include constructor-pattern)
+                          (:constructor make-ppcre-pattern (regex &rest subpatterns)))
   regex)
 
-(defmethod optima::destructor-equal ((x ppcre-pattern) (y ppcre-pattern))
+(defmethod constructor-pattern-destructor-sharable-p ((x ppcre-pattern) (y ppcre-pattern))
   (equal (ppcre-pattern-regex x) (ppcre-pattern-regex y)))
 
-(defmethod optima::destructor-predicate-form ((pattern ppcre-pattern) var)
-  (values `(and (stringp ,var)
-                (nth-value 1 (ppcre:scan-to-strings ,(ppcre-pattern-regex pattern) ,var)))
-          t))
+(defmethod constructor-pattern-make-destructor ((pattern ppcre-pattern) var)
+  (with-unique-names (it)
+    (make-destructor :bindings `((,it (and (stringp ,var)
+                                           (nth-value 1 (ppcre:scan-to-strings ,(ppcre-pattern-regex pattern) ,var)))))
+                     :predicate-form it
+                     :accessor-forms (loop for i from 0 below (constructor-pattern-arity pattern)
+                                           collect `(%svref ,it ,i)))))
 
-(defmethod optima::destructor-forms ((pattern ppcre-pattern) var)
-  (loop for i from 0 below (optima::constructor-pattern-arity pattern)
-        collect `(optima::%svref ,var ,i)))
-
-(defmethod optima::parse-constructor-pattern ((name (eql 'ppcre)) &rest args)
+(defmethod parse-constructor-pattern ((name (eql 'ppcre)) &rest args)
   (apply #'make-ppcre-pattern (first args)
-         (mapcar #'optima::parse-pattern (rest args))))
+         (mapcar #'parse-pattern (rest args))))
 
-(defmethod optima::unparse-pattern ((pattern ppcre-pattern))
+(defmethod unparse-pattern ((pattern ppcre-pattern))
   `(ppcre ,(ppcre-pattern-regex pattern) ,@(ppcre-pattern-subpatterns pattern)))

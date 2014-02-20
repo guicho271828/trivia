@@ -4,5 +4,6 @@
   :author "Tomohiro Matsuyama"
   :license "LLGPL"
   :depends-on (:optima
+               :alexandria
                :cl-ppcre)
   :components ((:file "lib/ppcre")))

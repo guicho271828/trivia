@@ -353,10 +353,468 @@ To do so, you need to use a specific quasiquote reader, for example
 fare-quasiquote-optima system, because an expanded form of a
 quasiquote reader is not standardized.
 
+Define Constructor Patterns
+---------------------------
+
+You can define your own constructor patterns by using `OPTIMA.CORE`
+package.  Firstly, define a data structore for the constructor
+pattern.
+
+    (defstruct (my-cons-pattern (:include constructor-pattern)
+                                (:constructor make-cons-pattern (car-pattern cdr-pattern
+                                                                 &aux (subpatterns (list car-pattern
+                                                                                         cdr-pattern))))))
+
+Note that you must keep `SUBPATTERNS` of the constructor pattern in
+sync so that optima can take care of them.  Secondly, specify a
+condition when destructor of the constructor patterns can be shared.
+Sharing destructors removes redundant data checks, that is,
+pattern-matching can get more faster.
+
+
+    (defmethod constructor-pattern-destructor-sharable-p ((x my-cons-pattern) (y my-cons-pattern))
+      t)
+
+Thirdly, define a destructor generator for the constructor pattern,
+whichs generate a destructor that specifies how to check the the
+data (`PREDICATE-FORM`) and how to access the data (`ACCESSOR-FORMS`).
+
+    (defmethod constructor-pattern-make-destructor ((pattern my-cons-pattern) var)
+      (make-destructor :predicate-form `(consp ,var)
+                       :accessor-forms (list `(car ,var) `(cdr ,var))))
+
+Finally, define a parser and an unparser for the constructor pattern.
+
+    (defmethod parse-constructor-pattern ((name (eql 'my-cons)) &rest args)
+      (apply #'make-my-cons-pattern (mapcar #'parse-pattern args)))
+    
+    (defmethod unparse-pattern ((pattern my-cons-pattern))
+      `(cons ,(unparse-pattern (my-cons-pattern-car-pattern pattern))
+             ,(unparse-pattern (my-cons-pattern-cdr-pattern pattern))))
+
+See the source code for more detail.
+
+[Package] optima.core
+---------------------
+
+### [Function] %equal
+
+    %equal a b
+
+Equality function for comparing patten constants.
+
+### [Macro] %equals
+
+    %equals var value
+
+Equality macro for comparing pattern constants. This specializes
+the comparison form to some specific form as follows:
+
+    (equals x nil)    => (null x)
+    (equals x 'foo)   => (eq x 'foo)
+    (equals x 123)    => (eql x 123)
+    (equals x '(a b)) => (%equals x '(a b))
+
+### [Function] %svref
+
+    %svref simple-vector index
+
+Safe SVREF.
+
+### [Function] %assoc
+
+    %assoc item alist &key (test #'eql)
+
+Safe ASSOC.
+
+### [Function] %get-property
+
+    %get-property item plist
+
+Safe GETF.
+
+### [Class] destructor
+
+### [Type] destructor
+
+    destructor
+
+### [Function] destructor-accessor-forms
+
+    destructor-accessor-forms instance
+
+Return whether debug-block represents elsewhere code.
+
+### [Function] make-destructor
+
+    make-destructor &key ((bindings dum0) nil) ((predicate-form dum1) nil) ((accessor-forms
+                                                                             dum2)
+                                                                            nil)
+
+### [Class] variable-pattern
+
+### [Type] variable-pattern
+
+    variable-pattern
+
+### [Function] variable-pattern-name
+
+    variable-pattern-name instance
+
+Return whether debug-block represents elsewhere code.
+
+### [Function] make-variable-pattern
+
+    make-variable-pattern &optional name
+
+### [Class] place-pattern
+
+### [Type] place-pattern
+
+    place-pattern
+
+### [Function] place-pattern-name
+
+    place-pattern-name instance
+
+Return whether debug-block represents elsewhere code.
+
+### [Function] make-place-pattern
+
+    make-place-pattern name
+
+### [Class] constant-pattern
+
+### [Type] constant-pattern
+
+    constant-pattern
+
+### [Function] constant-pattern-value
+
+    constant-pattern-value instance
+
+Return whether debug-block represents elsewhere code.
+
+### [Function] make-constant-pattern
+
+    make-constant-pattern value
+
+### [Class] complex-pattern
+
+### [Type] complex-pattern
+
+    complex-pattern
+
+### [Function] complex-pattern-subpatterns
+
+    complex-pattern-subpatterns instance
+
+Return whether debug-block represents elsewhere code.
+
+### [Class] guard-pattern
+
+### [Type] guard-pattern
+
+    guard-pattern
+
+### [Function] guard-pattern-test-form
+
+    guard-pattern-test-form instance
+
+Return whether debug-block represents elsewhere code.
+
+### [Function] guard-pattern-subpattern
+
+    guard-pattern-subpattern pattern
+
+### [Function] make-guard-pattern
+
+    make-guard-pattern subpattern test-form &aux (subpatterns (list subpattern))
+
+### [Class] not-pattern
+
+### [Type] not-pattern
+
+    not-pattern
+
+### [Function] not-pattern-subpattern
+
+    not-pattern-subpattern pattern
+
+### [Function] make-not-pattern
+
+    make-not-pattern subpattern &aux (subpatterns (list subpattern))
+
+### [Class] or-pattern
+
+### [Type] or-pattern
+
+    or-pattern
+
+### [Function] or-pattern-subpatterns
+
+    or-pattern-subpatterns instance
+
+Return whether debug-block represents elsewhere code.
+
+### [Function] make-or-pattern
+
+    make-or-pattern &rest subpatterns
+
+### [Class] and-pattern
+
+### [Type] and-pattern
+
+    and-pattern
+
+### [Function] and-pattern-subpatterns
+
+    and-pattern-subpatterns instance
+
+Return whether debug-block represents elsewhere code.
+
+### [Function] make-and-pattern
+
+    make-and-pattern &rest subpatterns
+
+### [Class] constructor-pattern
+
+### [Type] constructor-pattern
+
+    constructor-pattern
+
+### [Function] constructor-pattern-subpatterns
+
+    constructor-pattern-subpatterns instance
+
+Return whether debug-block represents elsewhere code.
+
+### [Function] constructor-pattern-arity
+
+    constructor-pattern-arity pattern
+
+### [Function] constructor-pattern-destructor-sharable-p
+
+    constructor-pattern-destructor-sharable-p x y
+
+### [Function] constructor-pattern-make-destructor
+
+    constructor-pattern-make-destructor pattern var
+
+### [Class] cons-pattern
+
+### [Type] cons-pattern
+
+    cons-pattern
+
+### [Function] cons-pattern-car-pattern
+
+    cons-pattern-car-pattern pattern
+
+### [Function] cons-pattern-cdr-pattern
+
+    cons-pattern-cdr-pattern pattern
+
+### [Function] make-cons-pattern
+
+    make-cons-pattern car-pattern cdr-pattern &aux (subpatterns
+                                                    (list car-pattern cdr-pattern))
+
+### [Class] assoc-pattern
+
+### [Type] assoc-pattern
+
+    assoc-pattern
+
+### [Function] assoc-pattern-item
+
+    assoc-pattern-item instance
+
+Return whether debug-block represents elsewhere code.
+
+### [Function] assoc-pattern-key
+
+    assoc-pattern-key instance
+
+Return whether debug-block represents elsewhere code.
+
+### [Function] assoc-pattern-test
+
+    assoc-pattern-test instance
+
+Return whether debug-block represents elsewhere code.
+
+### [Function] assoc-pattern-value-pattern
+
+    assoc-pattern-value-pattern pattern
+
+### [Function] make-assoc-pattern
+
+    make-assoc-pattern item value-pattern &key (key nil) (test nil) &aux (subpatterns
+                                                                          (list
+                                                                           value-pattern))
+
+### [Class] property-pattern
+
+### [Type] property-pattern
+
+    property-pattern
+
+### [Function] property-pattern-item
+
+    property-pattern-item instance
+
+Return whether debug-block represents elsewhere code.
+
+### [Function] property-pattern-value-pattern
+
+    property-pattern-value-pattern pattern
+
+### [Function] make-property-pattern
+
+    make-property-pattern item value-pattern &aux (subpatterns (list value-pattern))
+
+### [Class] vector-pattern
+
+### [Type] vector-pattern
+
+    vector-pattern
+
+### [Function] vector-pattern-subpatterns
+
+    vector-pattern-subpatterns instance
+
+Return whether debug-block represents elsewhere code.
+
+### [Function] make-vector-pattern
+
+    make-vector-pattern &rest subpatterns
+
+### [Class] simple-vector-pattern
+
+### [Type] simple-vector-pattern
+
+    simple-vector-pattern
+
+### [Function] simple-vector-pattern-subpatterns
+
+    simple-vector-pattern-subpatterns instance
+
+Return whether debug-block represents elsewhere code.
+
+### [Function] make-simple-vector-pattern
+
+    make-simple-vector-pattern &rest subpatterns
+
+### [Class] class-pattern
+
+### [Type] class-pattern
+
+    class-pattern
+
+### [Function] class-pattern-subpatterns
+
+    class-pattern-subpatterns instance
+
+Return whether debug-block represents elsewhere code.
+
+### [Function] class-pattern-class-name
+
+    class-pattern-class-name instance
+
+Return whether debug-block represents elsewhere code.
+
+### [Function] class-pattern-slot-names
+
+    class-pattern-slot-names instance
+
+Return whether debug-block represents elsewhere code.
+
+### [Function] make-class-pattern
+
+    make-class-pattern class-name &rest slot-specs
+
+### [Class] structure-pattern
+
+### [Type] structure-pattern
+
+    structure-pattern
+
+### [Function] structure-pattern-subpatterns
+
+    structure-pattern-subpatterns instance
+
+Return whether debug-block represents elsewhere code.
+
+### [Function] structure-pattern-conc-name
+
+    structure-pattern-conc-name instance
+
+Return whether debug-block represents elsewhere code.
+
+### [Function] structure-pattern-slot-names
+
+    structure-pattern-slot-names instance
+
+Return whether debug-block represents elsewhere code.
+
+### [Function] make-structure-pattern
+
+    make-structure-pattern conc-name &rest slot-specs
+
+### [Function] pattern-variables
+
+    pattern-variables pattern
+
+Returns the set of variables in PATTERN. If PATTERN is not linear,
+an error will be raised.
+
+### [Function] place-pattern-included-p
+
+    place-pattern-included-p pattern
+
+### [Function] check-patterns
+
+    check-patterns patterns
+
+Check if PATTERNS are valid. Otherwise, an error will be raised.
+
+### [Function] lift-guard-patterns
+
+    lift-guard-patterns pattern
+
+### [Function] pattern-expand-function
+
+    pattern-expand-function name
+
+### [Function] pattern-expand-1
+
+    pattern-expand-1 pattern
+
+### [Function] pattern-expand
+
+    pattern-expand pattern
+
+### [Function] pattern-expand-all
+
+    pattern-expand-all pattern
+
+### [Function] parse-pattern
+
+    parse-pattern pattern
+
+### [Function] parse-constructor-pattern
+
+    parse-constructor-pattern name &rest args
+
+### [Function] unparse-pattern
+
+    unparse-pattern pattern
+
 [Package] optima
 ----------------
 
-## [Macro] match
+### [Macro] match
 
     match arg &body clauses
 
@@ -401,7 +859,7 @@ Examples:
       (list x y z) (+ x y z))
     => 6
 
-## [Macro] multiple-value-match
+### [Macro] multiple-value-match
 
     multiple-value-match values-form &body clauses
 
@@ -417,55 +875,55 @@ Examples:
      ((1 y) y))
     => 2
 
-## [Macro] ematch
+### [Macro] ematch
 
     ematch arg &body clauses
 
 Same as MATCH, except MATCH-ERROR will be raised if not matched.
 
-## [Macro] multiple-value-ematch
+### [Macro] multiple-value-ematch
 
     multiple-value-ematch values-form &body clauses
 
 Same as MULTIPLE-VALUE-MATCH, except MATCH-ERROR will be raised if
 not matched.
 
-## [Macro] cmatch
+### [Macro] cmatch
 
     cmatch arg &body clauses
 
 Same as MATCH, except continuable MATCH-ERROR will be raised if not
 matched.
 
-## [Macro] multiple-value-cmatch
+### [Macro] multiple-value-cmatch
 
     multiple-value-cmatch values-form &body clauses
 
 Same as MULTIPLE-VALUE-MATCH, except continuable MATCH-ERROR will
 be raised if not matched.
 
-## [Macro] fail
+### [Macro] fail
 
     fail
 
 Causes the latest pattern matching be failed and continue to do the
 rest of pattern matching.
 
-## [Class] match-error
+### [Class] match-error
 
-## [Type] match-error
+### [Type] match-error
 
     match-error
 
-## [Function] match-error-values
+### [Function] match-error-values
 
     match-error-values condition
 
-## [Function] match-error-patterns
+### [Function] match-error-patterns
 
     match-error-patterns condition
 
-## [Macro] defpattern
+### [Macro] defpattern
 
     defpattern name lambda-list &body body
 
@@ -515,38 +973,38 @@ Examples:
       ((plist :name "John" :age age) age))
     => 23
 
-## [Macro] if-match
+### [Macro] if-match
 
     if-match pattern arg &body (then &optional else)
 
 Equivalent to (match ARG (PATTERN THEN) (otherwise ELSE)).
 
-## [Macro] when-match
+### [Macro] when-match
 
     when-match pattern arg &body body
 
 Equivalent to (match ARG (PATTERN BODY...)).
 
-## [Macro] unless-match
+### [Macro] unless-match
 
     unless-match pattern arg &body body
 
 Equivalent to (match ARG (PATTERN) (otherwise BODY...)).
 
-## [Macro] let-match
+### [Macro] let-match
 
     let-match bindings &body body
 
 Similar to LET, except not only a variable but also a pattern can
 be used in BINDINGS.
 
-## [Macro] let-match*
+### [Macro] let-match*
 
     let-match* bindings &body body
 
 Similar to LET-MATCH but matches sequentially.
 
-## [Macro] let-match1
+### [Macro] let-match1
 
     let-match1 pattern arg &body body
 

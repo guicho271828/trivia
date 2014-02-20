@@ -10,7 +10,7 @@
              (and (%equal (car a) (car b))
                   (%equal (cdr a) (cdr b)))))))
 
-(defmacro equals (var value)
+(defmacro %equals (var value)
   "Equality macro for comparing pattern constants. This specializes
 the comparison form to some specific form as follows:
 

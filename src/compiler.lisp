@@ -47,7 +47,7 @@
 
 (defun compile-match-constant-group (vars clauses else)
   `(%if ,(with-slots (value) (caaar clauses)
-           `(equals ,(car vars) ,value))
+           `(%equals ,(car vars) ,value))
         (%match ,(cdr vars)
                 ,(loop for ((nil . rest) . then) in clauses
                        collect `(,rest ,.then))
@@ -64,40 +64,36 @@
                                for subpatterns = (constructor-pattern-subpatterns pattern)
                                collect `((,@subpatterns ,.rest) ,.then))
                         ,else))
-         (wrap #'identity))
-    (multiple-value-bind (predicate-form bind-var-p)
-        (destructor-predicate-form pattern var)
-      ;; FIXME: BIND-VAR-P is ugly...
-      (when bind-var-p
-        (let ((new-var (gensym))
-              (predicate predicate-form))
-          (setq wrap (lambda (form) `(let ((,new-var ,predicate)) ,form))
-                var new-var
-                predicate-form new-var)))
-      (loop for i from 0 below arity
-            for new-var in new-vars
-            for form in (destructor-forms pattern var)
-            for binding = `(,new-var ,form)
-            if (loop for ((pattern . nil) . nil) in clauses
-                     for arg = (nth i (constructor-pattern-subpatterns pattern))
-                     never (place-pattern-included-p arg))
-              collect binding into let-bindings
-            else
-              collect binding into symbol-bindings
-            finally
-               (when symbol-bindings
-                 (setq then `(symbol-macrolet ,symbol-bindings
-                               (declare (ignorable ,@(mapcar #'car symbol-bindings)))
-                               ,then)))
-               (when let-bindings
-                 (setq then `(let ,let-bindings
-                               (declare (ignorable ,@(mapcar #'car let-bindings)))
-                               ,then)))
-               (return
-                 (funcall wrap
-                          `(%if ,predicate-form
-                                ,then
-                                ,else)))))))
+         (destructor (constructor-pattern-make-destructor pattern var)))
+    (loop for i from 0 below arity
+          for new-var in new-vars
+          for accessor-form in (destructor-accessor-forms destructor)
+          for binding = `(,new-var ,accessor-form)
+          if (loop for ((pattern . nil) . nil) in clauses
+                   for arg = (nth i (constructor-pattern-subpatterns pattern))
+                   never (place-pattern-included-p arg))
+            collect binding into let-bindings
+          else
+            collect binding into symbol-bindings
+          finally
+             (when symbol-bindings
+               (setq then `(symbol-macrolet ,symbol-bindings
+                             (declare (ignorable ,@(mapcar #'car symbol-bindings)))
+                             ,then)))
+             (when let-bindings
+               (setq then `(let ,let-bindings
+                             (declare (ignorable ,@(mapcar #'car let-bindings)))
+                             ,then)))
+             (return
+               (let ((form `(%if ,(destructor-predicate-form destructor)
+                                 ,then
+                                 ,else))
+                     (bindings (destructor-bindings destructor)))
+                 (if bindings
+                     `(let ,bindings
+                        (declare (ignorable ,@(mapcar #'car bindings)))
+                        ,form)
+                     form))))))
 
 (defun compile-match-or-group (vars clauses else)
   (assert (= (length clauses) 1))
@@ -180,7 +176,7 @@
                    (%equal (constant-pattern-value x)
                            (constant-pattern-value y)))
                   (constructor-pattern
-                   (destructor-equal x y))
+                   (constructor-pattern-destructor-sharable-p x y))
                   ((or guard-pattern and-pattern)
                    (error "Something wrong."))
                   ((or not-pattern or-pattern)
