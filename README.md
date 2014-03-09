@@ -107,8 +107,7 @@ Examples:
 ### Or-Pattern
 
 An or-pattern matches a value that is matched with one of
-sub-PATTERNs. There is a restriction that every pattern of
-sub-PATTERNs must have same set of variables.
+sub-PATTERNs.
 
 Examples:
 
