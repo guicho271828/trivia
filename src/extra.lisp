@@ -44,3 +44,30 @@ be used in BINDINGS."
 (defmacro let-match1 (pattern arg &body body)
   "Equivalent to (let-match ((PATTERN ARG)) BODY...)."
   `(let-match ((,pattern ,arg)) ,.body))
+
+(defmacro lambda-match (&body clauses)
+  "Equivalent to (lambda (arg) (match arg CLAUSES...))."
+  (with-unique-names (arg)
+    `(lambda (,arg) (match ,arg ,@clauses))))
+
+(defmacro lambda-ematch (&body clauses)
+  "Equivalent to (lambda (arg) (ematch arg CLAUSES...))."
+  (with-unique-names (arg)
+    `(lambda (,arg) (ematch ,arg ,@clauses))))
+
+(defmacro lambda-cmatch (&body clauses)
+  "Equivalent to (lambda (arg) (cmatch arg CLAUSES...))."
+  (with-unique-names (arg)
+    `(lambda (,arg) (cmatch ,arg ,@clauses))))
+
+(defmacro lambda-match1 (pattern &body body)
+  "Equivalent to (lambda-match (PATTERN BODY...))."
+  `(lambda-match (,pattern ,@body)))
+
+(defmacro lambda-ematch1 (pattern &body body)
+  "Equivalent to (lambda-ematch (PATTERN BODY...))."
+  `(lambda-ematch (,pattern ,@body)))
+
+(defmacro lambda-cmatch1 (pattern &body body)
+  "Equivalent to (lambda-cmatch (PATTERN BODY...))."
+  `(lambda-cmatch (,pattern ,@body)))

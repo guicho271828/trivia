@@ -1009,6 +1009,42 @@ Similar to LET-MATCH but matches sequentially.
 
 Equivalent to (let-match ((PATTERN ARG)) BODY...).
 
+### [Macro] lambda-match
+
+    lambda-match &body clauses
+
+Equivalent to (lambda (arg) (match arg CLAUSES...)).
+
+### [Macro] lambda-ematch
+
+    lambda-ematch &body clauses
+
+Equivalent to (lambda (arg) (ematch arg CLAUSES...)).
+
+### [Macro] lambda-cmatch
+
+    lambda-cmatch &body clauses
+
+Equivalent to (lambda (arg) (cmatch arg CLAUSES...)).
+
+### [Macro] lambda-match1
+
+    lambda-match1 pattern &body body
+
+Equivalent to (lambda-match (PATTERN BODY...)).
+
+### [Macro] lambda-ematch1
+
+    lambda-ematch1 pattern &body body
+
+Equivalent to (lambda-ematch (PATTERN BODY...)).
+
+### [Macro] lambda-cmatch1
+
+    lambda-cmatch1 pattern &body body
+
+Equivalent to (lambda-cmatch (PATTERN BODY...)).
+
 Authors
 -------
 

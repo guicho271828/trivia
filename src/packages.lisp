@@ -147,7 +147,8 @@
 (defpackage :optima.extra
   (:use :cl :optima)
   (:import-from :alexandria
-                #:plist-alist)
+                #:plist-alist
+                #:with-unique-names)
   (:export #:alist
            #:plist
 
@@ -156,7 +157,14 @@
            #:unless-match
            #:let-match
            #:let-match*
-           #:let-match1)
+           #:let-match1
+
+           #:lambda-match
+           #:lambda-ematch
+           #:lambda-cmatch
+           #:lambda-match1
+           #:lambda-ematch1
+           #:lambda-cmatch1)
   (:documentation "
 ### [Pattern] alist
 
