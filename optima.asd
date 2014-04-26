@@ -391,7 +391,7 @@ Finally, define a parser and an unparser for the constructor pattern.
              ,(unparse-pattern (my-cons-pattern-cdr-pattern pattern))))
 
 See the source code for more detail."
-  :version "0.2"
+  :version "1.0"
   :author "Tomohiro Matsuyama"
   :license "LLGPL"
   :depends-on (:alexandria

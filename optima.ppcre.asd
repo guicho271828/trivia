@@ -1,6 +1,6 @@
 (asdf:defsystem :optima.ppcre
   :description "CL-PPCRE support for optima"
-  :version "0.2"
+  :version "1.0"
   :author "Tomohiro Matsuyama"
   :license "LLGPL"
   :depends-on (:optima
