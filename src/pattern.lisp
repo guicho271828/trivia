@@ -378,12 +378,9 @@ Examples:
     `(cons ,(car args) (list ,@(cdr args)))))
 
 (defpattern list* (arg &rest args)
-  `(cons ,arg
-         ,(cond ((null args))
-                ((= (length args) 1)
-                 (car args))
-                (t
-                 `(list* ,(car args) ,@(cdr args))))))
+  (if (null args)
+      `(and ,arg (type list))
+      `(cons ,arg (list* ,@args))))
 
 (defpattern satisfies (predicate-name)
   (with-unique-names (it)
