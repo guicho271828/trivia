@@ -133,9 +133,15 @@
 
 (test derived-pattern
   ;; list
+  (is-match '() (list))
   (is-match '(1 2 3) (list 1 2 3))
+  (is-not-match '() (list _))
+  (is-not-match 5 (list _))
   ;; list*
+  (is-match '() (list* _))
   (is-match '(1 2 3) (list* 1 2 (list 3)))
+  (is-match '(1 2 3) (list* _))
+  (is-not-match 5 (list* _))
   ;; alist
   (is-match '((1 . 2) (2 . 3) (3 . 4)) (alist (3 . 4) (1 . 2)))
   ;; plist
