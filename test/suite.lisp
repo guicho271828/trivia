@@ -1,10 +1,35 @@
 (defpackage :optima.test
   (:use :cl :eos :optima :optima.extra :optima.ppcre)
+  (:import-from :optima.core #:parse-pattern #:unparse-pattern)
   (:shadowing-import-from :optima #:fail))
 (in-package :optima.test)
 
 (def-suite optima-test)
 (in-suite optima-test)
+
+;;; Pattern syntax
+
+(test roundtrip
+  (macrolet
+      ((check-roundtrip (pattern)
+         `(is (equal ',pattern
+                     (unparse-pattern (parse-pattern ',pattern))))))
+    ;; constant
+    (check-roundtrip 1)
+    (check-roundtrip t)
+    (check-roundtrip nil)
+    (check-roundtrip :foo)
+    (check-roundtrip 3.14)
+    (check-roundtrip "foo")
+    (check-roundtrip 'x)
+    (check-roundtrip '(x . y))
+    (check-roundtrip '(x y))
+    (check-roundtrip '(1 :foo))
+    ;; variable
+    ; (check-roundtrip _) does not roundtrip, but that's probably OK.
+    (check-roundtrip x)))
+
+;;; Pattern matching
 
 (defmacro is-match (arg pattern)
   `(is-true (match ,arg (,pattern t))))
