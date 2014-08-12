@@ -527,9 +527,13 @@ Examples:
 
 (defmethod unparse-pattern ((pattern constant-pattern))
   (with-slots (value) pattern
-    (if (atom value)
-        value
-        `(quote ,value))))
+    (cond
+      ((typep value '(and symbol (not keyword) (not (member nil t))))
+       `(quote ,value))
+      ((atom value)
+       value)
+      (t
+       `(quote ,value)))))
 
 (defmethod unparse-pattern ((pattern guard-pattern))
   `(guard ,(unparse-pattern (guard-pattern-subpattern pattern))
