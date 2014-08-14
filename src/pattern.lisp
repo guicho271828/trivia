@@ -471,16 +471,19 @@ Examples:
   ;; we also resolve the slot names via MOP.  If no slot found or too
   ;; many slots found, we will raise an error.
   (when (keywordp (first slot-specs))
-    (setq slot-specs
-          (loop with class = (find-class class-name nil)
-                with all-slot-names = (mapcar #'closer-mop:slot-definition-name
-                                              (closer-mop:class-slots class))
-                for (slot-name . pattern) in (plist-alist slot-specs)
-                for slot-names = (remove-if (lambda (name) (string/= slot-name name)) all-slot-names)
-                collect (case (length slot-names)
-                          (0 (error "Slot ~S not found" slot-name))
-                          (1 `(,(first slot-names) ,pattern))
-                          (t (error "Ambiguous slot name ~S" slot-name))))))
+    (let ((class (find-class class-name nil)))
+      (unless (closer-mop:class-finalized-p class)
+        (closer-mop:finalize-inheritance class))
+      (setq slot-specs
+            (loop with all-slot-names = (mapcar #'closer-mop:slot-definition-name
+                                                (closer-mop:class-slots class))
+                  for (slot-name . pattern) in (plist-alist slot-specs)
+                  for slot-names = (remove-if (lambda (name) (string/= slot-name name))
+                                           all-slot-names)
+                  collect (case (length slot-names)
+                            (0 (error "Slot ~S not found" slot-name))
+                            (1 `(,(first slot-names) ,pattern))
+                            (t (error "Ambiguous slot name ~S" slot-name)))))))
   (apply #'make-class-pattern class-name
          (loop for slot-spec in slot-specs
                do (setq slot-spec (ensure-list slot-spec))

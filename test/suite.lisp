@@ -90,7 +90,6 @@
   (defclass person ()
     ((name :initarg :name)
      (age :initarg :age)))
-  (closer-mop:finalize-inheritance (find-class 'person))
 
   (defstruct (point (:predicate point-p))
     x y))
