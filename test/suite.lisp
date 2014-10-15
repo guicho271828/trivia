@@ -468,3 +468,12 @@
                ((guard x (equal x 2)) (list :a x))
                (x (list :b x)))
              '(:b 1))))
+
+(defun signal-error ()
+  (error 'error))
+(defun will-fail ()
+  (match 1
+    ((not 2)
+     (signal-error))))
+(test issue101
+  (signals error (will-fail)))

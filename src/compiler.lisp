@@ -1,5 +1,7 @@
 (in-package :optima)
 
+(defparameter *debug-compiler* nil)
+
 (defun compile-clause-body (body)
   (cond ((null body)
          ;; Empty body.
@@ -29,9 +31,9 @@
                 (if name
                     `(,rest (let ((,name ,(car vars))) ,.then))
                     `(,rest ,.then)))))
-    `(%match ,(cdr vars)
-             ,clauses
-             ,else)))
+    (%compile-match (cdr vars)
+                    clauses
+                    else)))
 
 (defun compile-match-place-group (vars clauses else)
   (let ((clauses
@@ -41,17 +43,17 @@
                 (if name
                     `(,rest (symbol-macrolet ((,name ,(car vars))) ,.then))
                     `(,rest ,.then)))))
-    `(%match ,(cdr vars)
-             ,clauses
-             ,else)))
+    (%compile-match (cdr vars)
+                    clauses
+                    else)))
 
 (defun compile-match-constant-group (vars clauses else)
   `(%if ,(with-slots (value) (caaar clauses)
            `(%equals ,(car vars) ,value))
-        (%match ,(cdr vars)
-                ,(loop for ((nil . rest) . then) in clauses
-                       collect `(,rest ,.then))
-                ,else)
+        ,(%compile-match (cdr vars)
+                         (loop for ((nil . rest) . then) in clauses
+                               collect `(,rest ,.then))
+                         else)
         ,else))
 
 (defun compile-match-constructor-group (vars clauses else)
@@ -59,11 +61,11 @@
          (arity (constructor-pattern-arity pattern))
          (var (car vars))
          (new-vars (make-gensym-list arity))
-         (then `(%match ,(append new-vars (cdr vars))
-                        ,(loop for ((pattern . rest) . then) in clauses
-                               for subpatterns = (constructor-pattern-subpatterns pattern)
-                               collect `((,@subpatterns ,.rest) ,.then))
-                        ,else))
+         (then (%compile-match (append new-vars (cdr vars))
+                               (loop for ((pattern . rest) . then) in clauses
+                                     for subpatterns = (constructor-pattern-subpatterns pattern)
+                                     collect `((,@subpatterns ,.rest) ,.then))
+                               else))
          (destructor (constructor-pattern-make-destructor pattern var)))
     (loop for i from 0 below arity
           for new-var in new-vars
@@ -104,19 +106,19 @@
       (unless subpatterns
         (return-from compile-match-or-group else))
       (let ((bind-form
-              `(%match (,(first vars))
-                       ,(loop for i from 0
-                              for subpattern in subpatterns
-                              for vars = (pattern-variables subpattern)
-                              for vals
-                                = (loop for var in new-vars
-                                        collect (if (member var vars) var))
-                              collect `((,subpattern) (values ,@vals)))
-                       (fail)))
+              (%compile-match `(,(first vars))
+                              (loop for i from 0
+                                    for subpattern in subpatterns
+                                    for vars = (pattern-variables subpattern)
+                                    for vals
+                                      = (loop for var in new-vars
+                                              collect (if (member var vars) var))
+                                    collect `((,subpattern) (values ,@vals)))
+                              '(fail)))
             (body
-              `(%match ,(cdr vars)
-                       ((,rest ,.then))
-                       (fail))))
+              (%compile-match `(,(cdr vars))
+                              `((,rest ,.then))
+                              '(fail))))
         (if new-vars
             `(%or (multiple-value-bind ,new-vars ,bind-form
                     (declare (ignorable ,@new-vars))
@@ -129,12 +131,12 @@
   (destructuring-bind ((pattern . rest) . then)
       (first clauses)
     (let ((pattern (not-pattern-subpattern pattern)))
-      `(if (%match (,(first vars))
-                   (((,pattern) nil))
-                   t)
-           (%match ,(cdr vars)
-                   ((,rest ,.then))
-                   ,else)
+      `(if ,(%compile-match `(,(first vars))
+                            `(((,pattern) nil))
+                            t)
+           ,(%compile-match (cdr vars)
+                            `((,rest ,.then))
+                            else)
            ,else))))
 
 (defun compile-match-empty-group (clauses else)
@@ -295,6 +297,11 @@
        ,@(when vars
            `((declare (ignorable ,@vars))))
        ,(compile-match vars clauses else))))
+
+(defun %compile-match (vars clauses else)
+  (if *debug-compiler*
+      `(%match ,vars ,clauses ,else)
+      (compile-match vars clauses else)))
 
 (defmacro %match (vars clauses else)
   "Compiler cushion macro. This is useful for seeing and debugging the
