@@ -116,7 +116,7 @@
                                     collect `((,subpattern) (values ,@vals)))
                               '(fail)))
             (body
-              (%compile-match `(,(cdr vars))
+              (%compile-match (cdr vars)
                               `((,rest ,.then))
                               '(fail))))
         (if new-vars

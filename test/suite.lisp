@@ -477,3 +477,6 @@
      (signal-error))))
 (test issue101
   (signals error (will-fail)))
+
+(test issue105
+  (is-match '(1) (list* (or 1 2) _)))
