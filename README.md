@@ -442,8 +442,6 @@ Safe GETF.
 
     destructor-accessor-forms instance
 
-Return whether debug-block represents elsewhere code.
-
 ### [Function] make-destructor
 
     make-destructor &key ((bindings dum0) nil) ((predicate-form dum1) nil) ((accessor-forms
@@ -460,8 +458,6 @@ Return whether debug-block represents elsewhere code.
 
     variable-pattern-name instance
 
-Return whether debug-block represents elsewhere code.
-
 ### [Function] make-variable-pattern
 
     make-variable-pattern &optional name
@@ -475,8 +471,6 @@ Return whether debug-block represents elsewhere code.
 ### [Function] place-pattern-name
 
     place-pattern-name instance
-
-Return whether debug-block represents elsewhere code.
 
 ### [Function] make-place-pattern
 
@@ -492,8 +486,6 @@ Return whether debug-block represents elsewhere code.
 
     constant-pattern-value instance
 
-Return whether debug-block represents elsewhere code.
-
 ### [Function] make-constant-pattern
 
     make-constant-pattern value
@@ -508,8 +500,6 @@ Return whether debug-block represents elsewhere code.
 
     complex-pattern-subpatterns instance
 
-Return whether debug-block represents elsewhere code.
-
 ### [Class] guard-pattern
 
 ### [Type] guard-pattern
@@ -519,8 +509,6 @@ Return whether debug-block represents elsewhere code.
 ### [Function] guard-pattern-test-form
 
     guard-pattern-test-form instance
-
-Return whether debug-block represents elsewhere code.
 
 ### [Function] guard-pattern-subpattern
 
@@ -554,8 +542,6 @@ Return whether debug-block represents elsewhere code.
 
     or-pattern-subpatterns instance
 
-Return whether debug-block represents elsewhere code.
-
 ### [Function] make-or-pattern
 
     make-or-pattern &rest subpatterns
@@ -570,8 +556,6 @@ Return whether debug-block represents elsewhere code.
 
     and-pattern-subpatterns instance
 
-Return whether debug-block represents elsewhere code.
-
 ### [Function] make-and-pattern
 
     make-and-pattern &rest subpatterns
@@ -585,8 +569,6 @@ Return whether debug-block represents elsewhere code.
 ### [Function] constructor-pattern-subpatterns
 
     constructor-pattern-subpatterns instance
-
-Return whether debug-block represents elsewhere code.
 
 ### [Function] constructor-pattern-arity
 
@@ -629,19 +611,13 @@ Return whether debug-block represents elsewhere code.
 
     assoc-pattern-item instance
 
-Return whether debug-block represents elsewhere code.
-
 ### [Function] assoc-pattern-key
 
     assoc-pattern-key instance
 
-Return whether debug-block represents elsewhere code.
-
 ### [Function] assoc-pattern-test
 
     assoc-pattern-test instance
-
-Return whether debug-block represents elsewhere code.
 
 ### [Function] assoc-pattern-value-pattern
 
@@ -663,8 +639,6 @@ Return whether debug-block represents elsewhere code.
 
     property-pattern-item instance
 
-Return whether debug-block represents elsewhere code.
-
 ### [Function] property-pattern-value-pattern
 
     property-pattern-value-pattern pattern
@@ -683,8 +657,6 @@ Return whether debug-block represents elsewhere code.
 
     vector-pattern-subpatterns instance
 
-Return whether debug-block represents elsewhere code.
-
 ### [Function] make-vector-pattern
 
     make-vector-pattern &rest subpatterns
@@ -698,8 +670,6 @@ Return whether debug-block represents elsewhere code.
 ### [Function] simple-vector-pattern-subpatterns
 
     simple-vector-pattern-subpatterns instance
-
-Return whether debug-block represents elsewhere code.
 
 ### [Function] make-simple-vector-pattern
 
@@ -715,19 +685,13 @@ Return whether debug-block represents elsewhere code.
 
     class-pattern-subpatterns instance
 
-Return whether debug-block represents elsewhere code.
-
 ### [Function] class-pattern-class-name
 
     class-pattern-class-name instance
 
-Return whether debug-block represents elsewhere code.
-
 ### [Function] class-pattern-slot-names
 
     class-pattern-slot-names instance
-
-Return whether debug-block represents elsewhere code.
 
 ### [Function] make-class-pattern
 
@@ -743,19 +707,13 @@ Return whether debug-block represents elsewhere code.
 
     structure-pattern-subpatterns instance
 
-Return whether debug-block represents elsewhere code.
-
 ### [Function] structure-pattern-conc-name
 
     structure-pattern-conc-name instance
 
-Return whether debug-block represents elsewhere code.
-
 ### [Function] structure-pattern-slot-names
 
     structure-pattern-slot-names instance
-
-Return whether debug-block represents elsewhere code.
 
 ### [Function] make-structure-pattern
 
