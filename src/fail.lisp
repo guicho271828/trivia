@@ -1,8 +1,8 @@
 (in-package :optima)
 
 (defmacro %or (&rest forms)
-  "Similar to OR except %OR also allows to call (FAIL) in each branch
-to jump to its next branch."
+  "Causes the latest pattern matching to fail.  After this failure, matching
+continues at the next pattern."
   (setq forms (remove '(fail) forms :test #'equal))
   (cond ((null forms)
          '(fail))
