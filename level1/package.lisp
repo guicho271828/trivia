@@ -108,6 +108,7 @@ variables. the body is wrapped with `let' bounding these variables.")
        `(flet ((,fn ,vars
                  (declare (ignorable ,@vars))
                  ,(match-remaining-patterns)))
+          (declare (dynamic-extent (function ,fn)))
           ,@(mapcar (lambda (subpattern)
                       (match-clause (list subpattern)
                                     `(,fn ,@vars)

@@ -68,7 +68,45 @@
                            (cadr it) (guard cadr (= 2 cadr)))
                     (guard it (consp it)
                            (car it) (guard car (= 2 car))
-                           (cadr it) (guard cadr (= 1 cadr))))))
+                           (cadr it) (guard cadr (= 1 cadr)))))
+
+  ;; when checking is optimized...
+  (is-match '(2 1)
+            (guard it (consp it)
+                   it
+                   (or (guard it t
+                              (car it) (guard car (= 1 car))
+                              (cadr it) (guard cadr (= 2 cadr)))
+                       (guard it t
+                              (car it) (guard car (= 2 car))
+                              (cadr it) (guard cadr (= 1 cadr)))))))
+
+(defun constant-fn ()
+  ;; sbcl can optimize away everything in here, and can infer that the
+  ;; following code returns T: since '(1 2) is a constant value
+  (match '(1 2)
+    ((or (guard it (consp it)
+                (car it) (guard car (= 1 car))
+                (cadr it) (guard cadr (= 2 cadr)))
+         (guard it (consp it) ; this does not happen under level-2 ;
+                              ; optimization because checks for ; (consp
+                              ; it) is duplicated
+                (car it) (guard car (= 2 car))
+                (cadr it) (guard cadr (= 1 cadr))))
+     t)))
+
+(defun nonconstant-fn (thing)
+  ;; of cource this is not the case if it is not a constant
+  (match thing
+    ((or (guard it (consp it)
+                (car it) (guard car (= 1 car))
+                (cadr it) (guard cadr (= 2 cadr)))
+         (guard it (consp it) ; this does not happen under level-2
+                              ; optimization because checks for (consp it)
+                              ; is duplicated
+                (car it) (guard car (= 2 car))
+                (cadr it) (guard cadr (= 1 cadr))))
+     t)))
 
 
 (eval-when (:load-toplevel :execute)
