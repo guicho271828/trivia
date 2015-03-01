@@ -4,8 +4,8 @@
   (:shadowing-import-from :optima #:fail))
 (in-package :optima.test)
 
-(def-suite optima-test)
-(in-suite optima-test)
+(def-suite :optima-test)
+(in-suite :optima-test)
 
 ;;; Pattern syntax
 
