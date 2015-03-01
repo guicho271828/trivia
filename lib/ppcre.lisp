@@ -11,7 +11,7 @@ Syntax:
     (ppcre REGEXP PATTERN*)
 
 Matches REGEXP against the target string. Sub-PATTERNs will be used to
-match the matched groups, if REGEXP matched.
+match the matched groups, if the REGEXP matched.
 
 Examples:
 

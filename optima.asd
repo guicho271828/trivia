@@ -57,9 +57,9 @@ Examples:
 
 ### Variable-Pattern
 
-A variable-pattern matches any value and bind the value to the
-variable. _ and otherwise is a special variable-pattern (a.k.a
-wildcard-pattern) which matches any value but doesn't bind.
+A variable-pattern matches any value and binds the value to the
+variable. "_" and "otherwise" are special variable-patterns (a.k.a
+wildcard-pattern) which match any value but doesn't bind.
 
 Examples:
 
@@ -72,7 +72,7 @@ Examples:
 
 ### Place-Pattern
 
-A place-pattern matches any value like variable-patterns but bind the
+A place-pattern matches any value, in the same way as variable-patterns do, but binds the
 value with SYMBOL-MACROLET.
 
 Examples:
@@ -85,7 +85,7 @@ Examples:
 ### Guard-Pattern
 
 A guard-pattern is a special pattern that also tests whether TEST-FORM
-satisfies in the current matching context.
+is satisfied in the current matching context.
 
 Examples:
 
@@ -115,7 +115,7 @@ Examples:
 
 ### And-Pattern
 
-An and-pattern matches a value that is matched with all of
+An and-pattern matches a value that is matched with all of its
 sub-PATTERNs. The most common use case is to match a value and bind
 the value to a variable.
 
@@ -126,8 +126,8 @@ Examples:
 
 ### Constructor-Pattern
 
-A constructor-pattern matches not a value itself but a structure of
-the value. The following constructors are available:
+A constructor-pattern matches the sub-components of a value based on its structure. 
+The following constructors are available:
 
 #### CONS
 
@@ -218,7 +218,7 @@ Syntax:
            | (SLOT-NAME PATTERN*)
 
 CLASS can be omitted. If slot is a symbol, then it will be regarded
-as (slot slot). If more than one PATTERN are given, then they will be
+as (slot slot). If more than one PATTERN is given, then they will be
 wrapped by and-pattern like (and PATTERN*).
 
 Examples:
@@ -246,7 +246,7 @@ You can also use MAKE-INSTANCE style pattern syntax like:
     => (\"foo\" 30)
 
 This is equal to the example above except this implicitly resolves the
-slot names using Meta Object Protocol. In this case, you have to make
+slot names using the Metaobject Protocol. In this case, you have to make
 sure the slot names can be determined uniquely during the
 compilation. Otherwise, you will get a compilation error.
 
@@ -262,7 +262,7 @@ Syntax:
     slot ::= SLOT-NAME
            | (SLOT-NAME PATTERN*)
 
-As well as CLASS constructor-pattern, STRUCTURE can be
+As in the CLASS constructor-pattern, STRUCTURE can be
 omitted. CONC-NAME is a prefix string of a predicate (CONC-NAME +
 \"p\") and accessors (CONC-NAME + SLOT-NAME). For example, if we have
 the following defstruct,
@@ -271,7 +271,7 @@ the following defstruct,
 
 the structure constructor-pattern (person- name age) is valid because
 PERSON-P, PERSON-NAME and PERSON-AGE are available here. Technically,
-we don't need a structure defined. If we have the following code, for
+we don't need an actual structure definition. If we have the following code, for
 instance,
 
     (defun point-p (p) (consp p))
@@ -293,7 +293,7 @@ Examples:
       ((p- name age) (list name age)))
     => (\"foo\" 30)
 
-Same as class constructor-pattern, you can also use MAKE-INSTANCE
+As in the class constructor-pattern, you can also use MAKE-INSTANCE
 style pattern syntax like:
 
     (match (cons 1 2)
@@ -347,15 +347,15 @@ You may want to use a quasiquote in a pattern specifier like:
       (`(1 ,x ,@y) (list x y)))
 
 To do so, you need to use a specific quasiquote reader, for example
-[fare-quasiquote](http://cliki.net/fare-quasiquote) with loading
-fare-quasiquote-optima system, because an expanded form of a
-quasiquote reader is not standardized.
+[fare-quasiquote](http://cliki.net/fare-quasiquote) , loading
+fare-quasiquote-optima system, because there is no standard expanded form
+for quasiquote expressions.
 
 Define Constructor Patterns
 ---------------------------
 
 You can define your own constructor patterns by using `OPTIMA.CORE`
-package.  Firstly, define a data structore for the constructor
+package.  First, define a data structore for the constructor
 pattern.
 
     (defstruct (my-cons-pattern (:include constructor-pattern)
@@ -364,17 +364,17 @@ pattern.
                                                                                          cdr-pattern))))))
 
 Note that you must keep `SUBPATTERNS` of the constructor pattern in
-sync so that optima can take care of them.  Secondly, specify a
-condition when destructor of the constructor patterns can be shared.
-Sharing destructors removes redundant data checks, that is,
-pattern-matching can get more faster.
+sync so that optima can take care of them.
 
+Second, specify a condition when destructor of the constructor patterns can be
+shared.  Sharing destructors removes redundant data checks, that is,
+pattern-matching can get more faster.
 
     (defmethod constructor-pattern-destructor-sharable-p ((x my-cons-pattern) (y my-cons-pattern))
       t)
 
-Thirdly, define a destructor generator for the constructor pattern,
-whichs generate a destructor that specifies how to check the the
+Third, define a destructor generator for the constructor pattern. The destructor
+generator will make a destructor that specifies how to check the the
 data (`PREDICATE-FORM`) and how to access the data (`ACCESSOR-FORMS`).
 
     (defmethod constructor-pattern-make-destructor ((pattern my-cons-pattern) var)

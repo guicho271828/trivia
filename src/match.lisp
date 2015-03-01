@@ -15,9 +15,9 @@
 (defmacro match (arg &body clauses)
   "Matches ARG with CLAUSES. CLAUSES is a list of the form of (PATTERN
 . BODY) where PATTERN is a pattern specifier and BODY is an implicit
-progn. If ARG is matched with some PATTERN, then evaluates
-corresponding BODY and returns the evaluated value. Otherwise, returns
-NIL.
+progn. If ARG matches some PATTERN, `match` then evaluates
+the corresponding BODY and returns the evaluated value.  If no pattern matches,
+then returns NIL.
 
 Evaluating a form (FAIL) in the clause body causes the latest pattern
 matching be failed. For example,
@@ -100,8 +100,8 @@ not matched."
        ,(compile-multiple-value-match `(values-list ,values) clauses else))))
 
 (defmacro cmatch (arg &body clauses)
-  "Same as MATCH, except continuable MATCH-ERROR will be raised if not
-matched."
+  "Same as MATCH, except a continuable MATCH-ERROR will be raised if none of the
+clauses match."
   (once-only (arg)
     (let ((else `(cerror "Continue."
                          'match-error
@@ -118,8 +118,8 @@ matched."
       (compile-match args clauses else))))
 
 (defmacro multiple-value-cmatch (values-form &body clauses)
-  "Same as MULTIPLE-VALUE-MATCH, except continuable MATCH-ERROR will
-be raised if not matched."
+  "Same as MULTIPLE-VALUE-MATCH, except a continuable MATCH-ERROR will
+be raised if none of the clauses match."
   (let* ((values (gensym "VALUES"))
          (else `(cerror "Continue."
                         'match-error
