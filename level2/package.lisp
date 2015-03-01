@@ -1,3 +1,14 @@
+(defpackage :optima.level2
+  (:export :match))
 
-"Given a list of matched objects and matching clauses,
-returns an intermediate expression of decision tree structure"
+(defpackage :optima.level2.impl
+  (:use :cl
+        :alexandria
+        :optima.level0
+        :optima.level1)
+  (:shadowing-import-from
+   :optima.level0
+   :match))
+
+(in-package :optima.level2.impl)
+
