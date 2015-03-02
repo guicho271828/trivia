@@ -1,5 +1,5 @@
 (defpackage :optima.level1
-  (:export :match :guard :variables :next :or-pattern-inconsistency))
+  (:export :match* :match :guard :variables :next :or-pattern-inconsistency))
 
 (defpackage :optima.level1.impl
   (:use :cl
@@ -12,13 +12,17 @@
 
 (in-package :optima.level1.impl)
 
-(defmacro optima.level1:match (what &body clauses)
+(defmacro optima.level1:match* (whats &body clauses)
   ;; multi-in multi-match by default
-  (%match (list what)
+  (assert (listp whats))
+  (%match whats
           (mapcar (lambda-match
                     ((list* pattern body)
                      (list* (list pattern) body)))
                   clauses)))
+
+(defmacro optima.level1:match (what &body clauses)
+  `(match* (,what) ,@clauses))
 
 (defun gensym* (name)
   (lambda (x)
