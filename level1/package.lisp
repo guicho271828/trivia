@@ -16,7 +16,7 @@
   ;; multi-in multi-match by default
   (assert (listp whats))
   (%match whats
-          (mapcar (lambda-match
+          (mapcar (lambda-match0
                     ((list* pattern body)
                      (list* (list pattern) body)))
                   clauses)))
@@ -45,7 +45,7 @@ variables. the body is wrapped with `let' bounding these variables.")
 
 (defun match-clauses (clauses)
   (mapcar
-   (lambda-match
+   (lambda-match0
      ((list* patterns body)
       (match-clause patterns `(return (progn ,@body)))))
    clauses)
@@ -89,17 +89,17 @@ variables. the body is wrapped with `let' bounding these variables.")
   (match-remaining-patterns))
 
 (defun match-remaining-patterns ()
-  (match *patterns*
+  (match0 *patterns*
     (nil *body*)
     ((list* pattern *patterns*)
-     (match *args*
+     (match0 *args*
        ((list* arg *args*)
         (match-pattern-against pattern arg))))
     (_ (error "[~a] huh?" 'match-remaining-patterns))))
 
 (defun match-pattern-against (p arg)
   ;; returns a form that check if p matches arg, and if so, bind some variables.
-  (match p
+  (match0 p
     ((list* 'guard symbol test-form more-patterns)
      `(let ((,symbol ,arg))
         (when ,test-form
@@ -119,7 +119,7 @@ variables. the body is wrapped with `let' bounding these variables.")
     (_ (error "[~a] huh?" 'match-pattern-against))))
 
 (defun destructure-more-patterns (more-patterns)
-  (match more-patterns
+  (match0 more-patterns
     (nil (match-remaining-patterns)) ;; next pattern
     ((list* generator subpattern more-patterns)
      (let* ((further-expansion (destructure-more-patterns more-patterns))
@@ -138,7 +138,7 @@ variables. the body is wrapped with `let' bounding these variables.")
   ((subpatterns :initarg :subpatterns :reader subpatterns)))
 
 (defun variables (pattern)
-  (match pattern
+  (match0 pattern
     ((list* 'guard symbol _ more-patterns)
      (let ((morevar (variables-more-patterns more-patterns)))
        (assert (not (member symbol morevar)))
@@ -153,7 +153,7 @@ variables. the body is wrapped with `let' bounding these variables.")
     (_ (error "[variables] huh? : ~a" pattern))))
 
 (defun variables-more-patterns (more-patterns)
-  (match more-patterns
+  (match0 more-patterns
     (nil nil)
     ((list* _ subpattern more-patterns)
      (union (variables subpattern)

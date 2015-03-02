@@ -1,8 +1,8 @@
 
 (defpackage :optima.level0
   (:use :cl)
-  (:export #:match
-           #:lambda-match))
+  (:export #:match0
+           #:lambda-match0))
 
 (in-package :optima.level0)
 
@@ -39,14 +39,14 @@
 (defvar *what*)
 (defvar *bindings*)
 (defvar *env*)
-(defmacro match (*what* &body clauses &environment *env*)
+(defmacro match0 (*what* &body clauses &environment *env*)
   (once-only (*what*)
     (parse-patterns clauses)))
 
-(defmacro lambda-match (&body clauses)
+(defmacro lambda-match0 (&body clauses)
   (alexandria:with-gensyms (arg)
     `(lambda (,arg)
-       (match ,arg
+       (match0 ,arg
          ,@clauses))))
 
 (defun parse-patterns (clauses)

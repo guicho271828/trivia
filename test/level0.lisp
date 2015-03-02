@@ -7,7 +7,7 @@
 (in-suite :optima.level0)
 
 (defun testfn (x) 
-  (match x
+  (match0 x
     ((list* :keyword _) :keyword)
     ((list* "string" _) "string")
     ((list* MOST-POSITIVE-FIXNUM _) MOST-POSITIVE-FIXNUM)
