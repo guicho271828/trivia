@@ -75,12 +75,10 @@ variables. the body is wrapped with `let' bounding these variables.")
 ;; (note: the task of the optimizer is to minimize the number of checking).
 
 ;; thus, compilation of level-1 `match' is equivalent to just building a
-;; form of `if' and `let' binding. level-1 `match' assumes the tree is
+;; form consisting of `if' and `let' binding. level-1 `match' assumes the tree is
 ;; already valid and optimized.
 
 
-(defvar *lexvars*)
-(setf (documentation '*lexvars* 'variable) "list of variables lexically bound within the current tree")
 (defvar *patterns*)
 (setf (documentation '*patterns* 'variable) "")
 (defvar *body*)
