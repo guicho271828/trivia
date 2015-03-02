@@ -108,6 +108,18 @@
                   (cadr it) (guard1 cadr (= 1 cadr))))
      t)))
 
+(test match1*
+
+  (match1* ('(1 2) '(2 1))
+    (((guard1 it1 (consp it1)
+              (car it1) (guard1 car1 (= 1 car1))
+              (cadr it1) (guard1 cadr1 (= 2 cadr1)))
+      (guard1 it2 (consp it2)
+              (car it2) (guard1 car2 (= cadr1 car2))
+              (cadr it2) (guard1 cadr2 (= car1 cadr2))))
+     (pass))
+    (((guard1 it t) (guard1 it t))
+     (fail))))
 
 (eval-when (:load-toplevel :execute)
   (run! :optima.level1))

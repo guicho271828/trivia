@@ -12,14 +12,14 @@
 (defmacro match1* (whats &body clauses)
   ;; multi-in multi-match by default
   (assert (listp whats))
-  (%match whats
-          (mapcar (lambda-match0
-                    ((list* pattern body)
-                     (list* (list pattern) body)))
-                  clauses)))
+  (%match whats clauses))
 
 (defmacro match1 (what &body clauses)
-  `(match1* (,what) ,@clauses))
+  `(match1* (,what)
+     ,@(mapcar (lambda-match0
+                 ((list* pattern body)
+                  (list* (list pattern) body)))
+               clauses)))
 
 (defun gensym* (name)
   (lambda (x)
@@ -82,7 +82,10 @@ variables. the body is wrapped with `let' bounding these variables.")
 (setf (documentation '*body* 'variable) "")
 
 (defun match-clause (*patterns* *body* &optional (*args* *args*))
-  (assert (= (length *args*) (length *patterns*)))
+  (assert (= (length *args*) (length *patterns*))
+          nil "there is ~a patterns in ~_ ~a ~_, inconsistent with ~a"
+          (length *patterns*) *patterns*
+          (length *args*))
   (match-remaining-patterns))
 
 (defun match-remaining-patterns ()
@@ -113,7 +116,7 @@ variables. the body is wrapped with `let' bounding these variables.")
                                     `(,fn ,@vars)
                                     (list arg)))
                     subpatterns))))
-    (_ (error "[~a] huh?" 'match-pattern-against))))
+    (_ (error "[~a] huh? : ~a" 'match-pattern-against p))))
 
 (defun destructure-more-patterns (more-patterns)
   (match0 more-patterns
