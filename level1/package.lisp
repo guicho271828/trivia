@@ -1,5 +1,5 @@
 (defpackage :optima.level1
-  (:export :match1* :match1 :guard :variables :next :or-pattern-inconsistency))
+  (:export :match1* :match1 :or1 :guard1 :variables :next :or1-pattern-inconsistency))
 
 (defpackage :optima.level1.impl
   (:use :cl
@@ -57,18 +57,18 @@ variables. the body is wrapped with `let' bounding these variables.")
           ,tag))))
    clauses))
 
-;; Level-1 `match' accepts or/guard patterns only.
+;; Level-1 `match' accepts or1/guard1 patterns only.
 ;; syntax:
-;;  (or subpattens*)
-;;  (guard symbol test-form {generator-form subpattern}*)
+;;  (or1 subpattens*)
+;;  (guard1 symbol test-form {generator-form subpattern}*)
 
 ;; NOTE: There are several restrictions in the input of level-1 pattern
 ;; match. Level-1 patterns are canonical. That is, there are no
-;; forward/backward-referenced symbols, and all subpatterns of or-pattern share
+;; forward/backward-referenced symbols, and all subpatterns of or1-pattern share
 ;; the same set of variables.
 
-;; Also, level-1 guard patterns do not allow subpatterns in `symbol'.
-;; 1 guard pattern corresponds to exactly 1 type checking.
+;; Also, level-1 guard1 patterns do not allow subpatterns in `symbol'.
+;; 1 guard1 pattern corresponds to exactly 1 type checking.
 ;; (note: the task of the optimizer is to minimize the number of checking).
 
 ;; thus, compilation of level-1 `match' is equivalent to just building a
@@ -97,11 +97,11 @@ variables. the body is wrapped with `let' bounding these variables.")
 (defun match-pattern-against (p arg)
   ;; returns a form that check if p matches arg, and if so, bind some variables.
   (match0 p
-    ((list* 'guard symbol test-form more-patterns)
+    ((list* 'guard1 symbol test-form more-patterns)
      `(let ((,symbol ,arg))
         (when ,test-form
           ,(destructure-more-patterns more-patterns))))
-    ((list* 'or subpatterns)
+    ((list* 'or1 subpatterns)
      (let ((fn (gensym "FN"))
            (vars (variables p)))
        `(flet ((,fn ,vars
@@ -131,20 +131,20 @@ variables. the body is wrapped with `let' bounding these variables.")
   (when (set-equal seq1 seq2)
     seq1))
 
-(define-condition or-pattern-inconsistency (error)
+(define-condition or1-pattern-inconsistency (error)
   ((subpatterns :initarg :subpatterns :reader subpatterns)))
 
 (defun variables (pattern)
   (match0 pattern
-    ((list* 'guard symbol _ more-patterns)
+    ((list* 'guard1 symbol _ more-patterns)
      (let ((morevar (variables-more-patterns more-patterns)))
        (assert (not (member symbol morevar)))
        (cons symbol morevar)))
-    ((list* 'or subpatterns)
+    ((list* 'or1 subpatterns)
      (let ((variables-set (mapcar #'variables subpatterns)))
        (assert (reduce #'set-equal-or-nil variables-set)
                nil
-               'or-pattern-inconsistency
+               'or1-pattern-inconsistency
                :subpatterns subpatterns)
        (first variables-set)))
     (_ (error "[variables] huh? : ~a" pattern))))
@@ -157,6 +157,6 @@ variables. the body is wrapped with `let' bounding these variables.")
             (variables-more-patterns more-patterns)))
     (_ (error "[variables-more-patterns] huh? ~a" more-patterns))))
 
-;; (variables `(guard x t (car x) (guard y t)))
+;; (variables `(guard1 x t (car x) (guard1 y t)))
 
 
