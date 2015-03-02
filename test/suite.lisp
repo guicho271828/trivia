@@ -1,5 +1,5 @@
 (defpackage :optima.test
-  (:use :cl :eos :optima :optima.extra :optima.ppcre)
+  (:use :cl :fiveam :optima :optima.extra :optima.ppcre)
   (:import-from :optima.core #:parse-pattern #:unparse-pattern)
   (:shadowing-import-from :optima #:fail))
 (in-package :optima.test)

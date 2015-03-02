@@ -1,6 +1,6 @@
 
 (defpackage :optima.level1.test
-  (:use :cl :eos :optima.level1 :alexandria))
+  (:use :cl :fiveam :optima.level1 :alexandria))
 (in-package :optima.level1.test)
 
 (def-suite :optima.level1)

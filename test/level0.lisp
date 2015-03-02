@@ -1,6 +1,6 @@
 
 (defpackage :optima.level0.test
-  (:use :cl :eos :optima.level0))
+  (:use :cl :fiveam :optima.level0))
 (in-package :optima.level0.test)
 
 (def-suite :optima.level0)
