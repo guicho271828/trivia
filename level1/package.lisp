@@ -1,18 +1,15 @@
 (defpackage :optima.level1
-  (:export :match* :match :guard :variables :next :or-pattern-inconsistency))
+  (:export :match1* :match1 :guard :variables :next :or-pattern-inconsistency))
 
 (defpackage :optima.level1.impl
   (:use :cl
         :alexandria
         :optima.level0
-        :optima.level1)
-  (:shadowing-import-from
-   :optima.level0
-   :match))
+        :optima.level1))
 
 (in-package :optima.level1.impl)
 
-(defmacro optima.level1:match* (whats &body clauses)
+(defmacro match1* (whats &body clauses)
   ;; multi-in multi-match by default
   (assert (listp whats))
   (%match whats
@@ -21,8 +18,8 @@
                      (list* (list pattern) body)))
                   clauses)))
 
-(defmacro optima.level1:match (what &body clauses)
-  `(match* (,what) ,@clauses))
+(defmacro match1 (what &body clauses)
+  `(match1* (,what) ,@clauses))
 
 (defun gensym* (name)
   (lambda (x)

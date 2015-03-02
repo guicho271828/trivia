@@ -7,9 +7,9 @@
 (in-suite :optima.level1)
 
 (defmacro is-match (arg pattern)
-  `(is-true (match ,arg (,pattern t))))
+  `(is-true (match1 ,arg (,pattern t))))
 (defmacro is-not-match (arg pattern)
-  `(is-false (match ,arg (,pattern t))))
+  `(is-false (match1 ,arg (,pattern t))))
 
 (test variables
   ;; in layer1, variable binding order is strictly defined,
@@ -34,7 +34,7 @@
                                  (guard y t (car y) (guard x t)))))))
 
 
-(test match
+(test match1
 
   (is-match '(1 2)
             (guard it (consp it)
@@ -84,7 +84,7 @@
 (defun constant-fn ()
   ;; sbcl can optimize away everything in here, and can infer that the
   ;; following code returns T: since '(1 2) is a constant value
-  (match '(1 2)
+  (match1 '(1 2)
     ((or (guard it (consp it)
                 (car it) (guard car (= 1 car))
                 (cadr it) (guard cadr (= 2 cadr)))
@@ -97,7 +97,7 @@
 
 (defun nonconstant-fn (thing)
   ;; of cource this is not the case if it is not a constant
-  (match thing
+  (match1 thing
     ((or (guard it (consp it)
                 (car it) (guard car (= 1 car))
                 (cadr it) (guard cadr (= 2 cadr)))
