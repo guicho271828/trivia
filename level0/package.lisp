@@ -91,11 +91,13 @@
                         (push `(,*what* ,what) *bindings*)
                         (make-pattern-predicate cdr))))))
           (list
-           (destructuring-bind (car . cdr) args
-             (make-pattern-predicate
-              (if cdr
-                  `(cons ,car (list ,@cdr))
-                  `(cons ,car nil)))))
+           (if args
+               (destructuring-bind (car . cdr) args
+                 (make-pattern-predicate
+                  (if cdr
+                      `(cons ,car (list ,@cdr))
+                      `(cons ,car nil))))
+               `(null ,*what*)))
           (list*
            (destructuring-bind (car . cdr) args
              (make-pattern-predicate
