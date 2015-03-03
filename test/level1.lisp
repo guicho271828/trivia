@@ -22,6 +22,7 @@
   (signals error
     (variables `(or1 (guard1 x t)
                      (guard1 y t))))
+
   (is (set-equal '(x y)
                  (variables `(or1 (guard1 x t (car x) (guard1 y t))
                                   (guard1 y t (car y) (guard1 x t))))))
@@ -33,6 +34,13 @@
                  (variables `(or1 (guard1 x t nil (guard1 y t))
                                   (guard1 y t (car y) (guard1 x t)))))))
 
+(test guard1
+  (finishes
+    (macroexpand `(match1 y ((guard1 x t) nil))))
+  (signals error
+    (macroexpand `(match1 y ((guard1 (and x y) t) nil))))
+  (signals error
+    (variables `(guard1 (and x y) t))))
 
 (test match1
 

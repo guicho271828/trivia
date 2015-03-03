@@ -1,5 +1,5 @@
 (defpackage :optima.level1
-  (:export :match1* :match1 :or1 :guard1 :variables :next :or1-pattern-inconsistency))
+  (:export :match1* :match1 :or1 :guard1 :variables :next :or1-pattern-inconsistency :?))
 
 (defpackage :optima.level1.impl
   (:use :cl
@@ -8,6 +8,31 @@
         :optima.level1))
 
 (in-package :optima.level1.impl)
+
+;;; match1 specification
+
+;; NOTE: There are several restrictions in the input of level-1
+;; pattern match.
+
+;; First of all, level-1 `match' accepts or1/guard1 patterns only.
+;; syntax:
+;;  (or1 subpattens*)
+;;  (guard1 symbol test-form {generator-form subpattern}*)
+
+;; Level-1 guard1 patterns do not allow subpatterns in `symbol'.  1 guard1
+;; pattern corresponds to exactly 1 type checking.  (note: the task of the
+;; optimizer is to minimize the number of checking).
+
+;; Level-1 patterns should be canonical. That is, there are no
+;; forward/backward-referenced symbols, and all subpatterns of or1-pattern
+;; share the same set of variables.
+
+;; Thus, compilation of level-1 `match' is equivalent to just building a
+;; form consisting of `if' and `let' binding. level-1 `match' assumes the
+;; tree is already valid and optimized.
+
+
+;;; API
 
 (defmacro match1* (whats &body clauses)
   ;; multi-in multi-match by default
@@ -20,6 +45,8 @@
                  ((list* pattern body)
                   (list* (list pattern) body)))
                clauses)))
+
+;;; implementation
 
 (defun gensym* (name)
   (lambda (x)
@@ -57,24 +84,6 @@ variables. the body is wrapped with `let' bounding these variables.")
           ,tag))))
    clauses))
 
-;; Level-1 `match' accepts or1/guard1 patterns only.
-;; syntax:
-;;  (or1 subpattens*)
-;;  (guard1 symbol test-form {generator-form subpattern}*)
-
-;; NOTE: There are several restrictions in the input of level-1 pattern
-;; match. Level-1 patterns are canonical. That is, there are no
-;; forward/backward-referenced symbols, and all subpatterns of or1-pattern share
-;; the same set of variables.
-
-;; Also, level-1 guard1 patterns do not allow subpatterns in `symbol'.
-;; 1 guard1 pattern corresponds to exactly 1 type checking.
-;; (note: the task of the optimizer is to minimize the number of checking).
-
-;; thus, compilation of level-1 `match' is equivalent to just building a
-;; form consisting of `if' and `let' binding. level-1 `match' assumes the tree is
-;; already valid and optimized.
-
 
 (defvar *patterns*)
 (setf (documentation '*patterns* 'variable) "")
@@ -101,6 +110,7 @@ variables. the body is wrapped with `let' bounding these variables.")
   ;; returns a form that check if p matches arg, and if so, bind some variables.
   (match0 p
     ((list* 'guard1 symbol test-form more-patterns)
+     (assert (symbolp symbol) nil "guard1 pattern accepts symbol only ! ~_--> (guard1 symbol test-form {generator subpattern}*) symbol: ~a" symbol)
      `(let ((,symbol ,arg))
         (when ,test-form
           ,(destructure-more-patterns more-patterns))))
@@ -140,8 +150,9 @@ variables. the body is wrapped with `let' bounding these variables.")
 (defun variables (pattern)
   (match0 pattern
     ((list* 'guard1 symbol _ more-patterns)
+     (assert (symbolp symbol) nil
+             "guard1 pattern accepts symbol only ! ~_--> (guard1 symbol test-form {generator subpattern}*) symbol: ~a" symbol)
      (let ((morevar (variables-more-patterns more-patterns)))
-       (assert (not (member symbol morevar)))
        (cons symbol morevar)))
     ((list* 'or1 subpatterns)
      (let ((variables-set (mapcar #'variables subpatterns)))
@@ -161,5 +172,4 @@ variables. the body is wrapped with `let' bounding these variables.")
     (_ (error "[variables-more-patterns] huh? ~a" more-patterns))))
 
 ;; (variables `(guard1 x t (car x) (guard1 y t)))
-
 
