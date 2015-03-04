@@ -1,6 +1,4 @@
-(asdf:defsystem :optima
-  :description "Optimized Pattern Matching Library"
-  :long-description "optima is a very fast pattern matching library
+optima is a very fast pattern matching library
 which uses optimizing techniques widely used in a functional
 programming world. See the following references for more detail:
 
@@ -52,7 +50,7 @@ A constant-pattern matches the constant itself.
 Examples:
 
     (match 1 (1 2)) => 2
-    (match \"foo\" (\"foo\" \"bar\")) => \"bar\"
+    (match "foo" ("foo" "bar")) => "bar"
     (match '(1) ('(1) 2)) => 2
 
 ### Variable-Pattern
@@ -158,8 +156,8 @@ Examples:
     (match '(1 (2 . 3))
       ((assoc 2 x) x))
     => 3
-    (match '((\"a\" . 123))
-      ((assoc \"A\" 123 :test #'string-equal) t))
+    (match '(("a" . 123))
+      ((assoc "A" 123 :test #'string-equal) t))
     => T
 
 #### PROPERTY
@@ -234,16 +232,16 @@ Examples:
       ((point (x 1 x)) x))
     => 1
     (defstruct person (name age))
-    (defvar foo (make-person :name \"foo\" :age 30))
+    (defvar foo (make-person :name "foo" :age 30))
     (match foo
       ((person name age) (list name age)))
-    => (\"foo\" 30)
+    => ("foo" 30)
 
 You can also use MAKE-INSTANCE style pattern syntax like:
 
     (match foo
       ((person :name name :age age) (list name age)))
-    => (\"foo\" 30)
+    => ("foo" 30)
 
 This is equal to the example above except this implicitly resolves the
 slot names using the Metaobject Protocol. In this case, you have to make
@@ -264,7 +262,7 @@ Syntax:
 
 As in the CLASS constructor-pattern, STRUCTURE can be
 omitted. CONC-NAME is a prefix string of a predicate (CONC-NAME +
-\"p\") and accessors (CONC-NAME + SLOT-NAME). For example, if we have
+"p") and accessors (CONC-NAME + SLOT-NAME). For example, if we have
 the following defstruct,
 
     (defstruct person name age)
@@ -289,9 +287,9 @@ Examples:
     (defstruct (person (:conc-name :p-)
                        (:predicate p-p))
       name age)
-    (match (make-person :name \"foo\" :age 30)
+    (match (make-person :name "foo" :age 30)
       ((p- name age) (list name age)))
-    => (\"foo\" 30)
+    => ("foo" 30)
 
 As in the class constructor-pattern, you can also use MAKE-INSTANCE
 style pattern syntax like:
@@ -330,7 +328,7 @@ Expansion of EQ, EQL, EQUAL, EQUALP derived patterns:
     (eq 'foo) => (guard it (eq it 'foo))
     (eql 123) => (guard it (eql it 123))
     (equal '(1 2)) => (guard it (equal it '(1 2)))
-    (equalp \"foo\") => (guard it (equalp it \"foo\"))
+    (equalp "foo") => (guard it (equalp it "foo")) 
 
 #### TYPE
 
@@ -390,24 +388,4 @@ Finally, define a parser and an unparser for the constructor pattern.
       `(cons ,(unparse-pattern (my-cons-pattern-car-pattern pattern))
              ,(unparse-pattern (my-cons-pattern-cdr-pattern pattern))))
 
-See the source code for more detail."
-  :version "1.0"
-  :author "Tomohiro Matsuyama"
-  :license "LLGPL"
-  :depends-on (:alexandria
-               :closer-mop)
-  :components ((:module "src"
-                :serial t
-                :components ((:file "packages")
-                             (:file "util")
-                             (:file "runtime")
-                             (:file "pattern")
-                             (:file "fail")
-                             (:file "compiler")
-                             (:file "match")
-                             (:file "extra")))))
-
-(defmethod asdf:perform ((op asdf:test-op) (system (eql (asdf:find-system :optima))))
-  (asdf:load-system :optima.test)
-  (eval (read-from-string "(eos:run! 'optima.test::optima-test)"))
-  t)
+See the source code for more detail.
