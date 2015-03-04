@@ -1,33 +1,14 @@
+;;; integrated testing including derived patterns
+;;;
+;;; INCOMPATIBILITY NOTE: `fail' no longer effective: it forces the
+;;; optimization algorithm to be backtracking-automata specific
 (defpackage :optima.test
-  (:use :cl :fiveam :optima :optima.extra :optima.ppcre)
-  (:import-from :optima.core #:parse-pattern #:unparse-pattern)
-  (:shadowing-import-from :optima #:fail))
+  (:use :cl :fiveam :optima.level2))
+
 (in-package :optima.test)
 
-(def-suite :optima-test)
-(in-suite :optima-test)
-
-;;; Pattern syntax
-
-(test roundtrip
-  (macrolet
-      ((check-roundtrip (pattern)
-         `(is (equal ',pattern
-                     (unparse-pattern (parse-pattern ',pattern))))))
-    ;; constant
-    (check-roundtrip 1)
-    (check-roundtrip t)
-    (check-roundtrip nil)
-    (check-roundtrip :foo)
-    (check-roundtrip 3.14)
-    (check-roundtrip "foo")
-    (check-roundtrip 'x)
-    (check-roundtrip '(x . y))
-    (check-roundtrip '(x y))
-    (check-roundtrip '(1 :foo))
-    ;; variable
-    ; (check-roundtrip _) does not roundtrip, but that's probably OK.
-    (check-roundtrip x)))
+(def-suite :optima)
+(in-suite :optima)
 
 ;;; Pattern matching
 
@@ -36,9 +17,6 @@
 
 (defmacro is-not-match (arg pattern)
   `(is-false (match ,arg (,pattern t))))
-
-(test empty
-  (is-true (match 1 (_ (fail)) (_ t))))
 
 (test constant-pattern
   ;; integer
@@ -300,24 +278,7 @@
              ((cons 2 1) 2)
              (_ t)
              ((cons 1 2) nil)))
-  ;; fail
-  (is-false (match 1
-              (1 (fail))))
-  (is-true (match 1
-              (1 (fail))
-              (1 t)))
-  (is-true (match 1
-             (1 (fail))
-             (1 t)
-             (_ nil)))
-  (is (eql (match (cons 1 2)
-             ((cons x y)
-              (if (eql x 1)
-                  (fail)
-                  y))
-             ((cons x 2)
-              x))
-           1))
+
   ;; linear pattern
   (signals error
     (macroexpand
@@ -353,10 +314,7 @@
              ((2) 1)
              ((1 y) y))
            2))
-  ;; fail
-  (is-true (multiple-value-match (values 1 2)
-             ((1 2) (fail))
-             ((_ _) t)))
+
   ;; linear pattern
   (signals error
     (macroexpand
@@ -369,14 +327,7 @@
   (is-true (ematch 1 (1 t)))
   (signals match-error
     (ematch 1 (2 t)))
-  ;; fail
-  (is-true (ematch 1
-             (1 (fail))
-             (_ t)))
-  (signals match-error
-    (ematch 1
-      (1 (fail))
-      (1 (fail))))
+
   ;; only once
   (let ((count 0))
     (flet ((f () (incf count)))
@@ -389,10 +340,7 @@
   (signals match-error
     (multiple-value-ematch (values 1 2)
       ((2 1) t)))
-  ;; fail
-  (signals match-error
-    (multiple-value-ematch (values 1 2)
-      ((1 2) (fail))))
+
   ;; only once
   (let ((count 0))
     (flet ((f () (incf count)))
@@ -424,25 +372,6 @@
                  (match-error (e)
                    (first (match-error-values e))))
                1)))))
-
-;;; Contrib tests
-
-(test ppcre
-  (is-match "a" (ppcre "^a$"))
-  (is-not-match "a" (ppcre "^b$"))
-  (is-not-match 1 (ppcre "a"))
-  (is-not-match :A (ppcre "A"))
-  (is-true (match "a"
-             ((ppcre "^(.)$")
-              t)))
-  (is (equal (match "a"
-               ((ppcre "(a)" x y)
-                (list x y)))
-             '("a" nil)))
-  (is (equal (match "2012-11-04"
-               ((ppcre "^(\\d+)-(\\d+)-(\\d+)$" year month day)
-                (list year month day)))
-             '("2012" "11" "04"))))
 
 ;;; Regression tests
 
@@ -480,3 +409,8 @@
 
 (test issue105
   (is-match '(1) (list* (or 1 2) _)))
+
+
+
+(eval-when (:load-toplevel :execute)
+  (run! :optima))

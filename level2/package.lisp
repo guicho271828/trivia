@@ -122,7 +122,7 @@
            ;; ^^^^ this part can surely be improved by using &environment intensively!
            ,@clauses))
 
-(defmacro match+ (args types &body clauses)
+(defmacro match+ (whats types &body clauses)
   "Variant of match* : can specify the inferred types of each argument"
   (%match whats types clauses))
 
