@@ -1,5 +1,5 @@
 (defpackage :optima.level1
-  (:export :match1* :match1 :or1 :guard1 :variables :next :or1-pattern-inconsistency :?))
+  (:export :match1* :match1 :or1 :guard1 :variables :next :or1-pattern-inconsistency :vars1 :vars2 :?))
 
 (defpackage :optima.level1.impl
   (:use :cl
@@ -145,22 +145,24 @@ variables. the body is wrapped with `let' bounding these variables.")
     seq1))
 
 (define-condition or1-pattern-inconsistency (error)
-  ((subpatterns :initarg :subpatterns :reader subpatterns)))
+  ((vars1 :initarg :vars1 :reader vars1)
+   (vars2 :initarg :vars2 :reader vars2)))
 
 (defun variables (pattern)
   (match0 pattern
     ((list* 'guard1 symbol _ more-patterns)
      (assert (symbolp symbol) nil
              "guard1 pattern accepts symbol only ! ~_--> (guard1 symbol test-form {generator subpattern}*) symbol: ~a" symbol)
-     (let ((morevar (variables-more-patterns more-patterns)))
-       (cons symbol morevar)))
+     (cons symbol (variables-more-patterns more-patterns)))
     ((list* 'or1 subpatterns)
-     (let ((variables-set (mapcar #'variables subpatterns)))
-       (assert (reduce #'set-equal-or-nil variables-set)
-               nil
-               'or1-pattern-inconsistency
-               :subpatterns subpatterns)
-       (first variables-set)))
+     (reduce (lambda (vars next)
+               (assert (set-equal-or-nil vars next)
+                       (vars)
+                       'or1-pattern-inconsistency
+                       :vars1 vars
+                       :vars2 next)
+               vars)
+             (mapcar #'variables subpatterns)))
     (_ (error "[variables] huh? : ~a" pattern))))
 
 (defun variables-more-patterns (more-patterns)
