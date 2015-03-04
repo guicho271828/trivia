@@ -55,10 +55,22 @@
   "expand the given pattern once, just like macroexpand"
   (let (expanded)
     (do () (nil)
+      (if (atom p)
+          (setf p
+                (cond
+                  ((constantp p) `(eq ,p))
+                  ((symbolp p)
+                   ;; there is no _ pattern / variable pattern in level1
+                   (if (string= "_" (symbol-name p))
+                       (with-gensyms (it)
+                         `(guard1 ,it t))
+                       `(guard1 ,p t)))
+                  (t (error "what is this? ~a" p)))
+                expanded t)
       (multiple-value-bind (new expanded1) (pattern-expand-1 p)
         (if expanded1
             (setf p new expanded expanded1)
-            (return (values new expanded)))))))
+                (return (values new expanded))))))))
 
 (defun pattern-expand-all (p)
   "expand the given pattern once, just like macroexpand-all"

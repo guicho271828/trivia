@@ -3,7 +3,7 @@
 (defpattern and (&rest subpatterns)
   (with-gensyms (it)
     (match0 subpatterns
-      ((list) `(guard1 ,it t)) ;; well, there is no _ pattern in level1
+      ((list) '_)
       ((list sp) sp)
       ((list* sp and-subpatterns)
        (match0 (pattern-expand sp) ;; level1 patterns
@@ -20,6 +20,27 @@
   (with-gensyms (it)
     `(and ,subpattern
           (guard1 ,it ,test-form))))
+
+(defpattern not (subpattern)
+  (match0 (pattern-expand subpattern)
+    ((list* 'guard1 sym test guard1-subpatterns)
+     (if guard1-subpatterns
+         `(or1 (guard1 ,sym (not ,test))
+               (guard1 ,sym ,test
+                       ,@(alist-plist
+                          (mapcar
+                           (lambda-match0
+                             ((cons generator test-form)
+                              (cons generator `(not ,test-form)))) 
+                           (plist-alist guard1-subpatterns)))))
+         `(guard1 ,sym (not ,test))))
+    ((list* 'or1 or-subpatterns)
+     `(and ,@(mapcar (lambda (or-sp)
+                       `(not ,or-sp))
+                     or-subpatterns)))))
+
+(defpattern or (&rest subpatterns)
+  `(or1 ,@subpatterns))
 
 ;; no good idea right now
 ;; low priority
