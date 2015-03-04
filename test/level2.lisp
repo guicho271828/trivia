@@ -1,6 +1,9 @@
 
 (defpackage :optima.level2.test
-  (:use :cl :fiveam :optima.level2 :alexandria))
+  (:use :cl :fiveam :alexandria
+        :optima.level0
+        :optima.level1
+        :optima.level2))
 (in-package :optima.level2.test)
 
 (def-suite :optima.level2)
@@ -9,11 +12,6 @@
 
 (test defpattern
   (finishes (print (pattern-expand '(cons a b)))))
-
-;; (test test=
-;;   (is-true
-;;    (test= '(guard1 it1 (consp it1))
-;;           '(guard1 it2 (consp it2)))))
 
 (defun exunion (union types)
   (set-equal (exhaustive-union types) union))
@@ -27,6 +25,27 @@
                '(array simple-string sequence)))
   (is (exunion '(simple-array)
                '(simple-vector simple-array simple-string))))
+
+(defun subset (expected actual)
+  (subsetp expected actual :test #'equal))
+
+(test test-type
+  (is (eq nil (test-type '(ababa ?))))
+  (is (eq 'null (test-type '(eql nil ?))))
+  (is (eq 'string (test-type '(stringp ?))))
+
+  (is (subset '((TYPEP ? 'FIXNUM)) (type-tests 'fixnum)))
+
+  (is (subset '((TYPEP ? 'integer)
+                (integerp ?))
+              (type-tests 'integer)))
+
+  ;; more inference on integers, e.g., (< 0 ? 4), should be added
+  (is (subset '((TYPEP ? '(mod 5))
+                (TYPEP ? '(integer 0 4)))
+              (type-tests '(mod 5))))
+  (is (not (subset '((INTEGERP ?))
+                   (type-tests '(mod 5))))))
 
 
 (eval-when (:load-toplevel :execute)

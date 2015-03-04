@@ -11,12 +11,14 @@
   :license "LLGPL"
   :depends-on (:optima.level1
                :lisp-namespace
-               :closer-mop)
+               :closer-mop
+               :introspect-environment)
   :pathname "level2/"
   :serial t
   :components ((:file "package")
                (:file "derived")
-               (:file "optimizer")
+               (:file "inference2")
                (:file "typerel")
-               (:file "patterns"))
+               (:file "patterns")
+               (:file "optimizer"))
   :in-order-to ((test-op (load-op :optima.level2.test))))

@@ -11,54 +11,36 @@
            ;; pattern utils
            :pattern-compatible-p
            ;; test utils
+           :define-inference-rule
            :test-type
            :type-tests
-           :add-type-test
-           :define-type-tests
            :test-compatible-p
            ;; type utils
            :disjointp
            :all-subclasses
            :exhaustive-partitions
            :exhaustive-union
-           ))
+           ;; optimizer
+           :optimizer
+           :*optimizer*
+           :in-optimizer
+           :defoptimizer))
 
 (defpackage :optima.level2.impl
   (:use :cl :alexandria
+        :introspect-environment
         :optima.level0
         :optima.level1
         :optima.level2))
 
 (in-package :optima.level2.impl)
 
-;;;; api
 
-
-(defmacro match (what &body clauses)
-  `(match* (,what)
-     ,@(mapcar (lambda-match0
-                 ((list* pattern body)
-                  (list* (list pattern) body)))
-               clauses)))
-
-(defmacro match* (whats &body clauses)
-  (%match whats clauses))
-
-(defun %match (args clauses)
-  ;; first step: expand all subpatterns
-  (let* ((bodies (mapcar #'cdr clauses))
-         (multi-patterns (mapcar #'car clauses))
-         (expanded-level1 (mapcar (lambda (mp)
-                                    (mapcar #'pattern-expand mp))
-                                  multi-patterns)))
-    (optimize-level1 expanded-level1 body)))
 
 
 ;;;; inference database
 
 (lispn:define-namespace pattern function)
-(lispn:define-namespace pattern-transformer function)
-(lispn:define-namespace optimizer function)
 
 (defun pattern-expand-1 (p)
   "expand the given pattern once, just like macroexpand-1"
@@ -100,16 +82,56 @@
          #-sbcl
          (lambda ,args ,@body)))
 
-(defmacro define-pattern-transformer (name args &body body)
-  `(setf (symbol-transformer ',name)
+
+
+
+;;;; optimizer database
+
+(lispn:define-namespace optimizer function)
+(defvar *optimizer* :trivial)
+(defmacro in-optimizer (name)
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (setf *optimizer* ',name)))
+
+(defmacro defoptimizer (name (types clauses) &body body)
+  `(setf (symbol-optimizer ',name)
          #+sbcl
-         (sb-int:named-lambda ',name ,args ,@body)
+         (sb-int:named-lambda ',name (,clauses) ,@body)
          #-sbcl
          (lambda ,args ,@body)))
 
-(defmacro defoptimizer (name args &body body)
-  `(setf (symbol-optimizer ',name)
-         #+sbcl
-         (sb-int:named-lambda ',name ,args ,@body)
-         #-sbcl
-         (lambda ,args ,@body)))
+(defoptimizer :trivial (types clauses)
+  (declare (ignore types))
+  clauses)
+
+
+
+
+;;;; external apis
+
+(defmacro match (what &body clauses)
+  `(match* (,what)
+     ,@(mapcar (lambda-match0
+                 ((list* pattern body)
+                  (list* (list pattern) body)))
+               clauses)))
+
+(defmacro match* (whats &body clauses)
+  `(match+ ,whats
+           ,(make-list (length whats) :initial-element t)
+           ;; ^^^^ this part can surely be improved by using &environment intensively!
+           ,@clauses))
+
+(defmacro match+ (args types &body clauses)
+  "Variant of match* : can specify the inferred types of each argument"
+  (%match whats types clauses))
+
+(defun %match (args types clauses)
+  `(match1* ,args
+     ,@(funcall (symbol-optimizer *optimizer*)
+                types
+                (mapcar (lambda-match0
+                          ((list* patterns body)
+                           (list* (mapcar #'pattern-expand patterns) body)))
+                        clauses))))
+
