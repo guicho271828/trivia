@@ -1,9 +1,19 @@
 (defpackage :optima.level2
-  (:export :match
-           :match*
+  (:export :match :match*
+           :ematch :ematch*
+           :cmatch :cmatch*
+           :match-error
+           :pattern
+           :match-error-pattern
+           :match-error-values
+           ;; 
+           :multiple-value-cmatch
+           :multiple-value-ematch
+           :multiple-value-match
+           ;; 
            :guard
+           ;; 
            :defpattern
-           :define-pattern-transformer
            :pattern-expand
            :pattern-expand-1
            :pattern-expand-all
@@ -108,9 +118,9 @@
 (defmacro defoptimizer (name (types clauses) &body body)
   `(setf (symbol-optimizer ',name)
          #+sbcl
-         (sb-int:named-lambda ',name (,clauses) ,@body)
+         (sb-int:named-lambda ',name (,types ,clauses) ,@body)
          #-sbcl
-         (lambda ,args ,@body)))
+         (lambda (,types ,clauses) ,@body)))
 
 (defoptimizer :trivial (types clauses)
   (declare (ignore types))
@@ -121,18 +131,35 @@
 
 ;;;; external apis
 
-(defmacro match (what &body clauses)
-  `(match* (,what)
-     ,@(mapcar (lambda-match0
+(defun ensure-multipattern (clauses)
+  (mapcar (lambda-match0
                  ((list* pattern body)
                   (list* (list pattern) body)))
-               clauses)))
+          clauses))
+
+(defmacro match (what &body clauses)
+  `(match* (,what) ,@(ensure-multipattern clauses)))
 
 (defmacro match* (whats &body clauses)
   `(match+ ,whats
            ,(make-list (length whats) :initial-element t)
            ;; ^^^^ this part can surely be improved by using &environment intensively!
            ,@clauses))
+
+(defmacro multiple-value-match (values-form &body clauses)
+  (let* ((max (reduce #'max (mapcar (compose #'length #'ensure-list #'car) clauses)))
+         (temps (mapcar (lambda (x) (declare (ignore x)) (gensym)) (iota max)))
+         (padded (mapcar (curry #'pad max) clauses)))
+    `(multiple-value-bind ,temps ,values-form
+       (match* ,temps
+         ,@padded))))
+
+(defun pad (max clause)
+  (match0 clause
+    ((list* patterns body)
+     (list* (append patterns
+                    (make-list (- max (length patterns)) :initial-element '_)) 
+            body))))
 
 (defmacro match+ (whats types &body clauses)
   "Variant of match* : can specify the inferred types of each argument"
@@ -144,6 +171,45 @@
                 types
                 (mapcar (lambda-match0
                           ((list* patterns body)
-                           (list* (mapcar #'pattern-expand patterns) body)))
+                           (list* (mapcar #'pattern-expand-all patterns) body)))
                         clauses))))
 
+;;;; more external apis
+
+(define-condition match-error (error)
+  ((pattern :initarg :pattern :reader match-error-pattern)
+   (values :initarg :values :reader match-error-values)))
+
+(defmacro ematch (what &body clauses)
+  `(match ,what
+     ,@clauses
+     (_ (error 'match-error :pattern ',clauses :values ',what))))
+
+(defmacro ematch* (whats &body clauses)
+  `(match* ,whats
+           ,@clauses
+           (,(mapcar (constantly '_) whats)
+       (error 'match-error :pattern ',clauses :values ',what))))
+
+(defmacro multiple-value-ematch (values-form &body clauses)
+  (once-only (values-form)
+    `(multiple-value-match ,values-form
+       ,@clauses
+       (_ (error 'match-error :pattern ',clauses :values ,values-form)))))
+
+(defmacro cmatch (what &body clauses)
+  `(match ,what
+     ,@clauses
+     (_ (cerror "continue" 'match-error :pattern ',clauses :values ',what))))
+
+(defmacro cmatch* (whats &body clauses)
+  `(match* ,whats
+           ,@clauses
+           (,(mapcar (constantly '_) whats)
+       (cerror "continue" 'match-error :pattern ',clauses :values ',what))))
+
+(defmacro multiple-value-cmatch (values-form &body clauses)
+  (once-only (values-form)
+    `(multiple-value-match ,values-form
+       ,@clauses
+       (_ (cerror "continue" 'match-error :pattern ',clauses :values ',values-form)))))
