@@ -1,4 +1,6 @@
 
+(error "this file is no longer used")
+
 ;;;    Type and Test Inference
 ;;;
 ;;; this file provides utility to infer about primitive types and user-defined types

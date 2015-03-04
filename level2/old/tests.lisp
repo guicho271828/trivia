@@ -1,6 +1,8 @@
 
-(in-package :optima.level2.impl)
+(error "this file is no longer used")
 
+;;;     Tests Variations
+;;; 
 ;;; these works as the hints for the compiler.
 ;;; include only those which is not trivially defined.
 ;;; By default, type-tests finds corresponding function automatically

@@ -17,8 +17,6 @@
   :components ((:file "package")
                (:file "derived")
                (:file "optimizer")
-               (:file "inference")
-               (:file "tests")
                (:file "typerel")
                (:file "patterns"))
   :in-order-to ((test-op (load-op :optima.level2.test))))
