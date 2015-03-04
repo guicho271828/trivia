@@ -13,5 +13,7 @@
                :lisp-namespace)
   :pathname "level2/"
   :serial t
-  :components ((:file "package"))
+  :components ((:file "package")
+               (:file "derived")
+               )
   :in-order-to ((test-op (load-op :optima.level2.test))))
