@@ -52,35 +52,35 @@
 
 (lispn:define-namespace pattern function)
 
+(define-condition wildcard () ())
+
 (defun pattern-expand-1 (p)
   "expand the given pattern once, just like macroexpand-1"
-  (assert (listp p))
+  (if (atom p)
+      (values (cond
+                ((constantp p) `(eq ,p))
+                ((symbolp p)
+                 ;; there is no _ pattern / variable pattern in level1
+                 (if (string= "_" (symbol-name p))
+                     (progn (signal 'wildcard) ;; upper pattern-expand would handle this
+                            (with-gensyms (it) `(guard1 ,it t)))
+                     `(guard1 ,p t)))
+                (t (error "what is this? ~a" p)))
+              t)
   (handler-case
       (values (apply (symbol-pattern (car p)) (cdr p)) t)
     (unbound-pattern (c)
       (declare (ignore c))
-      p)))
+          p))))
 
 (defun pattern-expand (p)
   "expand the given pattern once, just like macroexpand"
   (let (expanded)
     (do () (nil)
-      (if (atom p)
-          (setf p
-                (cond
-                  ((constantp p) `(eq ,p))
-                  ((symbolp p)
-                   ;; there is no _ pattern / variable pattern in level1
-                   (if (string= "_" (symbol-name p))
-                       (with-gensyms (it)
-                         `(guard1 ,it t))
-                       `(guard1 ,p t)))
-                  (t (error "what is this? ~a" p)))
-                expanded t)
       (multiple-value-bind (new expanded1) (pattern-expand-1 p)
         (if expanded1
             (setf p new expanded expanded1)
-                (return (values new expanded))))))))
+            (return (values new expanded)))))))
 
 (defun pattern-expand-all (p)
   "expand the given pattern once, just like macroexpand-all"
@@ -89,9 +89,16 @@
     ((list* 'guard1 sym test more-patterns)
      (list* 'guard1 sym test
             (alist-plist
-             (mapcar (lambda-match0
+             (mappend
+              (lambda-match0
                        ((cons generator subpattern)
-                        (cons generator (pattern-expand-all subpattern))))
+                 (handler-case
+                     (handler-bind ((or1-pattern-inconsistency
+                                     (lambda (c)
+                                       (store-value (union (vars1 c) (vars2 c)) c))))
+                       (list (cons generator (pattern-expand-all subpattern))))
+                   (wildcard () ;; remove wildcard pattern
+                     nil))))
                      (plist-alist more-patterns)))))
     ((list* 'or1 subpatterns)
      (list* 'or1 (mapcar #'pattern-expand-all subpatterns)))))
