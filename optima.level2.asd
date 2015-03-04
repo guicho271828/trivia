@@ -10,10 +10,15 @@
   :author "Masataro Asai"
   :license "LLGPL"
   :depends-on (:optima.level1
-               :lisp-namespace)
+               :lisp-namespace
+               :closer-mop)
   :pathname "level2/"
   :serial t
   :components ((:file "package")
                (:file "derived")
-               )
+               (:file "optimizer")
+               (:file "inference")
+               (:file "tests")
+               (:file "typerel")
+               (:file "patterns"))
   :in-order-to ((test-op (load-op :optima.level2.test))))
