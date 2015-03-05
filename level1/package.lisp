@@ -1,5 +1,7 @@
 (defpackage :optima.level1
-  (:export :match1* :match1 :or1 :guard1 :variables :next :or1-pattern-inconsistency :vars1 :vars2 :?))
+  (:export :match1* :match1 :or1 :guard1 :variables :next
+           :or1-pattern-inconsistency :vars1 :vars2
+           :guard1-pattern-nonlinear :conflicts :pattern :?))
 
 (defpackage :optima.level1.impl
   (:use :cl
@@ -71,6 +73,10 @@
    clauses))
 
 (defun match-clause (arg pattern body)
+  (let ((vars (handler-bind ((guard1-pattern-nonlinear
+                              (lambda (c)
+                                (setf (pattern c) pattern))))
+                (variables pattern))))
   (match0 pattern
     ((list* 'guard1 symbol test-form more-patterns)
      (assert (symbolp symbol) nil "guard1 pattern accepts symbol only !
@@ -80,8 +86,7 @@
         (when ,test-form
           ,(destructure-guard1-subpatterns more-patterns body))))
     ((list* 'or1 subpatterns)
-     (let ((fn (gensym "FN"))
-           (vars (variables pattern)))
+       (with-gensyms (fn)
        `(flet ((,fn ,vars
                  (declare (ignorable ,@vars))
                  ,body))
@@ -89,7 +94,7 @@
           ,@(mapcar (lambda (subpattern)
                       (match-clause arg subpattern `(,fn ,@vars)))
                     subpatterns))))
-    (_ (error "[~a] huh? : ~a" 'match-pattern-against pattern))))
+      (_ (error "[~a] huh? : ~a" 'match-pattern-against pattern)))))
 
 (defun destructure-guard1-subpatterns (more-patterns body)
   (match0 more-patterns
@@ -113,8 +118,13 @@
    (vars2 :initarg :vars2 :reader vars2)))
 
 (define-condition guard1-pattern-nonlinear (error)
-  ((vars :initarg :vars :reader vars)
-   (pattern :initarg :pattern :reader pattern)))
+  ((pattern :initarg :pattern :accessor pattern)
+   (conflicts :initarg :conflicts :accessor conflicts))
+  (:report (lambda (c s)
+             (format s "~<guard1-pattern-nonlinear: ~:_~a ~:_conflicts: ~a ~:_in: ~a~:>"
+                     (list (pattern c)
+                           (apply #'intersection (conflicts c))
+                           (conflicts c))))))
 
 (defun variables (pattern)
   "given a pattern, traverse the matching tree and returns a list of variables bounded by guard1 pattern.
@@ -127,10 +137,9 @@ When or1 subpatterns have inconsistency, it signals a continuable error, with us
      (if (symbol-package symbol)
          ;; consider the explicitly named symbols only
          (let ((more-vars (variables-more-patterns more-patterns)))
-           (assert (not (member symbol more-patterns))
+           (assert (not (member symbol more-vars))
                    () 'guard1-pattern-nonlinear
-                   :vars more-vars
-                   :pattern pattern)
+                   :conflicts (list (list symbol) more-vars))
            (cons symbol more-vars))
          (variables-more-patterns more-patterns)))
     ((list* 'or1 subpatterns)
@@ -153,8 +162,12 @@ When or1 subpatterns have inconsistency, it signals a continuable error, with us
   (match0 more-patterns
     (nil nil)
     ((list* _ subpattern more-patterns)
-     (union (variables subpattern)
-            (variables-more-patterns more-patterns)))
+     (let ((vars1 (variables subpattern))
+           (vars2 (variables-more-patterns more-patterns)))
+       (assert (not (intersection vars1 vars2))
+               () 'guard1-pattern-nonlinear
+               :conflicts (list vars1 vars2))
+       (append vars1 vars2)))
     (_ (error "[variables-more-patterns] huh? ~a" more-patterns))))
 
 ;; (variables `(guard1 x t (car x) (guard1 y t)))

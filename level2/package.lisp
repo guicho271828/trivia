@@ -3,7 +3,6 @@
            :ematch :ematch*
            :cmatch :cmatch*
            :match-error
-           :pattern
            :match-error-pattern
            :match-error-values
            ;; 
@@ -146,9 +145,9 @@
 
 (defmacro match* (whats &body clauses)
   `(match+ ,whats
-           ,(make-list (length whats) :initial-element t)
-           ;; ^^^^ this part can surely be improved by using &environment intensively!
-           ,@clauses))
+       ,(make-list (length whats) :initial-element t)
+     ;; ^^^^ this part can surely be improved by using &environment intensively!
+     ,@clauses))
 
 (defmacro match+ (whats types &body clauses)
   "Variant of match* : can specify the inferred types of each argument"
@@ -174,27 +173,27 @@
 
 (defmacro ematch (what &body clauses)
   (with-gensyms (otherwise)
-  `(match ,what
-     ,@clauses
+    `(match ,what
+       ,@clauses
        (,otherwise (error 'match-error :pattern ',clauses :values (list ,otherwise))))))
 
 (defmacro ematch* (whats &body clauses)
   (let ((temps (make-gensyms whats "OTHERWISE")))
-  `(match* ,whats
-           ,@clauses
+    `(match* ,whats
+       ,@clauses
        (,temps
         (error 'match-error :pattern ',clauses :values (list ,@temps))))))
 
 (defmacro cmatch (what &body clauses)
   (with-gensyms (otherwise)
-  `(match ,what
-     ,@clauses
+    `(match ,what
+       ,@clauses
        (,otherwise (cerror "continue" 'match-error :pattern ',clauses :values (list ,otherwise))))))
 
 (defmacro cmatch* (whats &body clauses)
   (let ((temps (make-gensyms whats "OTHERWISE")))
-  `(match* ,whats
-           ,@clauses
+    `(match* ,whats
+       ,@clauses
        (,temps
         (cerror "continue" 'match-error :pattern ',clauses :values (list ,@temps))))))
 
@@ -240,6 +239,6 @@
    (lambda (clauses temps)
      `(multiple-value-bind ,temps ,values-form
         (match* ,temps
-       ,@clauses
+          ,@clauses
           (,temps
            (cerror "continue" 'match-error :pattern ',clauses :values (list ,@temps))))))))
