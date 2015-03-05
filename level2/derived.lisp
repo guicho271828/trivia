@@ -94,7 +94,7 @@
 
 (defpattern type (type-specifier)
   (with-gensyms (it)
-    `(guard1 ,it (typep ,it ,type-specifier))))
+    `(guard1 ,it (typep ,it ',type-specifier))))
 
 (defpattern access (accessor pattern)
   (let ((accessor (match0 accessor
