@@ -151,6 +151,10 @@ pattern context.")
   ((vars1 :initarg :vars1 :reader vars1)
    (vars2 :initarg :vars2 :reader vars2)))
 
+(define-condition guard1-pattern-nonlinear (error)
+  ((vars :initarg :vars :reader vars)
+   (pattern :initarg :pattern :reader pattern)))
+
 (defun variables (pattern)
   "given a pattern, traverse the matching tree and returns a list of variables bounded by guard1 pattern.
 gensym'd anonymous symbols are not accounted i.e. when symbol-package is non-nil.
@@ -159,9 +163,14 @@ When or1 subpatterns have inconsistency, it signals a continuable error, with us
     ((list* 'guard1 symbol _ more-patterns)
      (assert (symbolp symbol) nil
              "guard1 pattern accepts symbol only ! ~_--> (guard1 symbol test-form {generator subpattern}*) symbol: ~a" symbol)
-     ;; only the explicitly named symbols are considered
      (if (symbol-package symbol)
-         (cons symbol (variables-more-patterns more-patterns))
+         ;; consider the explicitly named symbols only
+         (let ((more-vars (variables-more-patterns more-patterns)))
+           (assert (not (member symbol more-patterns))
+                   () 'guard1-pattern-nonlinear
+                   :vars more-vars
+                   :pattern pattern)
+           (cons symbol more-vars))
          (variables-more-patterns more-patterns)))
     ((list* 'or1 subpatterns)
      (reduce (lambda (vars next)
