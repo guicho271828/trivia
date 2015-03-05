@@ -368,10 +368,10 @@
   ;; only once
   (let ((count 0))
     (flet ((f () (incf count)))
-      (is (eql (handler-case (multiple-value-cmatch (values (f)) ((0) t))
+      (is (eql 1
+               (handler-case (multiple-value-cmatch (values (f)) ((0) t))
                  (match-error (e)
-                   (first (match-error-values e))))
-               1)))))
+                   (first (match-error-values e)))))))))
 
 ;;; Regression tests
 
