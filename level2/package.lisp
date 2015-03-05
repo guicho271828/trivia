@@ -150,21 +150,6 @@
            ;; ^^^^ this part can surely be improved by using &environment intensively!
            ,@clauses))
 
-(defmacro multiple-value-match (values-form &body clauses)
-  (let* ((max (reduce #'max (mapcar (compose #'length #'ensure-list #'car) clauses)))
-         (temps (mapcar (lambda (x) (declare (ignore x)) (gensym)) (iota max)))
-         (padded (mapcar (curry #'pad max) clauses)))
-    `(multiple-value-bind ,temps ,values-form
-       (match* ,temps
-         ,@padded))))
-
-(defun pad (max clause)
-  (match0 clause
-    ((list* patterns body)
-     (list* (append patterns
-                    (make-list (- max (length patterns)) :initial-element '_)) 
-            body))))
-
 (defmacro match+ (whats types &body clauses)
   "Variant of match* : can specify the inferred types of each argument"
   (%match whats types clauses))
@@ -180,40 +165,81 @@
 
 ;;;; more external apis
 
+(defun make-gensyms (list &optional (name "G"))
+  (mapcar (lambda (x) (declare (ignore x)) (gensym name)) list))
+
 (define-condition match-error (error)
   ((pattern :initarg :pattern :reader match-error-pattern)
    (values :initarg :values :reader match-error-values)))
 
 (defmacro ematch (what &body clauses)
+  (with-gensyms (otherwise)
   `(match ,what
      ,@clauses
-     (_ (error 'match-error :pattern ',clauses :values ',what))))
+       (,otherwise (error 'match-error :pattern ',clauses :values (list ,otherwise))))))
 
 (defmacro ematch* (whats &body clauses)
+  (let ((temps (make-gensyms whats "OTHERWISE")))
   `(match* ,whats
            ,@clauses
-           (,(mapcar (constantly '_) whats)
-       (error 'match-error :pattern ',clauses :values ',what))))
-
-(defmacro multiple-value-ematch (values-form &body clauses)
-  (once-only (values-form)
-    `(multiple-value-match ,values-form
-       ,@clauses
-       (_ (error 'match-error :pattern ',clauses :values ,values-form)))))
+       (,temps
+        (error 'match-error :pattern ',clauses :values (list ,@temps))))))
 
 (defmacro cmatch (what &body clauses)
+  (with-gensyms (otherwise)
   `(match ,what
      ,@clauses
-     (_ (cerror "continue" 'match-error :pattern ',clauses :values ',what))))
+       (,otherwise (cerror "continue" 'match-error :pattern ',clauses :values (list ,otherwise))))))
 
 (defmacro cmatch* (whats &body clauses)
+  (let ((temps (make-gensyms whats "OTHERWISE")))
   `(match* ,whats
            ,@clauses
-           (,(mapcar (constantly '_) whats)
-       (cerror "continue" 'match-error :pattern ',clauses :values ',what))))
+       (,temps
+        (cerror "continue" 'match-error :pattern ',clauses :values (list ,@temps))))))
+
+
+
+;;;; multiple values
+
+(defun pad (max clause)
+  (match0 clause
+    ((list* patterns body)
+     (let ((patterns (ensure-list patterns)))
+       (list* (append patterns
+                      (make-list (- max (length patterns)) :initial-element '_)) 
+              body)))))
+
+(defun call-with-mvb-temp-vars (clauses fn)
+  (let* ((max (reduce #'max (mapcar (compose #'length #'ensure-list #'car) clauses)))
+         (clauses (mapcar (curry #'pad max) clauses))
+         (temps (mapcar (lambda (x) (declare (ignore x)) (gensym)) (iota max))))
+    (funcall fn clauses temps)))
+
+(defmacro multiple-value-match (values-form &body clauses)
+  (call-with-mvb-temp-vars
+   clauses
+   (lambda (clauses temps)
+     `(multiple-value-bind  ,temps ,values-form
+        (match* ,temps
+          ,@clauses)))))
+
+(defmacro multiple-value-ematch (values-form &body clauses)
+  (call-with-mvb-temp-vars
+   clauses
+   (lambda (clauses temps)
+     `(multiple-value-bind ,temps ,values-form
+        (match* ,temps
+          ,@clauses
+          (,temps
+           (error 'match-error :pattern ',clauses :values (list ,@temps))))))))
 
 (defmacro multiple-value-cmatch (values-form &body clauses)
-  (once-only (values-form)
-    `(multiple-value-match ,values-form
+  (call-with-mvb-temp-vars
+   clauses
+   (lambda (clauses temps)
+     `(multiple-value-bind ,temps ,values-form
+        (match* ,temps
        ,@clauses
-       (_ (cerror "continue" 'match-error :pattern ',clauses :values ',values-form)))))
+          (,temps
+           (cerror "continue" 'match-error :pattern ',clauses :values (list ,@temps))))))))
