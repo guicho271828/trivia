@@ -2,6 +2,9 @@
 ;;;
 ;;; INCOMPATIBILITY NOTE: `fail' no longer effective: it forces the
 ;;; optimization algorithm to be backtracking-automata specific
+;;; INCOMPATIBILITY NOTE: `place' no longer effective: to simplify level1
+;;; INCOMPATIBILITY NOTE: `match' no longer expanded in 1-pass through
+;;; `macroexpand': they are now replaced with eval
 (defpackage :optima.test
   (:use :cl :fiveam :optima.level2))
 
@@ -45,6 +48,7 @@
              ((list x y z) (+ x y z)))
            6)))
 
+#+nil
 (test place-pattern
   ;; level 0
   (let ((z 1))
@@ -281,19 +285,19 @@
 
   ;; linear pattern
   (signals error
-    (macroexpand
+    (eval
      '(match (cons 1 2)
        ((cons x x) t))))
   (signals error
-    (macroexpand
+    (eval
      '(match (list 1 (list 2 3))
        ((list x (list y x)) t))))
   (signals error
-    (macroexpand
+    (eval
      '(match (list 1 (list 2 3))
        ((list x (list y y)) t))))
   (signals error
-    (macroexpand
+    (eval
      '(match 1
        ((and x x) t))))
   (is-match 1 (and _ _))
@@ -317,7 +321,7 @@
 
   ;; linear pattern
   (signals error
-    (macroexpand
+    (eval
      '(multiple-value-match (values 1 2)
        ((x x) t))))
   (is-true (multiple-value-match 1
@@ -381,9 +385,10 @@
   (is (eql (match '(0) ((list (and x (guard it (numberp it)))) x))
            0)))
 
+#+nil
 (test issue38
   (signals error
-    (macroexpand '(match 1 ((or (place x) (place x)))))))
+    (eval '(match 1 ((or (place x) (place x)))))))
 
 (test issue31
   (is (equal (match '(1 2 3 4)
