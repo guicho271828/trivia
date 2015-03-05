@@ -149,19 +149,30 @@ variables. the body is wrapped with `let' bounding these variables.")
    (vars2 :initarg :vars2 :reader vars2)))
 
 (defun variables (pattern)
+  "given a pattern, traverse the matching tree and returns a list of variables bounded by guard1 pattern.
+gensym'd anonymous symbols are not accounted i.e. when symbol-package is non-nil.
+When or1 subpatterns have inconsistency, it signals a continuable error, with use-value restarts."
   (match0 pattern
     ((list* 'guard1 symbol _ more-patterns)
      (assert (symbolp symbol) nil
              "guard1 pattern accepts symbol only ! ~_--> (guard1 symbol test-form {generator subpattern}*) symbol: ~a" symbol)
-     (cons symbol (variables-more-patterns more-patterns)))
+     ;; only the explicitly named symbols are considered
+     (if (symbol-package symbol)
+         (cons symbol (variables-more-patterns more-patterns))
+         (variables-more-patterns more-patterns)))
     ((list* 'or1 subpatterns)
      (reduce (lambda (vars next)
-               (assert (set-equal-or-nil vars next)
-                       (vars)
-                       'or1-pattern-inconsistency
-                       :vars1 vars
-                       :vars2 next)
-               vars)
+               (restart-case
+                   (when (or vars next)
+                     ;; handles the cases where both vars and next are nil
+                     (assert (set-equal-or-nil vars next)
+                             (vars)
+                             'or1-pattern-inconsistency
+                             :vars1 vars
+                             :vars2 next)
+                     vars)
+                 (use-value (value)
+                   value)))
              (mapcar #'variables subpatterns)))
     (_ (error "[variables] huh? : ~a" pattern))))
 
