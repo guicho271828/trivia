@@ -1,3 +1,4 @@
+;;;; optima level2
 (defpackage :optima.level2
   (:export :match :match*
            :ematch :ematch*
@@ -47,7 +48,7 @@
 
 
 
-;;;; inference database
+;;;; derived pattern database
 
 (lispn:define-namespace pattern function)
 
