@@ -86,9 +86,11 @@ variables. the body is wrapped with `let' bounding these variables.")
 
 
 (defvar *patterns*)
-(setf (documentation '*patterns* 'variable) "")
+(setf (documentation '*patterns* 'variable)
+      "remaining patterns in the current clause, in multi
+pattern context.")
 (defvar *body*)
-(setf (documentation '*body* 'variable) "")
+(setf (documentation '*body* 'variable) "body code of the current clause")
 
 (defun match-clause (*patterns* *body* &optional (*args* *args*))
   (assert (= (length *args*) (length *patterns*))
@@ -107,13 +109,13 @@ variables. the body is wrapped with `let' bounding these variables.")
     (_ (error "[~a] huh?" 'match-remaining-patterns))))
 
 (defun match-pattern-against (p arg)
-  ;; returns a form that check if p matches arg, and if so, bind some variables.
+  "returns a form that check if p matches arg, and if so, bind some variables."
   (match0 p
     ((list* 'guard1 symbol test-form more-patterns)
      (assert (symbolp symbol) nil "guard1 pattern accepts symbol only ! ~_--> (guard1 symbol test-form {generator subpattern}*) symbol: ~a" symbol)
      `(let ((,symbol ,arg))
         (when ,test-form
-          ,(destructure-more-patterns more-patterns))))
+          ,(destructure-guard1-subpatterns more-patterns))))
     ((list* 'or1 subpatterns)
      (let ((fn (gensym "FN"))
            (vars (variables p)))
@@ -128,14 +130,15 @@ variables. the body is wrapped with `let' bounding these variables.")
                     subpatterns))))
     (_ (error "[~a] huh? : ~a" 'match-pattern-against p))))
 
-(defun destructure-more-patterns (more-patterns)
+(defun destructure-guard1-subpatterns (more-patterns)
   (match0 more-patterns
     (nil (match-remaining-patterns)) ;; next pattern
     ((list* generator subpattern more-patterns)
-     (let* ((further-expansion (destructure-more-patterns more-patterns))
-            (arg (gensym "DESTRCT")))
-       `(let ((,arg ,generator)) ;; no need to add to *lexvars*
-          ,(match-clause `(,subpattern) further-expansion (list arg)))))
+     (with-gensyms (field)
+       `(let ((,field ,generator))
+          ,(match-clause `(,subpattern)
+                         (destructure-guard1-subpatterns more-patterns)
+                         (list field)))))
     (_ (error "huh? ~a" more-patterns))))
 
 ;;; utility: variable-list
