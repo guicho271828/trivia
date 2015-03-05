@@ -31,20 +31,26 @@
 ;; form consisting of `if' and `let' binding. level-1 `match' assumes the
 ;; tree is already valid and optimized.
 
-
 ;;; API
 
 (defmacro match1* (whats &body clauses)
-  ;; multi-in multi-match by default
   (assert (listp whats))
-  (%match whats clauses))
+  (let* ((args (mapcar (gensym* "ARG") whats))
+         (bindings (mapcar #'list args whats))
+         (clauses
+          (mapcar (lambda (clause)
+                    (with-gensyms (it) ;; peudo arg
+                      (match0 clause
+                        ((list* patterns body)
+                         (list* `(guard1 ,it t ,@(mappend #'list args patterns))
+                                body)))))
+                  clauses)))
+    `(let ,bindings
+       (match1 t ,@clauses))))
 
 (defmacro match1 (what &body clauses)
-  `(match1* (,what)
-     ,@(mapcar (lambda-match0
-                 ((list* pattern body)
-                  (list* (list pattern) body)))
-               clauses)))
+  (once-only (what)
+    (%match what clauses)))
 
 ;;; implementation
 
@@ -53,92 +59,47 @@
     (declare (ignore x))
     (gensym name)))
 
-(defvar *args*)
-(setf (documentation '*args* 'variable)
-      "lists of gensym symbols. matching clause tests against these
-variables. the body is wrapped with `let' bounding these variables.")
+(defun %match (arg clauses)
+  `(block nil
+     ,@(match-clauses arg clauses)))
 
-(defun %match (args clauses)
-  (let ((*args* (mapcar (gensym* "ARG") args)))
-    `(let ,(mapcar #'list *args* args)
-       (block nil
-         ,@(match-clauses clauses)
-         #+nil
-         (tagbody
-           ,@(match-clauses clauses))))))
-
-(defun match-clauses (clauses)
+(defun match-clauses (arg clauses)
   (mapcar
    (lambda-match0
-     ((list* patterns body)
-      (match-clause patterns `(return (progn ,@body)))))
-   clauses)
-  #+nil
-  (alexandria:mappend
-   (lambda-match
-     ((list* patterns body)
-      (let ((tag (tag))
-            (form (match-clause patterns `(return (progn ,@body)))))
-        `((macrolet ((next () (go ,tag)))
-            ,form)
-          ,tag))))
+     ((list* pattern body)
+      (match-clause arg pattern `(return (progn ,@body)))))
    clauses))
 
-
-(defvar *patterns*)
-(setf (documentation '*patterns* 'variable)
-      "remaining patterns in the current clause, in multi
-pattern context.")
-(defvar *body*)
-(setf (documentation '*body* 'variable) "body code of the current clause")
-
-(defun match-clause (*patterns* *body* &optional (*args* *args*))
-  (assert (= (length *args*) (length *patterns*))
-          nil "there is ~a patterns in ~_ ~a ~_, inconsistent with ~a"
-          (length *patterns*) *patterns*
-          (length *args*))
-  (match-remaining-patterns))
-
-(defun match-remaining-patterns ()
-  (match0 *patterns*
-    (nil *body*)
-    ((list* pattern *patterns*)
-     (match0 *args*
-       ((list* arg *args*)
-        (match-pattern-against pattern arg))))
-    (_ (error "[~a] huh?" 'match-remaining-patterns))))
-
-(defun match-pattern-against (p arg)
-  "returns a form that check if p matches arg, and if so, bind some variables."
-  (match0 p
+(defun match-clause (arg pattern body)
+  (match0 pattern
     ((list* 'guard1 symbol test-form more-patterns)
-     (assert (symbolp symbol) nil "guard1 pattern accepts symbol only ! ~_--> (guard1 symbol test-form {generator subpattern}*) symbol: ~a" symbol)
+     (assert (symbolp symbol) nil "guard1 pattern accepts symbol only !
+    --> (guard1 symbol test-form {generator subpattern}*)
+    symbol: ~a" symbol)
      `(let ((,symbol ,arg))
         (when ,test-form
-          ,(destructure-guard1-subpatterns more-patterns))))
+          ,(destructure-guard1-subpatterns more-patterns body))))
     ((list* 'or1 subpatterns)
      (let ((fn (gensym "FN"))
-           (vars (variables p)))
+           (vars (variables pattern)))
        `(flet ((,fn ,vars
                  (declare (ignorable ,@vars))
-                 ,(match-remaining-patterns)))
+                 ,body))
           (declare (dynamic-extent (function ,fn)))
           ,@(mapcar (lambda (subpattern)
-                      (match-clause (list subpattern)
-                                    `(,fn ,@vars)
-                                    (list arg)))
+                      (match-clause arg subpattern `(,fn ,@vars)))
                     subpatterns))))
-    (_ (error "[~a] huh? : ~a" 'match-pattern-against p))))
+    (_ (error "[~a] huh? : ~a" 'match-pattern-against pattern))))
 
-(defun destructure-guard1-subpatterns (more-patterns)
+(defun destructure-guard1-subpatterns (more-patterns body)
   (match0 more-patterns
-    (nil (match-remaining-patterns)) ;; next pattern
+    (nil body)
     ((list* generator subpattern more-patterns)
      (with-gensyms (field)
        `(let ((,field ,generator))
-          ,(match-clause `(,subpattern)
-                         (destructure-guard1-subpatterns more-patterns)
-                         (list field)))))
+          ,(match-clause field
+                         subpattern
+                         (destructure-guard1-subpatterns more-patterns body)))))
     (_ (error "huh? ~a" more-patterns))))
 
 ;;; utility: variable-list
