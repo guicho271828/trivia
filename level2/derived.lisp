@@ -1,20 +1,19 @@
 (in-package :optima.level2.impl)
 
 (defpattern and (&rest subpatterns)
-  (with-gensyms (it)
-    (match0 subpatterns
-      ((list) '_)
-      ((list sp) sp)
-      ((list* sp and-subpatterns)
-       (match0 (pattern-expand sp) ;; level1 patterns
-         ((list* 'guard1 sym test guard1-subpatterns)
-          `(guard1 ,sym ,test ,@guard1-subpatterns
-                   ,sym (and ,@and-subpatterns)))
-         ((list* 'or1 or-subpatterns)
-          (list* 'or1
-                 (mapcar (lambda (or-sp)
-                           `(and ,or-sp ,@and-subpatterns))
-                         or-subpatterns))))))))
+  (match0 subpatterns
+    ((list) '_)
+    ((list sp) sp)
+    ((list* sp and-subpatterns)
+     (match0 (pattern-expand sp) ;; level1 patterns
+       ((list* 'guard1 sym test guard1-subpatterns)
+        `(guard1 ,sym ,test ,@guard1-subpatterns
+                 ,sym (and ,@and-subpatterns)))
+       ((list* 'or1 or-subpatterns)
+        (list* 'or1
+               (mapcar (lambda (or-sp)
+                         `(and ,or-sp ,@and-subpatterns))
+                       or-subpatterns)))))))
 
 (defpattern guard (subpattern test-form)
   (with-gensyms (it)
