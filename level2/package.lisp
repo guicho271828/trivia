@@ -93,10 +93,7 @@
               (lambda-match0
                        ((cons generator subpattern)
                  (handler-case
-                     (handler-bind ((or1-pattern-inconsistency
-                                     (lambda (c)
-                                       (store-value (union (vars1 c) (vars2 c)) c))))
-                       (list (cons generator (pattern-expand-all subpattern))))
+                     (list (cons generator (pattern-expand-all subpattern)))
                    (wildcard () ;; remove wildcard pattern
                      nil))))
                      (plist-alist more-patterns)))))
