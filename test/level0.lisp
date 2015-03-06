@@ -26,8 +26,19 @@
   (is (equal '(3 2 1) (testfn '(a 3 2 1)))))
 
 (test list*
+  ;; invalid list* pattern: needs at least 1 arg
   (signals error
-    (macroexpand '(match0 x ((list*) t))))) ;; invalid list* pattern: needs at least 1 arg
+    (macroexpand '(match0 x ((list*) t))))
+
+  (match0 '(:a nil)
+    ((list* a b c)
+     (is (eq :a a))
+     (is (eq nil b))
+     (is (eq nil c)))
+    (_ (fail))))
+
+
+
 
 (eval-when (:load-toplevel :execute)
   (run! :optima.level0))
