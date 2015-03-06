@@ -97,7 +97,7 @@
      ((list* pattern body)
       (match-clause arg
                     (correct-pattern pattern)
-                    `(return (progn ,@body)))))
+                    `(return (locally ,@body)))))
    clauses))
 
 ;;; pattern syntax validation
