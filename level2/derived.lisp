@@ -111,8 +111,8 @@
   (with-gensyms (it)
     `(guard1 ,it (listp ,it)
              (cdr (assoc ,item ,it
-                         ,@(when key `((:key ,key)))
-                         ,@(when test `((:test ,test))))) ,pattern)))
+                         ,@(when key `(:key ,key))
+                         ,@(when test `(:test ,test)))) ,pattern)))
 
 (defpattern property (key pattern)
   (with-gensyms (it)
