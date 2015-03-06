@@ -31,6 +31,7 @@ matrix:
     # - env: LISP=cmucl
     # free edition --- heap exhausted
     - env: LISP=allegro
+    - env: LISP=abcl            # until lisp-namespace is updated
     # - env: LISP=clisp
     # - env: LISP=clisp32
     - env: LISP=ecl
@@ -44,8 +45,6 @@ install:
     else
       curl https://raw.githubusercontent.com/luismbo/cl-travis/master/install.sh | sh;
     fi     
-  # clone lispn as of now (2015/3/1). this will be removed when the next quicklisp release contains lispn
-  - git clone --depth=1 https://github.com/guicho271828/lisp-namespace.git ~/lisp/lisp-namespace
 
 # this bit is just testing that travis correctly sets up ASDF to find
 # systems placed somewhere within ~/lisp. You can remove this section
