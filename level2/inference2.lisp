@@ -72,17 +72,24 @@
                    (append (predicatep-function (car type))
                            (predicate-p-function (car type)))))))))
 
+
+(defun predicatep (type)
+  (let* ((name (symbol-name type)))
+    (find-symbol (format nil "~aP" name)
+                 (symbol-package type))))
+
+(defun predicate-p (type)
+  (let* ((name (symbol-name type)))
+    (find-symbol (format nil "~a-P" name)
+                 (symbol-package type))))
+
 (defun predicatep-function (type)
-  (let* ((name (symbol-name type))
-         (fnsym (find-symbol (format nil "~aP" name)
-                             (symbol-package type))))
+  (let ((fnsym (predicatep type)))
     (when (fboundp fnsym)
       `((,fnsym ?)))))
 
 (defun predicate-p-function (type)
-  (let* ((name (symbol-name type))
-         (fnsym (find-symbol (format nil "~a-P" name)
-                             (symbol-package type))))
+  (let ((fnsym (predicate-p type)))
     (when (fboundp fnsym)
       `((,fnsym ?)))))
 

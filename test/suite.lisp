@@ -72,11 +72,16 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defclass person ()
-    ((name :initarg :name)
-     (age :initarg :age)))
+       ((name :initarg :name :reader name)
+        (age :initarg :age)))
 
   (defstruct (point (:predicate point-p))
     x y))
+
+(test predicatep
+  (is (null (predicatep 'point)))
+  (is (eq 'point-p (predicate-p 'point))))
+
 
 (test constructor-pattern
   ;; cons
@@ -123,8 +128,9 @@
     (is-match person (person (age 31)))
     (is-not-match person (person (name "Alice")))
     (is-not-match person (person (age 49)))
-    (is-not-match 1 (person)))
+    (is-not-match 1 (person))))
 (test make-instance
+  (let ((person (make-instance 'person :name "Bob" :age 31)))
     (is-match person (person :name "Bob" :age 31))
     (is-not-match person (person :name "Bob" :age 49))))
 (test structure
@@ -143,8 +149,9 @@
     (is-match point (point- (x 1)))
     (is-match point (point- (y 2)))
     (is-not-match point (point- (x 2)))
-    (is-not-match 1 (point-)))
+    (is-not-match 1 (point-))))
 (test structure-make-instance
+  (let ((point (make-point :x 1 :y 2)))
     (is-match point (point- :x 1 :y 2))
     (is-not-match point (point- :x 2 :y 2))))
 

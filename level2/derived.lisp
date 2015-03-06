@@ -149,3 +149,128 @@
                     ((cons key pattern)
                      `(property ,key ,pattern)))
                   (plist-alist args))))
+
+;;;; class pattern etc.
+
+(defpattern class (name &rest slots)
+  ;; in v2, class pattern is just a sugar
+  `(structure ,name ,@slots))
+
+(defpattern structure (name &rest slots)
+  (with-gensyms (it)
+    `(guard1 ,it ,(cond
+                    ((find-class name nil) `(typep ,it ',name))
+                    ((fboundp (predicatep name)) `(,(predicatep name) ,it))
+                    ((fboundp (predicate-p name)) `(,(predicate-p name) ,it))
+                    (t (simple-style-warning 
+                        "failed to infer the type-checking predicate of ~a in compile time, forced to use runtime check!"
+                        name)
+                       `(or (typep ,it ',name)
+                            (when (fboundp ',(predicatep name)) (funcall (symbol-function ',(predicatep name)) ,it))
+                            (when (fboundp ',(predicate-p name)) (funcall (symbol-function ',(predicate-p name)) ,it)))))
+             ,@(map-accessors (parse-slots slots)
+                              it name))))
+
+;; should be rewrote with c2mop:class-slots and
+;; slot-definition-readers 
+
+(defun parse-slots (slots)
+  (ematch0 slots
+    ((list) nil)
+    ((list* (list name pattern) rest)
+     (list* (list name pattern) (parse-slots rest)))
+    ((list something)
+     (etypecase something
+       (keyword (error "the last slot is a keyword!"))
+       (symbol
+        (list (list something something)))))
+    ((list something next)
+     (etypecase something
+       (keyword
+        (list (list something next)))
+       (symbol
+        (list* (list something something)
+               (parse-slots (list next))))))
+    ((list* something next rest)
+     (etypecase something
+       (keyword
+        (list* (list something next)
+               (parse-slots rest)))
+       (symbol
+        (list* (list something something)
+               (parse-slots (list* next rest))))))))
+
+(defun map-accessors (parsed it type)
+  (let ((package (symbol-package type)))
+    (if (and (find-class type nil)
+             ;; (subtypep type 'standard-object)
+             )
+        (let ((c (find-class type)))
+          (c2mop:finalize-inheritance c)
+          (mappend (lambda-ematch0
+                     ((list slot pattern)
+                      (if-let ((dslot (find-direct-slot slot c)))
+                        (if-let ((reader (first (c2mop:slot-definition-readers dslot))))
+                          `((,reader ,it) ,pattern)
+                          (progn
+                            (simple-style-warning
+                             "No reader for slot ~a in class ~a: Forced to use slot-value"
+                             (c2mop:slot-definition-name dslot) type)
+                            `((slot-value ,it ',(c2mop:slot-definition-name dslot))
+                              ,pattern)))
+                        (progn
+                          (simple-style-warning
+                           "Failed to find slot ~a in class ~a: Forced to use slot-value"
+                           slot type)
+                          `((slot-value ,it ',slot) ,pattern)))))
+                   parsed))
+        (mappend (lambda-ematch0
+                   ((list slot pattern)
+                    (let* ((h (hyphened type slot package))
+                           (c (concname type slot package))
+                           (n (nameonly type slot package))
+                           (reader (cond ((fboundp h) h)
+                                         ((fboundp c) c)
+                                         ((fboundp n) n))))
+                      (if reader
+                          `((,reader ,it) ,pattern)
+                          (progn
+                            (simple-style-warning
+                             "failed to find the accessor for slot ~a! Using ~a"
+                             slot h)
+                            `((,h ,it) ,pattern))))))
+                 parsed))))
+
+(defun find-direct-slot (slot/keyword c)
+  (or (find slot/keyword (c2mop:class-direct-slots c)
+            :key #'c2mop:slot-definition-name)
+      (find slot/keyword (c2mop:class-direct-slots c)
+            :key #'c2mop:slot-definition-name
+            :test #'string=)
+      (some (lambda (c)
+              (find-direct-slot slot/keyword c))
+            (c2mop:class-direct-superclasses c))))
+
+(defun hyphened (type slot package)
+  (when-let ((sym (find-symbol
+                   (concatenate 'string
+                                (symbol-name type)
+                                "-"
+                                (symbol-name slot))
+                   package)))
+    sym))
+
+(defun concname (type slot package)
+  (when-let ((sym (find-symbol
+                   (concatenate 'string
+                                (symbol-name type)
+                                (symbol-name slot))
+                   package)))
+    sym))
+
+(defun nameonly (type slot package)
+  (declare (ignorable type slot))
+  (when-let ((sym (find-symbol (symbol-name slot) package))) ; slot may be a keyword!
+    sym))
+
+

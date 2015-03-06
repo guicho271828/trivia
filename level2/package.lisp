@@ -21,6 +21,8 @@
            :pattern-expand-1
            :pattern-expand-all
            :defoptimizer
+           :predicatep
+           :predicate-p
            ;; pattern utils
            :pattern-compatible-p
            ;; test utils
@@ -70,10 +72,21 @@
                      `(guard1 ,p t)))
                 (t (error "what is this? ~a" p)))
               t)
-      (match0 p
+      (ematch0 p
         ((list* 'guard1 _) p)
         ((list* 'or1 _)    p)
-        (_ (values (apply (symbol-pattern (car p)) (cdr p)) t)))))
+        ((list* name args)
+         ;; handle implicit patterns
+         (values 
+          (handler-case
+              (apply (symbol-pattern name) args)
+            (unbound-pattern (c)
+              (if (or (find-class name nil)
+                      (fboundp (predicatep name))
+                      (fboundp (predicate-p name)))
+                  `(structure ,name ,@args)
+                  (error c))))
+          t)))))
 
 (defun pattern-expand (p)
   "expand the given pattern once, just like macroexpand"
