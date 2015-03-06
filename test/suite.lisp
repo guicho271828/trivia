@@ -16,10 +16,12 @@
 ;;; Pattern matching
 
 (defmacro is-match (arg pattern)
-  `(is-true (match ,arg (,pattern t))))
+  `(is-true (match ,arg (,pattern t))
+            ,(format nil "pattern ~a did not match against arg ~a" pattern arg)))
 
 (defmacro is-not-match (arg pattern)
-  `(is-false (match ,arg (,pattern t))))
+  `(is-false (match ,arg (,pattern t))
+             ,(format nil "pattern ~a matched against arg ~a" pattern arg)))
 
 (test constant-pattern
   ;; integer
@@ -40,33 +42,33 @@
 
 (test variable-pattern
   ;; simple bind
-  (is (eql (match 1 (x x)) 1))
+  (is (eql 1 (match 1 (x x))))
   ;; anonymous bind
   (is-match 1 _)
   ;; complex bind
-  (is (eql (match '(1 2 3)
-             ((list x y z) (+ x y z)))
-           6)))
+  (is (eql 6
+           (match '(1 2 3)
+             ((list x y z) (+ x y z))))))
 
 #+nil
 (test place-pattern
   ;; level 0
   (let ((z 1))
     (match z ((place x) (incf x)))
-    (is (eql z 2)))
+    (is (eql 2 z)))
   ;; level 1
   (let ((z (cons 1 2)))
     (match z
       ((cons (place x) y)
        (incf x)
        (incf y)))
-    (is (equal z (cons 2 2))))
+    (is (equal (cons 2 2) z)))
   ;; level 2
   (let ((z (list (vector 1))))
     (match z
       ((list (vector (place x)))
        (incf x)))
-    (is (equalp z (list (vector 2))))))
+    (is (equalp (list (vector 2)) z))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defclass person ()
@@ -103,9 +105,9 @@
   (is-match (vector 1 2) (simple-vector 1 2))
   ;; class
   (let ((person (make-instance 'person :name "Bob" :age 31)))
-    (is (equal (match person
-                 ((person name age) (list name age)))
-               '("Bob" 31)))
+    (is (equal '("Bob" 31)
+               (match person
+                 ((person name age) (list name age)))))
     (is-match person (person))
     (is-match person (person (name "Bob") (age 31)))
     (is-match person (person (name "Bob")))
@@ -118,9 +120,9 @@
     (is-not-match person (person :name "Bob" :age 49)))
   ;; structure
   (let ((point (make-point :x 1 :y 2)))
-    (is (equal (match point
-                 ((point- x y) (list x y)))
-               '(1 2)))
+    (is (equal '(1 2)
+               (match point
+                 ((point- x y) (list x y)))))
     (is-match point (point))
     (is-match point (point (x 1) (y 2)))
     (is-match point (point (x 1)))
@@ -217,9 +219,9 @@
   (is-match 1 (not (not (not (not 1)))))
   ;; complex
   (is-match 1 (not (guard it (consp it))))
-  (is (equal (let ((it 1))
-               (match 2 ((not (guard it (eql it 3))) it)))
-             1)))
+  (is (equal 1
+             (let ((it 1))
+               (match 2 ((not (guard it (eql it 3))) it))))))
 
 (test or-pattern
   (is-not-match 1 (or))
@@ -234,12 +236,12 @@
   (is-match 1 (or (or 1)))
   (is-not-match 1 (or (or (not 1))))
   ;; unshared variables
-  (is (equal (match 1 ((or 1 (list x) y) (list x y)))
-             '(nil nil)))
-  (is (equal (match 2 ((or 1 (list x) y) (list x y)))
-             '(nil 2)))
-  (is (equal (match '(1) ((or 1 (list x) y) (list x y)))
-             '(1 nil))))
+  (is (equal '(nil nil)
+             (match 1 ((or 1 (list x) y) (list x y)))))
+  (is (equal '(nil 2)
+             (match 2 ((or 1 (list x) y) (list x y)))))
+  (is (equal '(1 nil)
+             (match '(1) ((or 1 (list x) y) (list x y))))))
 
 (test and-pattern
   (is-match 1 (and))
@@ -250,7 +252,7 @@
   (is-match 1 (and _ _))
   (is-match 1 (and 1 (and 1)))
   (is-match 1 (and (and 1)))
-  (is (eql (match 1 ((and 1 x) x)) 1))
+  (is (eql 1 (match 1 ((and 1 x) x))))
   (is-not-match 1 (and (and (not 1))))
   (is-match 1 (and (type number) (type integer)))
   ;; complex
@@ -258,9 +260,9 @@
              ((and 1 2) nil)
              (1 t)
              (2 nil)))
-  (is (eql (match (list 1 2)
-             ((list (and 1 x) 2) x))
-           1))
+  (is (eql 1
+           (match (list 1 2)
+             ((list (and 1 x) 2) x))))
   (is-true (match (list 1 2 3)
              ((list (and 1 2 3 4 5) 2))
              ((list (and 1 (type number)) 3 3))
@@ -275,8 +277,8 @@
   ;; empty
   (is-false (match 1))
   ;; values
-  (is (equal (multiple-value-list (match 1 (1 (values 1 2 3))))
-             '(1 2 3)))
+  (is (equal '(1 2 3)
+             (multiple-value-list (match 1 (1 (values 1 2 3))))))
   ;; mixture
   (is-true (match (cons 1 2)
              ((cons 2 1) 2)
@@ -314,10 +316,10 @@
   (is-true (match 1 (_ unless nil t))))
 
 (test multiple-value-match
-  (is (eql (multiple-value-match (values 1 2)
+  (is (eql 2
+           (multiple-value-match (values 1 2)
              ((2) 1)
-             ((1 y) y))
-           2))
+             ((1 y) y))))
 
   ;; linear pattern
   (signals error
@@ -335,10 +337,10 @@
   ;; only once
   (let ((count 0))
     (flet ((f () (incf count)))
-      (is (eql (handler-case (ematch (f) (0 t))
+      (is (eql 1
+               (handler-case (ematch (f) (0 t))
                  (match-error (e)
-                   (first (match-error-values e))))
-               1)))))
+                   (first (match-error-values e)))))))))
 
 (test multiple-value-ematch
   (signals match-error
@@ -348,10 +350,10 @@
   ;; only once
   (let ((count 0))
     (flet ((f () (incf count)))
-      (is (eql (handler-case (multiple-value-ematch (values (f)) ((0) t))
+      (is (eql 1
+               (handler-case (multiple-value-ematch (values (f)) ((0) t))
                  (match-error (e)
-                   (first (match-error-values e))))
-               1)))))
+                   (first (match-error-values e)))))))))
 
 (test cmatch
   (is-true (cmatch 1 (1 t)))
@@ -360,10 +362,10 @@
   ;; only once
   (let ((count 0))
     (flet ((f () (incf count)))
-      (is (eql (handler-case (cmatch (f) (0 t))
+      (is (eql 1
+               (handler-case (cmatch (f) (0 t))
                  (match-error (e)
-                   (first (match-error-values e))))
-               1)))))
+                   (first (match-error-values e)))))))))
 
 (test multiple-value-cmatch
   (is-false (handler-bind ((match-error #'continue))
@@ -380,10 +382,10 @@
 ;;; Regression tests
 
 (test issue39
-  (is (eql (match '(0) ((list x) x))
-           0))
-  (is (eql (match '(0) ((list (and x (guard it (numberp it)))) x))
-           0)))
+  (is (eql 0
+           (match '(0) ((list x) x))))
+  (is (eql 0
+           (match '(0) ((list (and x (guard it (numberp it)))) x)))))
 
 #+nil
 (test issue38
@@ -391,17 +393,17 @@
     (eval '(match 1 ((or (place x) (place x)))))))
 
 (test issue31
-  (is (equal (match '(1 2 3 4)
+  (is (equal '(2 1 (3 4))
+             (match '(1 2 3 4)
                ((or (list* (and (type symbol) x) y z)
                     (list* y x z))
-                (list x y z)))
-             '(2 1 (3 4)))))
+                (list x y z))))))
 
 (test issue68
-  (is (equal (match 1
+  (is (equal '(:b 1)
+             (match 1
                ((guard x (equal x 2)) (list :a x))
-               (x (list :b x)))
-             '(:b 1))))
+               (x (list :b x))))))
 
 (defun signal-error ()
   (error 'error))
