@@ -81,7 +81,7 @@
 (defun make-pattern-predicate (pattern)
   (if (atom pattern)
       (cond
-        ((constantp pattern *env*) `(eq ,*what* ,pattern))
+        ((constantp pattern *env*) `(equal ,*what* ,pattern))
         ((symbolp pattern)
          (unless (string= "_" (symbol-name pattern))
            (push `(,pattern ,*what*) *bindings*))
@@ -89,7 +89,7 @@
         (t (error "what is this? ~a" pattern)))
       (destructuring-bind (name . args) pattern
         (ecase name
-          (quote `(eq ,*what* ',@args))
+          (quote `(equal ,*what* ',@args))
           (cons
            (destructuring-bind (car cdr) args
              `(and (consp ,*what*)
