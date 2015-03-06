@@ -4,21 +4,39 @@
   (ematch0 subpatterns
     ((list) '_)
     ((list sp) sp)
-    ((list* sp and-subpatterns)
-     (ematch0 (pattern-expand sp) ;; level1 patterns
-       ((list* 'guard1 sym test guard1-subpatterns)
-        `(guard1 ,sym ,test ,@guard1-subpatterns
-                 ,sym (and ,@and-subpatterns)))
-       ((list* 'or1 or-subpatterns)
-        (list* 'or1
-               (mapcar (lambda (or-sp)
-                         `(and ,or-sp ,@and-subpatterns))
-                       or-subpatterns)))))))
+    ((list* subpatterns)
+     (let* ((subpatterns (mapcar #'pattern-expand subpatterns))
+            (or1  (find 'or1 subpatterns :key #'car))
+            (rest (remove or1 subpatterns)))
+       (if or1
+           (ematch0 or1
+             ((list* 'or1 or-subpatterns)
+              (list* 'or1
+                     (mapcar (lambda (or-sp)
+                               `(and ,or-sp ,@rest))
+                             or-subpatterns))))
+           ;; no or pattern; perform lifting
+           (labels ((wrap-bind (syms body)
+                      (ematch0 syms
+                        ((list) body)
+                        ((list* sym rest)
+                         `(guard1 ,sym t ,sym ,(wrap-bind rest body)))))
+                    (wrap-test (tests body)
+                      (ematch0 tests
+                        ((list) body)
+                        ((list* test rest)
+                         (with-gensyms (it)
+                           `(guard1 ,it ,test ,it ,(wrap-test rest body)))))))
+             ;; now that all subpatterns are guard1, we can safely assume this;
+             (wrap-bind (mapcar #'second rest)
+                        (wrap-test (mapcar #'third rest)
+                                   (with-gensyms (it)
+                                     `(guard1 ,it t ,@(mappend #'cdddr rest)))))))))))
 
-(defpattern guard (subpattern test-form)
+(defpattern guard (subpattern test-form &rest more-patterns)
   (with-gensyms (it)
     `(and ,subpattern
-          (guard1 ,it ,test-form))))
+          (guard1 ,it ,test-form ,more-patterns))))
 
 (defpattern not (subpattern)
   (ematch0 (pattern-expand subpattern)
