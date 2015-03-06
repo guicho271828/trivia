@@ -21,6 +21,7 @@
   (is (exunion '(list array) '(cons null array)))
   (is (exunion '(sequence) '(cons null sequence)))
   (is (exunion '(sequence) '(cons null vector))) ; file:///usr/share/doc/hyperspec/Body/t_seq.htm
+  ;; these types may not necessarily a class in common lisp, but many implementations do.
   (is (exunion '(array sequence)
                '(array simple-string sequence)))
   (is (exunion '(simple-array)
