@@ -80,30 +80,39 @@
 
 (test constructor-pattern
   ;; cons
-  (is-match (cons 1 2) (cons 1 2))
-  ;; assoc
+  (is-match (cons 1 2) (cons 1 2)))
+(test assoc
   (is-match '((1 . 2)) (assoc 1 2))
   (is-match '((1 . 2) (3 . 4)) (assoc 3 4))
-  (is-match '(1 (2 . 3)) (assoc 2 3))
-  (is-match '((a . 1)) (assoc a 1))
+  ;; NOTE: incompatibility --- this is not an association list, according to CLHS
+  ;; (is-match '(1 (2 . 3)) (assoc 2 3))
+  (signals type-error
+    (match '(1 (2 . 3)) ((assoc 2 3) t)))
+  ;; NOTE: incompatibility --- first argument to assoc should be quoted or constant
+  ;; (is-match '((a . 1)) (assoc a 1))
+  (is-match '((a . 1)) (assoc 'a 1))
   (is-not-match 1 (assoc 1 2))
   (is-not-match '((1 . 2)) (assoc 3 4))
   (is-not-match '((1 . 2) (3 . 4)) (assoc 3 5))
-  (is-match '(("a" . 1)) (assoc "A" 1 :test string-equal))
-  ;; property
+  ;; NOTE: incompatibility --- keyword arguments to assoc is evaluated
+  ;; (is-match '(("a" . 1)) (assoc "A" 1 :test string-equal))
+  (is-match '(("a" . 1)) (assoc "A" 1 :test #'string-equal)))
+(test property
   (is-match '(:a 1) (property :a 1))
   (is-match '(:a 1 :b 2) (property :a 1))
   (is-match '(:a 1 2) (property :a 1))
   (is-match '(1 2 :b 3) (property :b 3))
-  (is-match '(a 1) (property a 1))
+  ;; NOTE: incompatibility --- first argument to property should be quoted or constant
+  ;; (is-match '(a 1) (property a 1))
+  (is-match '(a 1) (property 'a 1))
   (is-not-match 1 (property :a 1))
   (is-not-match '(:a 1) (property :b 1))
-  (is-not-match '(:a 1 :b 2) (property :b 3))
-  ;; vector
-  (is-match (vector 1 2) (vector 1 2))
-  ;; simple-vector
-  (is-match (vector 1 2) (simple-vector 1 2))
-  ;; class
+  (is-not-match '(:a 1 :b 2) (property :b 3)))
+(test vector
+  (is-match (vector 1 2) (vector 1 2)))
+(test simple-vector
+  (is-match (vector 1 2) (simple-vector 1 2)))
+(test class
   (let ((person (make-instance 'person :name "Bob" :age 31)))
     (is (equal '("Bob" 31)
                (match person
@@ -114,11 +123,11 @@
     (is-match person (person (age 31)))
     (is-not-match person (person (name "Alice")))
     (is-not-match person (person (age 49)))
-    (is-not-match 1 (person))
-    ;; make-instance style
+    (is-not-match 1 (person)))
+(test make-instance
     (is-match person (person :name "Bob" :age 31))
-    (is-not-match person (person :name "Bob" :age 49)))
-  ;; structure
+    (is-not-match person (person :name "Bob" :age 49))))
+(test structure
   (let ((point (make-point :x 1 :y 2)))
     (is (equal '(1 2)
                (match point
@@ -134,8 +143,8 @@
     (is-match point (point- (x 1)))
     (is-match point (point- (y 2)))
     (is-not-match point (point- (x 2)))
-    (is-not-match 1 (point-))
-    ;; make-instance style
+    (is-not-match 1 (point-)))
+(test structure-make-instance
     (is-match point (point- :x 1 :y 2))
     (is-not-match point (point- :x 2 :y 2))))
 
@@ -310,12 +319,16 @@
   ;; declarations
   (is-true (match 1
              (1 (declare (ignore)) t)))
+  ;; when is not supported
+  #+nil
   (is-true (match 1
              (1 when t (declare (ignore)) t)))
   (is-true (match 1
              ((guard 1 t) (declare (ignore)) t)))
   ;; syntax sugar
+  #+nil
   (is-true (match 1 (_ when t t)))
+  #+nil
   (is-true (match 1 (_ unless nil t))))
 
 (test multiple-value-match
