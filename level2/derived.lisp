@@ -23,16 +23,19 @@
 (defpattern not (subpattern)
   (match0 (pattern-expand subpattern)
     ((list* 'guard1 sym test guard1-subpatterns)
-     (if guard1-subpatterns
-         `(or1 (guard1 ,sym (not ,test))
-               (guard1 ,sym ,test
-                       ,@(alist-plist
-                          (mapcar
-                           (lambda-match0
-                             ((cons generator test-form)
-                              (cons generator `(not ,test-form)))) 
-                           (plist-alist guard1-subpatterns)))))
-         `(guard1 ,sym (not ,test))))
+     (with-gensyms (dummy)
+       ;; no symbols are visible from the body
+       (subst dummy sym
+              (if guard1-subpatterns
+                  `(or1 (guard1 ,sym (not ,test))
+                        (guard1 ,sym ,test
+                                ,@(alist-plist
+                                   (mapcar
+                                    (lambda-match0
+                                      ((cons generator test-form)
+                                       (cons generator `(not ,test-form)))) 
+                                    (plist-alist guard1-subpatterns)))))
+                  `(guard1 ,sym (not ,test))))))
     ((list* 'or1 or-subpatterns)
      `(and ,@(mapcar (lambda (or-sp)
                        `(not ,or-sp))
