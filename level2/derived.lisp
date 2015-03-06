@@ -112,12 +112,23 @@
 (defpattern assoc (item pattern &key key test)
   (with-gensyms (it)
     `(guard1 ,it (listp ,it)
-             (assoc ,item ,it
-                    ,@(when key `((:key ,key)))
-                    ,@(when test `((:test ,test)))) ,pattern)))
+             (cdr (assoc ,item ,it
+                         ,@(when key `((:key ,key)))
+                         ,@(when test `((:test ,test))))) ,pattern)))
 
 (defpattern property (key pattern)
   (with-gensyms (it)
     `(guard1 ,it (listp ,it)
              (getf ,it ,key) ,pattern)))
 
+(defpattern alist (&rest args &key &allow-other-keys)
+  `(and ,@(mapcar (lambda-match0
+                    ((cons key pattern)
+                     `(assoc ,key ,pattern)))
+                  args)))
+
+(defpattern plist (&rest args &key &allow-other-keys)
+  `(and ,@(mapcar (lambda-match0
+                    ((cons key pattern)
+                     `(property ,key ,pattern)))
+                  (plist-alist args))))

@@ -12,6 +12,8 @@
            :multiple-value-match
            ;; 
            :guard
+           :alist
+           :plist
            ;; 
            :defpattern
            :pattern-expand
