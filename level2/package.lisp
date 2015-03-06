@@ -67,11 +67,10 @@
                      `(guard1 ,p t)))
                 (t (error "what is this? ~a" p)))
               t)
-  (handler-case
-      (values (apply (symbol-pattern (car p)) (cdr p)) t)
-    (unbound-pattern (c)
-      (declare (ignore c))
-          p))))
+      (match0 p
+        ((list* 'guard1 _) p)
+        ((list* 'or1 _)    p)
+        (_ (values (apply (symbol-pattern (car p)) (cdr p)) t)))))
 
 (defun pattern-expand (p)
   "expand the given pattern once, just like macroexpand"
