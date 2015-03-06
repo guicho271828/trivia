@@ -18,10 +18,18 @@
              (variables `(guard1 x t (car x) (guard1 y t)))))
 
 
-  ;; in layer1, or-pattern binding is strict, so the variable set should be set-equal
-  (signals error
+  ;; in layer1, or-pattern binding is _soft_ by default, so the missing
+  ;; variable set in one pattern are supplied nil
+  (finishes
     (variables `(or1 (guard1 x t)
                      (guard1 y t))))
+
+  ;; however, it can be customised to make it strict, meaning of which each
+  ;; subpatterns should strictly set-equal variable set
+  (signals error
+    (let ((*or-pattern-allow-unshared-variables* nil))
+      (variables `(or1 (guard1 x t)
+                       (guard1 y t)))))
 
   (is (set-equal '(x y)
                  (variables `(or1 (guard1 x t (car x) (guard1 y t))
@@ -38,8 +46,10 @@
   (finishes
     (macroexpand `(match1 y ((guard1 x t) nil))))
   (signals error
+    ;; no level2 derived pattern in match1 !
     (macroexpand `(match1 y ((guard1 (and x y) t) nil))))
   (signals error
+    ;; no level2 derived pattern in match1 !
     (variables `(guard1 (and x y) t))))
 
 (test match1
@@ -82,10 +92,10 @@
   (is-match '(2 1)
             (guard1 it (consp it)
                     it
-                    (or1 (guard1 it t
+                    (or1 (guard1 it2 t
                                  (car it) (guard1 car (= 1 car))
                                  (cadr it) (guard1 cadr (= 2 cadr)))
-                         (guard1 it t
+                         (guard1 it2 t
                                  (car it) (guard1 car (= 2 car))
                                  (cadr it) (guard1 cadr (= 1 cadr)))))))
 
@@ -126,7 +136,7 @@
               (car it2) (guard1 car2 (= cadr1 car2))
               (cadr it2) (guard1 cadr2 (= car1 cadr2))))
      (pass))
-    (((guard1 it t) (guard1 it t))
+    (((guard1 it t) (guard1 it2 t))
      (fail))))
 
 (eval-when (:load-toplevel :execute)
