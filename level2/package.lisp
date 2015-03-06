@@ -14,6 +14,7 @@
            :guard
            :alist
            :plist
+           :property
            ;; 
            :defpattern
            :pattern-expand
