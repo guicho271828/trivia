@@ -2,7 +2,9 @@
 (defpackage :optima.level0
   (:use :cl)
   (:export #:match0
-           #:lambda-match0))
+           #:ematch0
+           #:lambda-match0
+           #:lambda-ematch0))
 
 (in-package :optima.level0)
 
@@ -43,10 +45,21 @@
   (once-only (*what*)
     (parse-patterns clauses)))
 
+(defmacro ematch0 (what &body clauses)
+  `(match0 ,what
+     ,@clauses
+     (_ (error "match error!"))))
+
 (defmacro lambda-match0 (&body clauses)
   (alexandria:with-gensyms (arg)
     `(lambda (,arg)
        (match0 ,arg
+         ,@clauses))))
+
+(defmacro lambda-ematch0 (&body clauses)
+  (alexandria:with-gensyms (arg)
+    `(lambda (,arg)
+       (ematch0 ,arg
          ,@clauses))))
 
 (defun parse-patterns (clauses)
