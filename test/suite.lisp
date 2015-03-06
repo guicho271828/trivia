@@ -139,30 +139,31 @@
     (is-match point (point- :x 1 :y 2))
     (is-not-match point (point- :x 2 :y 2))))
 
-(test derived-pattern
-  ;; list
+(test list
   (is-match '() (list))
   (is-match '(1 2 3) (list 1 2 3))
   (is-not-match '() (list _))
-  (is-not-match 5 (list _))
-  ;; list*
+  (is-not-match 5 (list _)))
+(test list*
   (is-match '() (list* _))
   (is-match '(1 2 3) (list* 1 2 (list 3)))
   (is-match '(1 2 3) (list* _))
-  (is-not-match 5 (list* _))
-  ;; alist
-  (is-match '((1 . 2) (2 . 3) (3 . 4)) (alist (3 . 4) (1 . 2)))
-  ;; plist
-  (is-match '(:a 1 :b 2 :c 3) (plist :c 3 :a 1))
-  ;; satisfies
+  ;;;;; guicho271828 --- this is incorrect, should match because (list* 5) == 5
+  ;; (is-not-match 5 (list* _))
+  (is-match 5 (list* _)))
+(test alist
+  (is-match '((1 . 2) (2 . 3) (3 . 4)) (alist (3 . 4) (1 . 2))))
+(test plist
+  (is-match '(:a 1 :b 2 :c 3) (plist :c 3 :a 1)))
+(test satisfies
   (is-match 1 (satisfies numberp))
-  (is-not-match 1 (satisfies stringp))
-  ;; eq, eql, equal, equalp
+  (is-not-match 1 (satisfies stringp)))
+(test eq-family
   (is-match :foo (eq :foo))
   (is-match 1 (eql 1))
   (is-match "foo" (equal "foo"))
-  (is-match #(1) (equalp #(1)))
-  ;; type
+  (is-match #(1) (equalp #(1))))
+(test type
   (is-match 1 (type number))
   (is-match "foo" (type string))
   (is-match :foo (type (eql :foo)))
@@ -175,8 +176,8 @@
   (is-match 1 (guard 1 t))
   (is-not-match 1 (guard 1 nil))
   (is-not-match 1 (guard 2 t))
-  (is-match 1 (guard x (eql x 1)))
-  ;; lift
+  (is-match 1 (guard x (eql x 1))))
+(test lift
   (is-match 1 (and x (guard y (eql x y))))
   (is-match 1 (and (guard x (eql x y)) y))
   (is-not-match 1 (and x (guard 2 (eql x 1))))
