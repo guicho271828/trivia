@@ -77,10 +77,11 @@
   (setf (symbol-pattern s)
         (lambda (&rest args)
           (with-gensyms (it)
-            `(guard1 ,it (typep ,it ,s)
+            `(guard1 ,it (typep ,it ',s)
                      ,@(mappend (lambda (arg i)
                                   `((elt ,it ,i) ,arg))
-                                args))))))
+                                args
+                                (iota (length args))))))))
 
 (defpattern satisfies (predicate-name)
   (with-gensyms (it)
