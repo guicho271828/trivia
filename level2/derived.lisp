@@ -63,7 +63,9 @@
   `(or1 ,@subpatterns))
 
 (defpattern quote (x)
-  `(eql ',x))
+  (if (typep x 'sequence)
+      `(equal ',x)
+      `(eql ',x)))
 
 (defpattern cons (a b)
   (with-gensyms (it)
@@ -206,6 +208,7 @@
              ;; (subtypep type 'standard-object)
              )
         (let ((c (find-class type)))
+          #+sbcl
           (c2mop:finalize-inheritance c)
           (mappend (lambda-ematch0
                      ((list slot pattern)

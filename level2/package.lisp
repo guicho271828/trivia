@@ -63,6 +63,7 @@
   "expand the given pattern once, just like macroexpand-1"
   (if (atom p)
       (values (cond
+                ((typep p 'sequence) `(equal ,p))
                 ((constantp p) `(eq ,p))
                 ((symbolp p)
                  ;; there is no _ pattern / variable pattern in level1
