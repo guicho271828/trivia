@@ -47,7 +47,7 @@
          (clauses
           (mapcar (lambda (clause)
                     (with-gensyms (it) ;; peudo arg
-                      (match0 clause
+                      (ematch0 clause
                         ((list* patterns body)
                          (list* `(guard1 ,it t ,@(mappend #'list args patterns))
                                 body)))))
@@ -93,7 +93,7 @@
 
 (defun match-clauses (arg clauses)
   (mapcar
-   (lambda-match0
+   (lambda-ematch0
      ((list* pattern body)
       (match-clause arg
                     (correct-pattern pattern)
@@ -118,8 +118,8 @@
 (defun union* (&optional x y) (union x y))
 
 (defun correct-pattern (pattern)
-  (match0 pattern
-    ((list* 'guard1 symbol _)
+  (ematch0 pattern
+    ((list* 'guard1 symbol test more-patterns)
      (restart-case
          (progn
            (check-guard1 symbol pattern)
@@ -174,7 +174,7 @@
 ;;; matching form generation
 
 (defun match-clause (arg pattern body)
-  (match0 pattern
+  (ematch0 pattern
     ((list* 'guard1 symbol test-form more-patterns)
      (let ((*lexvars* (cons symbol *lexvars*)))
        `(let ((,symbol ,arg))
@@ -195,7 +195,7 @@
                       subpatterns)))))))
 
 (defun destructure-guard1-subpatterns (more-patterns body)
-  (match0 more-patterns
+  (ematch0 more-patterns
     (nil body)
     ((list* generator subpattern more-patterns)
      (with-gensyms (field)
@@ -219,9 +219,8 @@
 
 (defun %variables (pattern)
   "given a pattern, traverse the matching tree and returns a list of variables bounded by guard1 pattern.
-gensym'd anonymous symbols are not accounted i.e. when symbol-package is non-nil.
-When or1 subpatterns have inconsistency, it signals a continuable error, with use-value restarts."
-  (match0 pattern
+gensym'd anonymous symbols are not accounted i.e. when symbol-package is non-nil."
+  (ematch0 pattern
     ((list* 'guard1 symbol _ more-patterns)
      (if (symbol-package symbol)
          ;; consider the explicitly named symbols only

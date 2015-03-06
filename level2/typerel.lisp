@@ -71,7 +71,7 @@
                        open (list new-union)))))))))))
 
 (defun remove-redundunt-types (types)
-  (match0 types
+  (ematch0 types
     ((list) nil)
     ((list* type rest)
      (if (some (lambda (c) (subtypep type c)) rest)

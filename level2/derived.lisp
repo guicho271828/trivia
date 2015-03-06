@@ -1,11 +1,11 @@
 (in-package :optima.level2.impl)
 
 (defpattern and (&rest subpatterns)
-  (match0 subpatterns
+  (ematch0 subpatterns
     ((list) '_)
     ((list sp) sp)
     ((list* sp and-subpatterns)
-     (match0 (pattern-expand sp) ;; level1 patterns
+     (ematch0 (pattern-expand sp) ;; level1 patterns
        ((list* 'guard1 sym test guard1-subpatterns)
         `(guard1 ,sym ,test ,@guard1-subpatterns
                  ,sym (and ,@and-subpatterns)))
@@ -21,7 +21,7 @@
           (guard1 ,it ,test-form))))
 
 (defpattern not (subpattern)
-  (match0 (pattern-expand subpattern)
+  (ematch0 (pattern-expand subpattern)
     ((list* 'guard1 sym test guard1-subpatterns)
      (with-gensyms (dummy)
        ;; no symbols are visible from the body
@@ -31,7 +31,7 @@
                         (guard1 ,sym ,test
                                 ,@(alist-plist
                                    (mapcar
-                                    (lambda-match0
+                                    (lambda-ematch0
                                       ((cons generator test-form)
                                        (cons generator `(not ,test-form)))) 
                                     (plist-alist guard1-subpatterns)))))
@@ -99,7 +99,7 @@
     `(guard1 ,it (typep ,it ',type-specifier))))
 
 (defpattern access (accessor pattern)
-  (let ((accessor (match0 accessor
+  (let ((accessor (ematch0 accessor
                     ((list 'function name) name)
                     ((list 'quote name) name)
                     (_ (if (symbolp accessor)

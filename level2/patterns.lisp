@@ -8,9 +8,9 @@
 
 (defun pattern-compatible-p (p1 p2)
   "tests if two patterns share the constructor."
-  (match0 p1
+  (ematch0 p1
     ((list* 'guard1 s1 t1 more1)
-     (match0 p2
+     (ematch0 p2
        ((list* 'guard1 s2 t2 more2)
         (test-compatible-p (? s1 t1)
                            (? s2 t2)))
@@ -20,9 +20,9 @@
 #+nil
 (defun pattern-compatible-p (p1 p2)
   "tests if two patterns share the constructor. only descends into or1 patterns"
-  (match0 p1
+  (ematch0 p1
     ((list* 'guard1 s1 t1 more1)
-     (match0 p2
+     (ematch0 p2
        ((list* 'guard1 s2 t2 more2)
         (test-compatible-p (? s1 t1)
                            (? s2 t2)))
@@ -42,7 +42,7 @@ to make them canonical."
 
 
 ;; (defun gsubpatterns (g)
-;;   (match0 g
+;;   (ematch0 g
 ;;     ((list* 'guard1 _ _ more-patterns) more-patterns)
 ;;     (_ (error "[~a] called against non-guard1 pattern ~a" 'gsubpatterns g))))
 ;; 
@@ -54,9 +54,9 @@ to make them canonical."
 ;;                  (mapcar #'cdr (plist-alist (gsubpatterns g2)))))))
 
 (defun find-exhaustive-test-form (g1 g2)
-  (match0 g1
+  (ematch0 g1
     ((list* 'guard1 s1 t1 _)
-     (match0 g2
+     (ematch0 g2
        ((list* 'guard1 s2 t2 _)
         `(and ,@(mapcar #'first
                         (mapcar #'type-tests

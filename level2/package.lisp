@@ -85,12 +85,12 @@
 (defun pattern-expand-all (p)
   "expand the given pattern once, just like macroexpand-all"
   ;; should start by guard1 or or1
-  (match0 (pattern-expand p)
+  (ematch0 (pattern-expand p)
     ((list* 'guard1 sym test more-patterns)
      (list* 'guard1 sym test
             (alist-plist
              (mappend
-              (lambda-match0
+              (lambda-ematch0
                        ((cons generator subpattern)
                  (handler-case
                      (list (cons generator (pattern-expand-all subpattern)))
@@ -136,7 +136,7 @@
 ;;;; external apis
 
 (defun ensure-multipattern (clauses)
-  (mapcar (lambda-match0
+  (mapcar (lambda-ematch0
                  ((list* pattern body)
                   (list* (list pattern) body)))
           clauses))
@@ -158,7 +158,7 @@
   `(match1* ,args
      ,@(funcall (symbol-optimizer *optimizer*)
                 types
-                (mapcar (lambda-match0
+                (mapcar (lambda-ematch0
                           ((list* patterns body)
                            (list* (mapcar #'pattern-expand-all patterns) body)))
                         clauses))))
@@ -203,7 +203,7 @@
 ;;;; multiple values
 
 (defun pad (max clause)
-  (match0 clause
+  (ematch0 clause
     ((list* patterns body)
      (let ((patterns (ensure-list patterns)))
        (list* (append patterns
