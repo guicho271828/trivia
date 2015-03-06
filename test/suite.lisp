@@ -183,13 +183,15 @@
   (is-not-match 1 (and x (guard 2 (eql x 1))))
   (is-not-match 1 (and x (guard y (not (eql x y)))))
   (is-match '(1 1) (list x (guard y (eql x y))))
-  (is-match '(1 1) (list (guard x (oddp x)) (guard y (eql x y))))
+  (is-match '(1 1) (list (guard x (oddp x)) (guard y (eql x y)))))
+(test lift1
   (is-not-match '(1 2) (list (guard x (oddp x)) (guard y (eql x y))))
   (is-match '(1 (1)) (list x (guard (list (guard y (eql x y))) (eql x 1))))
   (is-not-match '(1 (1)) (list x (guard (list (guard y (eql x y))) (eql x 2))))
   (is-match 1 (or (list x) (guard x (oddp x))))
   (is-match '(1) (or (list x) (guard x (oddp x))))
-  (is-not-match 1 (or (list x) (guard x (evenp x))))
+  (is-not-match 1 (or (list x) (guard x (evenp x)))))
+(test lift2
   (is-match '(1) (list (or (list x) (guard x (oddp x)))))
   (is-not-match '(1) (or (list (or (list x) (guard x (evenp x))))
                          (list (guard x (eql x 2)))))
