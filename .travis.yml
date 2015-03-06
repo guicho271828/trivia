@@ -20,15 +20,20 @@ env:
     - LISP=sbcl32
     - LISP=ccl
     - LISP=ccl32
-    - LISP=clisp
-    - LISP=clisp32
-    - LISP=cmucl
+    # - LISP=clisp
+    # - LISP=clisp32
+    # - LISP=cmucl
     - LISP=ecl
 
 matrix:
   allow_failures:
     # CIM not available for CMUCL
-    - env: LISP=cmucl
+    # - env: LISP=cmucl
+    # free edition --- heap exhausted
+    - env: LISP=allegro
+    # - env: LISP=clisp
+    # - env: LISP=clisp32
+    - env: LISP=ecl
 
 # either use a local install.sh script or install it via curl. Feel
 # free to simplify this section in your own .travis.yml file.
