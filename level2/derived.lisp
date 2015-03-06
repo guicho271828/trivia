@@ -44,12 +44,9 @@
 (defpattern or (&rest subpatterns)
   `(or1 ,@subpatterns))
 
-;; no good idea right now
-;; low priority
-;; (defpattern not (pattern)
-;;   (with-gensyms (it)
 (defpattern quote (x)
   `(eql ',x))
+
 (defpattern cons (a b)
   (with-gensyms (it)
     `(guard1 ,it (consp ,it) (car ,it) ,a (cdr ,it) ,b)))
