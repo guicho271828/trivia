@@ -24,14 +24,14 @@
   (is-true (match "a"
              ((ppcre "^(.)$")
               t)))
-  (is (equal (match "a"
+  (is (equal '("a" nil)
+             (match "a"
                ((ppcre "(a)" x y)
-                (list x y)))
-             '("a" nil)))
-  (is (equal (match "2012-11-04"
+                (list x y)))))
+  (is (equal '("2012" "11" "04")
+             (match "2012-11-04"
                ((ppcre "^(\\d+)-(\\d+)-(\\d+)$" year month day)
-                (list year month day)))
-             '("2012" "11" "04"))))
+                (list year month day))))))
 
 (eval-when (:load-toplevel :execute)
   (run! :optima.ppcre))

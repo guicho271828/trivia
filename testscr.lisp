@@ -14,5 +14,6 @@
 (uiop:quit (if (every #'fiveam::TEST-PASSED-P
                        (append (test :optima.level0)
                                (test :optima.level1)
-                               (test :optima.level2)))
+                               (test :optima.level2)
+                               (test :optima.ppcre)))
                0 1))

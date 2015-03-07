@@ -99,7 +99,7 @@
                                           ,(if soft '* len)))
                          ,@(mappend (lambda (pattern i)
                                       `(,(if soft
-                                             `(when (<= (array-total-size ,it) ,i)
+                                             `(when (< ,i (array-total-size ,it))
                                                 (,ref ,it ,i))
                                              `(,ref ,it ,i)) ,pattern))
                                     patterns (iota len)))))))))
