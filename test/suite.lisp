@@ -114,7 +114,10 @@
   (is-not-match '(:a 1) (property :b 1))
   (is-not-match '(:a 1 :b 2) (property :b 3)))
 (test vector
-  (is-match (vector 1 2) (vector 1 2)))
+  (is-match (vector 1 2) (vector 1 2))
+  (match (vector 1 2)
+    ;; soft vector pattern
+    ((vector* 1 2 a) (is (eq a nil)))))
 (test simple-vector
   (is-match (vector 1 2) (simple-vector 1 2)))
 (test class

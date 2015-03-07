@@ -12,7 +12,9 @@
   :depends-on (:optima.level1
                :lisp-namespace
                :closer-mop
-               :introspect-environment)
+               :introspect-environment ;; typeexpand
+               ;; :type-r ;; not in quicklisp yet
+               )
   :pathname "level2/"
   :serial t
   :components ((:file "package")

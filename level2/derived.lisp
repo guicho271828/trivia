@@ -85,23 +85,46 @@
       `(cons ,(car args) (list* ,@(cdr args)))
       (car args)))
 
-(dolist (s '(string
-             simple-string
-             simple-vector
-             vector
-             array
-             simple-array
-             bit-vector
-             simple-bit-vector
-             sequence))
-  (setf (symbol-pattern s)
-        (lambda (&rest args)
-          (with-gensyms (it)
-            `(guard1 ,it (typep ,it ',s)
-                     ,@(mappend (lambda (arg i)
-                                  `((elt ,it ,i) ,arg))
-                                args
-                                (iota (length args))))))))
+(defun set-vector-matcher (name &optional simple need-type soft)
+  (let* ((level2p (find-package :optima.level2))
+         (name* (intern (format nil "~a*" name) level2p)))
+    (export name* level2p)
+    (setf (symbol-pattern (if soft name* name))
+          (lambda (&rest patterns)
+            (with-gensyms (it)
+              (let ((len (length patterns))
+                    (ref (if simple 'svref 'aref)))
+                `(guard1 ,it (typep ,it '(,name
+                                          ,@(when need-type '(*))
+                                          ,(if soft '* len)))
+                         ,@(mappend (lambda (pattern i)
+                                      `(,(if soft
+                                             `(when (<= (array-total-size ,it) ,i)
+                                                (,ref ,it ,i))
+                                             `(,ref ,it ,i)) ,pattern))
+                                    patterns (iota len)))))))))
+
+(dolist (s '(string bit-vector base-string))
+  ;; strict vector matching
+  (set-vector-matcher s)
+  ;; soft vector matching where the insufficient elements are given NIL
+  (set-vector-matcher s nil nil t))
+(dolist (s '(simple-string simple-bit-vector simple-base-string))
+  (set-vector-matcher s t nil)
+  (set-vector-matcher s t nil t))
+
+(set-vector-matcher 'vector nil t)
+(set-vector-matcher 'vector nil t t)
+(set-vector-matcher 'simple-vector t nil)
+(set-vector-matcher 'simple-vector t nil t)
+
+(defpattern sequence (&rest args)
+  (with-gensyms (it)
+    `(guard1 ,it (typep ,it 'sequence)
+             ,@(mappend (lambda (arg i)
+                          `((elt ,it ,i) ,arg))
+                        args
+                        (iota (length args))))))
 
 (defpattern satisfies (predicate-name)
   (with-gensyms (it)
