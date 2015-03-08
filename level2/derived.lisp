@@ -144,12 +144,9 @@
   (let ((accessor (ematch0 accessor
                     ((list 'function name) name)
                     ((list 'quote name) name)
-                    (_ (if (symbolp accessor)
-                           accessor
-                           (error "[access] 1st arg is not a function designator"))))))
+                    (_ (error "[access] 1st arg is not a function designator")))))
     (with-gensyms (it)
-      `(guard1 ,it (,accessor ,it)
-               ,it ,pattern))))
+      `(guard1 ,it t (,accessor ,it) ,pattern))))
 
 (defpattern assoc (item pattern &key key test)
   (with-gensyms (it)

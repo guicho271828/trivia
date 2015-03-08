@@ -443,7 +443,10 @@
 (test issue105
   (is-match '(1) (list* (or 1 2) _)))
 
+(defun ^2 (x) (* x x))
 
+(test access
+  (is-match '(2) (list (access #'^2 4))))
 
 (eval-when (:load-toplevel :execute)
   (run! :optima))

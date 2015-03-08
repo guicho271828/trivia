@@ -15,6 +15,7 @@
            :alist
            :plist
            :property
+           :access
            ;; 
            :defpattern
            :pattern-expand
