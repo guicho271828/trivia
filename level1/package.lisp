@@ -53,6 +53,7 @@
                                 body)))))
                   clauses)))
     `(let ,bindings
+       (declare (ignorable ,@args))
        (match1 t ,@clauses))))
 
 (defmacro match1 (what &body clauses)
@@ -178,6 +179,7 @@
     ((list* 'guard1 symbol test-form more-patterns)
      (let ((*lexvars* (cons symbol *lexvars*)))
        `(let ((,symbol ,arg))
+          (declare (ignorable ,symbol))
           (when ,test-form
             ,(destructure-guard1-subpatterns more-patterns body)))))
     ((list* 'or1 subpatterns)
@@ -200,6 +202,7 @@
     ((list* generator subpattern more-patterns)
      (with-gensyms (field)
        `(let ((,field ,generator))
+          (declare (ignorable ,field))
           ,(match-clause field
                          subpattern
                          (let ((*lexvars* (append (variables subpattern)
