@@ -130,25 +130,23 @@
 
 ;;;; optimizer database
 
-(lispn:define-namespace optimizer function)
+(lispn:define-namespace optimizer (function (list list &key &allow-other-keys) list))
 (defvar *optimizer* :trivial)
 (defmacro in-optimizer (name)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (setf *optimizer* ',name)))
 
-(defmacro defoptimizer (name (types clauses) &body body)
-  `(setf (symbol-optimizer ',name)
-         #+sbcl
-         (sb-int:named-lambda ',name (,types ,clauses) ,@body)
-         #-sbcl
-         (lambda (,types ,clauses) ,@body)))
+(defmacro defoptimizer (name args &body body)
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (setf (symbol-optimizer ',name)
+           #+sbcl
+           (sb-int:named-lambda ',name ,args ,@body)
+           #-sbcl
+           (lambda ,args ,@body))))
 
 (defoptimizer :trivial (types clauses)
   (declare (ignore types))
   clauses)
-
-
-
 
 ;;;; external apis
 
