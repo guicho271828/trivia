@@ -1,0 +1,34 @@
+* List of Additional Patterns
+
+Introduces the patterns newly added in Trivia
+
+** Complete Set of Specialized Vector Patterns
+
+#+BEGIN_SRC lisp
+<vector-pattern> : vector      | simple-vector
+                   bit-vector  | simple-bit-vector
+                   string      | simple-string
+                   base-string | simple-base-string | sequence 
+(<vector-pattern> &rest subpatterns)
+#+END_SRC
+
+The family of vector-patterns also have /soft-match/ variants like
+=vector*=, which matches against the vectors with insufficient number of
+elements, binding the remaining unmatched variables with NIL.
+
+** Access Pattern
+
+Just want to access an element? It's time to use =access= pattern: 
+
+#+BEGIN_SRC lisp
+(access #'accessor subpattern) ; or
+(access 'accessor subpattern)
+#+END_SRC
+
+These expand into 
+
+#+BEGIN_SRC lisp
+(with-gensyms (it)
+  `(guard1 ,it t (,accessor ,it) ,subpattern))
+#+END_SRC
+
