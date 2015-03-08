@@ -3,6 +3,7 @@
   (:export :match :match*
            :ematch :ematch*
            :cmatch :cmatch*
+           :match+
            :match-error
            :match-error-pattern
            :match-error-values
@@ -165,7 +166,7 @@
      ;; ^^^^ this part can surely be improved by using &environment intensively!
      ,@clauses))
 
-(defmacro match+ (whats types &body clauses)
+(defmacro match+ ((&rest whats) (&rest types) &body clauses)
   "Variant of match* : can specify the inferred types of each argument"
   (%match whats types clauses))
 
