@@ -16,22 +16,22 @@
                                `(and ,or-sp ,@rest))
                              or-subpatterns))))
            ;; no or pattern; perform lifting
-           (labels ((wrap-bind (syms body)
-                      (ematch0 syms
-                        ((list) body)
-                        ((list* sym rest)
-                         `(guard1 ,sym t ,sym ,(wrap-bind rest body)))))
-                    (wrap-test (tests body)
+           (with-gensyms (whole)
+             (labels ((wrap-test (syms tests body)
                         (ematch0 tests
-                        ((list) body)
-                        ((list* test rest)
-                         (with-gensyms (it)
-                           `(guard1 ,it ,test ,it ,(wrap-test rest body)))))))
+                          ((list test)
+                           `(guard1 ,(first syms) ,test ,@body))
+                          ((list* test t-rest)
+                           `(guard1 ,(first syms) ,test
+                                    ,whole ,(wrap-test (rest syms) t-rest body))))))
                ;; now that all subpatterns are guard1, we can safely assume this;
-             (wrap-bind (mapcar #'second rest)
-                        (wrap-test (mapcar #'third rest)
-                                   (with-gensyms (it)
-                                     `(guard1 ,it t ,@(mappend #'cdddr rest)))))))))))
+               (let* ((symopts (mapcar #'second rest))
+                      (syms   (mapcar (compose #'first #'ensure-list) symopts))
+                      (tests  (mapcar #'third rest))
+                      (wholes (mapcar (constantly whole) rest))
+                      (tests* (mapcar #'subst wholes syms tests)))
+                 `(guard1 ,whole t
+                          ,whole ,(wrap-test symopts tests* (mappend #'cdddr rest)))))))))))
 
 (defpattern guard (subpattern test-form &rest more-patterns)
   (with-gensyms (guard)
