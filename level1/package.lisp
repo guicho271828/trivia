@@ -37,8 +37,10 @@
        (match1 t ,@clauses))))
 
 (defmacro match1 (what &body clauses)
-  (once-only (what)
-    (%match what clauses)))
+  (let ((whatvar (gensym "WHAT1")))
+    `(let ((,whatvar ,what))
+       (declare (ignorable ,whatvar))
+       ,(%match whatvar clauses))))
 
 ;;; syntax error
 
@@ -182,11 +184,14 @@
           `(,(if (getf options :place) 'symbol-macrolet 'let) ((,symbol ,arg))
              ,@(when (getf options :ignorable)
                  `((declare (ignorable ,symbol))))
-             (when ,test-form
-               (locally
-                   (declare ,@(when-let ((type (getf options :type)))
-                                `((type ,type ,symbol))))
-                 ,(destructure-guard1-subpatterns more-patterns body))))))))
+             ,((lambda (x)
+                 (if (eq t test-form) x
+                     `(when ,test-form ,x)))
+               (let ((type (getf options :type)))
+                 ((lambda (x)
+                    (if (eq t type) x
+                        `(locally (declare (type ,type ,symbol)) ,x)))
+                  (destructure-guard1-subpatterns more-patterns body)))))))))
     ((list* 'or1 subpatterns)
      (let* ((vars (variables pattern)))
        (with-gensyms (fn)
