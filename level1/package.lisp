@@ -83,7 +83,7 @@
 
 ;;; pattern syntax validation
 
-(defvar *lexvars* nil)  ;; list of symbols bound in the context
+(defvar *lexvars* nil "List of symbol-and-options in the current parsing context.")
 
 (defun %correct-more-patterns (more)
   (ematch0 more
@@ -100,12 +100,11 @@
 
 (defun correct-pattern (pattern)
   (ematch0 pattern
-    ((list* 'guard1 symbol test more-patterns)
+    ((list* 'guard1 symbol? test more-patterns)
      (restart-case
-         (progn
-           (check-guard1 symbol pattern)
-           (let ((*lexvars* (cons symbol *lexvars*)))
-             (list* 'guard1 symbol test
+         (let ((symopts (preprocess-symopts symbol? pattern)))
+           (let ((*lexvars* (cons symopts *lexvars*)))
+             (list* 'guard1 symopts test
                     (%correct-more-patterns more-patterns))))
        (repair-pattern (pattern)
          (correct-pattern pattern))))
@@ -115,9 +114,10 @@
          `(or1 ,@(mapcar
                   (lambda (sp)
                     (let* ((vars (variables sp))
-                           (missing (set-difference all-vars vars)))
+                           (missing (set-difference all-vars vars :key #'car)))
                       (if *or-pattern-allow-unshared-variables*
-                          (bind-missing-vars-with-nil sp missing)
+                          (correct-pattern
+                           (bind-missing-vars-with-nil sp missing))
                           (restart-case
                               (progn (assert (null missing)
                                              nil
@@ -127,6 +127,33 @@
                                      sp)
                             (repair-pattern (sp) sp)))))
                   subpatterns)))))))
+
+(defun preprocess-symopts (symopt? pattern)
+  "Ensure the symopts being a list, plus sets some default values."
+  (match0 (ensure-list symopt?)
+    ((list* sym options)
+     ;; error check
+     ;; symbol
+     (assert (symbolp sym)
+             nil
+             "guard1 pattern accepts symbol only !
+    --> (guard1 symbol test-form {generator subpattern}*)
+    symbol: ~a" sym)
+     (assert (not (member sym *lexvars* :key #'car))
+             nil
+             'guard1-pattern-nonlinear
+             :pattern pattern
+             :conflicts `((,sym) ,(mapcar #'car *lexvars*)))
+     (destructuring-bind (&key
+                          (type t)
+                          place
+                          (ignorable (if (symbol-package sym) nil t))
+                          &allow-other-keys)
+         options
+       (setf (getf options :type) type)
+       (when place (setf (getf options :place) t))
+       (when ignorable (setf (getf options :ignorable) t))
+       (list* sym options)))))
 
 (defun bind-missing-vars-with-nil (pattern missing)
   (ematch0 missing
@@ -139,76 +166,92 @@
                  ,it ,pattern))
       rest))))
 
-
-(defun check-guard1 (sym pattern)
-  (assert (symbolp sym)
-          nil
-          "guard1 pattern accepts symbol only !
-    --> (guard1 symbol test-form {generator subpattern}*)
-    symbol: ~a" sym)
-  (assert (not (member sym *lexvars*))
-          nil
-          'guard1-pattern-nonlinear
-          :pattern pattern
-          :conflicts `((,sym) ,*lexvars*)))
-
 ;;; matching form generation
 
+(define-condition place-pattern () ())
+
 (defun match-clause (arg pattern body)
+  ;; All patterns are corrected by correct-pattern. The first argument of
+  ;; guard1 patterns are converted into a list (symbol &key
+  ;; &allow-other-keys)
   (ematch0 pattern
-    ((list* 'guard1 symbol test-form more-patterns)
-     (let ((*lexvars* (cons symbol *lexvars*)))
-       `(let ((,symbol ,arg))
-          (declare (ignorable ,symbol))
-          (when ,test-form
-            ,(destructure-guard1-subpatterns more-patterns body)))))
+    ((list* 'guard1 symopts test-form more-patterns)
+     (let ((*lexvars* (cons symopts *lexvars*)))
+       (ematch0 symopts
+         ((list* symbol options)
+          `(,(if (getf options :place) 'symbol-macrolet 'let) ((,symbol ,arg))
+             ,@(when (getf options :ignorable)
+                 `((declare (ignorable ,symbol))))
+             (when ,test-form
+               (locally
+                   (declare ,@(when-let ((type (getf options :type)))
+                                `((type ,type ,symbol))))
+                 ,(destructure-guard1-subpatterns more-patterns body))))))))
     ((list* 'or1 subpatterns)
      (let* ((vars (variables pattern)))
        (with-gensyms (fn)
-         `(flet ((,fn ,vars
-                   (declare (ignorable ,@vars))
-                   ;; ,@(when vars `((declare (ignorable ,@vars))))
+         `(flet ((,fn ,(mapcar #'first vars)
+                   (declare
+                    ,@(mapcar (lambda-ematch0
+                                ((list* var options)
+                                 `(type ,(getf options :type) ,var)))
+                              vars))
                    ,body))
             (declare (dynamic-extent (function ,fn)))
             ;; we do not want to mess up the looking of expansion
             ;; with symbol-macrolet
             ,@(mapcar (lambda (pattern)
-                        (match-clause arg pattern `(,fn ,@vars)))
+                        (match-clause arg pattern `(,fn ,@(mapcar #'first vars))))
                       subpatterns)))))))
 
 (defun destructure-guard1-subpatterns (more-patterns body)
   (ematch0 more-patterns
     (nil body)
+    ((list generator)
+     (error "Odd number of elements in {generator subpattern}*: subpattern for ~a missing!"
+            generator))
     ((list* generator subpattern more-patterns)
-     (with-gensyms (field)
-       `(let ((,field ,generator))
-          (declare (ignorable ,field))
-          ,(match-clause field
-                         subpattern
-                         (let ((*lexvars* (append (variables subpattern)
-                                                  *lexvars*)))
-                           (destructure-guard1-subpatterns more-patterns body))))))))
+     (match-clause generator
+                   subpattern
+                   (let ((*lexvars* (append (variables subpattern)
+                                            *lexvars*)))
+                     (destructure-guard1-subpatterns more-patterns body))))))
 
 ;;; utility: variable-list
 
 (defun set-equal-or-error (&optional seq1 seq2)
-  (if (set-equal seq1 seq2)
-      seq1
+  (if (set-equal seq1 seq2 :key #'car)
+      ;; FIXME: this does not seem correct, considering there are several options now.
+      ;; type: type information of or-pattern is...?
+      ;; place: T supersedes NIL
+      ;; ignorable: never appears here since ignorable variables are excluded
+      (merge-variables seq1 seq2)
       (error "~a and ~a differs! this should have been fixed by correct-pattern, why!!??"
              seq1 seq2)))
+
+(defun merge-variables (seq1 seq2)
+  (match0 seq1
+    ((list* (list* v1 o1) rest)
+     (match0 (find v1 seq2 :key #'car)
+       ((list* _ o2)
+        (cons (list v1
+                    :type `(or ,(getf o1 :type) ,(getf o2 :type))
+                    :place (or (getf o1 :place) (getf o2 :place))
+                    :ignorable (or (getf o1 :ignorable) (getf o2 :ignorable)))
+              (merge-variables rest seq2)))))))
 
 (defun variables (pattern &optional *lexvars*)
   (%variables (correct-pattern pattern)))
 
 (defun %variables (pattern)
   "given a pattern, traverse the matching tree and returns a list of variables bounded by guard1 pattern.
-gensym'd anonymous symbols are not accounted i.e. when symbol-package is non-nil."
+Temporary symbols are not accounted."
   (ematch0 pattern
-    ((list* 'guard1 symbol _ more-patterns)
-     (if (symbol-package symbol)
+    ((list* 'guard1 symopts _ more-patterns)
+     (if (getf (cdr symopts) :ignorable)
          ;; consider the explicitly named symbols only
-         (cons symbol (%variables-more-patterns more-patterns))
-         (%variables-more-patterns more-patterns)))
+         (%variables-more-patterns more-patterns)
+         (cons symopts (%variables-more-patterns more-patterns))))
     ((list* 'or1 subpatterns)
      (reduce #'set-equal-or-error
              (mapcar #'%variables subpatterns)))))

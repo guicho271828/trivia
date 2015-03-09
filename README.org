@@ -90,10 +90,13 @@ First of all, =match1= accepts or1/guard1 patterns only.
 syntax:
 
 : (or1 subpattens*)
-: (guard1 symbol test-form {generator-form subpattern}*)
+: (guard1 symbol
+:         test-form {generator-form subpattern}*)
 
 + Unlike original =guard= pattern, guard1 patterns do not allow subpatterns
-  in `symbol'. 1 guard1 pattern corresponds to exactly 1 type checking.
+  in =symbol=. 1 guard1 pattern corresponds to exactly 1 type checking.
+  Instead, =symbol= may contain additional lexical
+  information. For details see [[./GUARD1.org][GUARD1.org]] .
 + Level-1 patterns should be canonical. That is, there should be no
   forward-referenced symbols.
 

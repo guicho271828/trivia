@@ -1,0 +1,22 @@
+
+Normal syntax of guard1:
+
+#+BEGIN_SRC lisp
+(guard1 symbol test-form {generator-form subpattern}*)
+#+END_SRC
+
+Extended syntax of guard1:
+
+#+BEGIN_SRC lisp
+(guard1 (symbol &key (type t) place (ignorable (symbol-package symbol)) &allow-other-keys)
+        test-form {generator-form subpattern}*)
+#+END_SRC
+
+- type :: a type specifier. It is added to the declaration after =let=.
+- place :: if this key is non-nil, then the symbol is bound with
+           symbol-macrolet and the accessor becomes setf-able.
+- ignorable :: If non-nil, =symbol= is declared to be =ignorable=, and is
+               not accounted for or1 pattern consistency check. Default
+               value is =T= when =symbol= is a non-interned symbol, and
+               =NIL= otherwise.
+

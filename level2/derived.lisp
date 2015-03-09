@@ -22,22 +22,22 @@
                         ((list* sym rest)
                          `(guard1 ,sym t ,sym ,(wrap-bind rest body)))))
                     (wrap-test (tests body)
-                      (ematch0 tests
+                        (ematch0 tests
                         ((list) body)
                         ((list* test rest)
                          (with-gensyms (it)
                            `(guard1 ,it ,test ,it ,(wrap-test rest body)))))))
-             ;; now that all subpatterns are guard1, we can safely assume this;
+               ;; now that all subpatterns are guard1, we can safely assume this;
              (wrap-bind (mapcar #'second rest)
                         (wrap-test (mapcar #'third rest)
                                    (with-gensyms (it)
                                      `(guard1 ,it t ,@(mappend #'cdddr rest)))))))))))
 
 (defpattern guard (subpattern test-form &rest more-patterns)
-  (with-gensyms (it)
+  (with-gensyms (guard)
     `(and ,subpattern
-          (guard1 ,it ,test-form ,more-patterns))))
-
+          (guard1 ,guard ,test-form ,@more-patterns))))
+  
 (defpattern not (subpattern)
   (ematch0 (pattern-expand subpattern)
     ((list* 'guard1 sym test guard1-subpatterns)
@@ -69,11 +69,11 @@
 
 (defpattern cons (a b)
   (with-gensyms (it)
-    `(guard1 ,it (consp ,it) (car ,it) ,a (cdr ,it) ,b)))
+    `(guard1 (,it :type cons) (consp ,it) (car ,it) ,a (cdr ,it) ,b)))
 
 (defpattern null ()
   (with-gensyms (it)
-    `(guard1 ,it (null ,it))))
+    `(guard1 (,it :type null) (null ,it))))
 
 (defpattern list (&rest args)
   (if args
@@ -92,11 +92,13 @@
     (setf (symbol-pattern (if soft name* name))
           (lambda (&rest patterns)
             (with-gensyms (it)
-              (let ((len (length patterns))
-                    (ref (if simple 'svref 'aref)))
-                `(guard1 ,it (typep ,it '(,name
-                                          ,@(when need-type '(*))
-                                          ,(if soft '* len)))
+              (let* ((len (length patterns))
+                     (ref (if simple 'svref 'aref))
+                     (type `(,name
+                             ,@(when need-type '(*))
+                             ,(if soft '* len))))
+                `(guard1 (,it :type ,type)
+                         (typep ,it ',type)
                          ,@(mappend (lambda (pattern i)
                                       `(,(if soft
                                              `(when (< ,i (array-total-size ,it))
@@ -120,7 +122,8 @@
 
 (defpattern sequence (&rest args)
   (with-gensyms (it)
-    `(guard1 ,it (typep ,it 'sequence)
+    `(guard1 (,it :type sequence)
+             (typep ,it 'sequence)
              ,@(mappend (lambda (arg i)
                           `((elt ,it ,i) ,arg))
                         args
@@ -130,15 +133,18 @@
   (with-gensyms (it)
     `(guard1 ,it (,predicate-name ,it))))
 
+;; here is a lot of possibility; e.g. strings can be compared in char-wise, etc.
 (dolist (s '(eq eql equal equalp))
   (setf (symbol-pattern s)
         (lambda (arg)
           (with-gensyms (it)
             `(guard1 ,it (,s ,it ,arg))))))
 
+
 (defpattern type (type-specifier)
   (with-gensyms (it)
-    `(guard1 ,it (typep ,it ',type-specifier))))
+    `(guard1 (,it :type ,type-specifier)
+             (typep ,it ',type-specifier))))
 
 (defpattern access (accessor pattern)
   (let ((accessor (ematch0 accessor
@@ -150,14 +156,16 @@
 
 (defpattern assoc (item pattern &key key test)
   (with-gensyms (it)
-    `(guard1 ,it (listp ,it)
+    `(guard1 (,it :type list)
+             (listp ,it)
              (cdr (assoc ,item ,it
                          ,@(when key `(:key ,key))
                          ,@(when test `(:test ,test)))) ,pattern)))
 
 (defpattern property (key pattern)
   (with-gensyms (it)
-    `(guard1 ,it (listp ,it)
+    `(guard1 (,it :type list)
+             (listp ,it)
              (getf ,it ,key) ,pattern)))
 
 (defpattern alist (&rest args &key &allow-other-keys)
@@ -180,16 +188,17 @@
 
 (defpattern structure (name &rest slots)
   (with-gensyms (it)
-    `(guard1 ,it ,(cond
-                    ((find-class name nil) `(typep ,it ',name))
-                    ((fboundp (predicatep name)) `(,(predicatep name) ,it))
-                    ((fboundp (predicate-p name)) `(,(predicate-p name) ,it))
-                    (t (simple-style-warning 
-                        "failed to infer the type-checking predicate of ~a in compile time, forced to use runtime check!"
-                        name)
-                       `(or (typep ,it ',name)
-                            (when (fboundp ',(predicatep name)) (funcall (symbol-function ',(predicatep name)) ,it))
-                            (when (fboundp ',(predicate-p name)) (funcall (symbol-function ',(predicate-p name)) ,it)))))
+    `(guard1 ,@(cond
+                 ((find-class name nil) `((,it :type ,name) (typep ,it ',name)))
+                 ((fboundp (predicatep name)) `(,it (,(predicatep name) ,it)))
+                 ((fboundp (predicate-p name)) `(,it (,(predicate-p name) ,it)))
+                 (t (simple-style-warning 
+                     "failed to infer the type-checking predicate of ~a in compile time, forced to use runtime check!"
+                     name)
+                    `(,it
+                      (or (typep ,it ',name)
+                          (when (fboundp ',(predicatep name)) (funcall (symbol-function ',(predicatep name)) ,it))
+                          (when (fboundp ',(predicate-p name)) (funcall (symbol-function ',(predicate-p name)) ,it))))))
              ,@(map-accessors (parse-slots slots)
                               it name))))
 
