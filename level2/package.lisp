@@ -56,18 +56,27 @@
 
 (define-condition wildcard () ())
 
+(defun wildcardp (pattern)
+  (and (symbolp pattern)
+       (string= "_" (symbol-name pattern))))
+
+
+(defun variablep (pattern)
+  (and (symbolp pattern)
+       (not (string= "_" (symbol-name pattern)))))
+
+
 (defun pattern-expand-1 (p)
   "expand the given pattern once, just like macroexpand-1"
   (if (atom p)
       (values (cond
                 ((typep p 'sequence) `(equal ,p))
                 ((constantp p) `(eq ,p))
-                ((symbolp p)
-                 ;; there is no _ pattern / variable pattern in level1
-                 (if (string= "_" (symbol-name p))
-                     (progn (signal 'wildcard) ;; upper pattern-expand would handle this
+                ((wildcardp p) 
+                 (signal 'wildcard) ;; upper pattern-expand would handle this
                             (with-gensyms (it) `(guard1 ,it t)))
-                     `(guard1 ,p t)))
+                ((variablep p)
+                 `(guard1 ,p t))
                 (t (error "what is this? ~a" p)))
               t)
       (ematch0 p
