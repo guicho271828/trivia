@@ -25,6 +25,8 @@
            :plist
            :property
            :access
+           :$guard1
+           :$or1
            ;; 
            :defpattern
            :pattern-expand

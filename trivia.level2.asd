@@ -10,6 +10,7 @@
   :pathname "level2/"
   :serial t
   :components ((:file "package")
-               (:file "derived"))
+               (:file "derived")
+               (:file "derived2"))
   :in-order-to ((test-op (load-op :trivia.level2.test))))
 
