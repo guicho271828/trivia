@@ -74,7 +74,7 @@
                 ((constantp p) `(eq ,p))
                 ((wildcardp p) 
                  (signal 'wildcard) ;; upper pattern-expand would handle this
-                            (with-gensyms (it) `(guard1 ,it t)))
+                 (with-gensyms (it) `(guard1 ,it t)))
                 ((variablep p)
                  `(guard1 ,p t))
                 (t (error "what is this? ~a" p)))
@@ -113,7 +113,7 @@
             (alist-plist
              (mappend
               (lambda-ematch0
-                       ((cons generator subpattern)
+                ((cons generator subpattern)
                  (handler-case
                      (list (cons generator (pattern-expand-all subpattern)))
                    (wildcard () ;; remove wildcard pattern
@@ -167,7 +167,8 @@
                 `(t)
                 (mapcar (lambda-ematch0
                           ((list* pattern body)
-                           (list* (pattern-expand-all pattern) body)))
+                           (list* (correct-pattern
+                                   (pattern-expand-all pattern)) body)))
                         clauses))))
 
 (defmacro match* (whats &body clauses)
@@ -185,7 +186,9 @@
                 types
                 (mapcar (lambda-ematch0
                           ((list* patterns body)
-                           (list* (mapcar #'pattern-expand-all patterns) body)))
+                           (list* (mapcar (compose #'correct-pattern
+                                                   #'pattern-expand-all)
+                                          patterns) body)))
                         clauses))))
 
 ;;;; more external apis
