@@ -1,10 +1,10 @@
 
-(defpackage :optima.level1.test
-  (:use :cl :fiveam :optima.level1 :alexandria))
-(in-package :optima.level1.test)
+(defpackage :trivia.level1.test
+  (:use :cl :fiveam :trivia.level1 :alexandria))
+(in-package :trivia.level1.test)
 
-(def-suite :optima.level1)
-(in-suite :optima.level1)
+(def-suite :trivia.level1)
+(in-suite :trivia.level1)
 
 (defmacro is-match (arg pattern)
   `(is-true (match1 ,arg (,pattern t))))
@@ -140,5 +140,5 @@
      (fail))))
 
 (eval-when (:load-toplevel :execute)
-  (run! :optima.level1))
+  (run! :trivia.level1))
 

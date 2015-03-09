@@ -1,4 +1,4 @@
-(in-package :optima.level2.impl)
+(in-package :trivia.level2.impl)
 
 (defpattern and (&rest subpatterns)
   (ematch0 subpatterns
@@ -86,7 +86,7 @@
       (car args)))
 
 (defun set-vector-matcher (name &optional simple need-type soft)
-  (let* ((level2p (find-package :optima.level2))
+  (let* ((level2p (find-package :trivia.level2))
          (name* (intern (format nil "~a*" name) level2p)))
     (export name* level2p)
     (setf (symbol-pattern (if soft name* name))
@@ -193,7 +193,17 @@
              ,@(map-accessors (parse-slots slots)
                               it name))))
 
-;; should be rewrote with c2mop:class-slots and
+(defun predicatep (type)
+  (let* ((name (symbol-name type)))
+    (find-symbol (format nil "~aP" name)
+                 (symbol-package type))))
+
+(defun predicate-p (type)
+  (let* ((name (symbol-name type)))
+    (find-symbol (format nil "~a-P" name)
+                 (symbol-package type))))
+
+;; should be rewritten with c2mop:class-slots and
 ;; slot-definition-readers 
 
 (defun parse-slots (slots)

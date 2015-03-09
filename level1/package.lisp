@@ -1,41 +1,21 @@
 ;;; level1 implementation
 
-(defpackage :optima.level1
-  (:export :match1* :match1 :or1 :guard1 :variables :next
+(defpackage :trivia.level1
+  (:export :match1* :match1 :or1 :guard1 :variables
            :*or-pattern-allow-unshared-variables*
            :or1-pattern-inconsistency
            :guard1-pattern-nonlinear
-           :conflicts :pattern :repair-pattern :?))
+           :conflicts :pattern :repair-pattern
+           :correct-pattern
+           :preprocess-symopts))
 
-(defpackage :optima.level1.impl
+(defpackage :trivia.level1.impl
   (:use :cl
         :alexandria
-        :optima.level0
-        :optima.level1))
+        :trivia.level0
+        :trivia.level1))
 
-(in-package :optima.level1.impl)
-
-;;; match1 specification
-
-;; NOTE: There are several restrictions in the input of level-1
-;; pattern match.
-
-;; First of all, level-1 `match' accepts or1/guard1 patterns only.
-;; syntax:
-;;  (or1 subpattens*)
-;;  (guard1 symbol test-form {generator-form subpattern}*)
-
-;; Level-1 guard1 patterns do not allow subpatterns in `symbol'.  1 guard1
-;; pattern corresponds to exactly 1 type checking.  (note: the task of the
-;; optimizer is to minimize the number of checking).
-
-;; Level-1 patterns should be canonical. That is, there are no
-;; forward/backward-referenced symbols, and all subpatterns of or1-pattern
-;; share the same set of variables.
-
-;; Thus, compilation of level-1 `match' is equivalent to just building a
-;; form consisting of `if' and `let' binding. level-1 `match' assumes the
-;; tree is already valid and optimized.
+(in-package :trivia.level1.impl)
 
 ;;; API
 
@@ -80,7 +60,7 @@
                            (apply #'intersection (conflicts c))
                            (first (conflicts c)))))))
 
-;;; implementation
+;;; outer construct
 
 (defun gensym* (name)
   (lambda (x)

@@ -1,12 +1,12 @@
 
-(defpackage :optima.ppcre.test
+(defpackage :trivia.ppcre.test
   (:use :cl :fiveam :alexandria
-        :optima.level2
-        :optima.ppcre))
-(in-package :optima.ppcre.test)
+        :trivia.level2
+        :trivia.ppcre))
+(in-package :trivia.ppcre.test)
 
-(def-suite :optima.ppcre)
-(in-suite :optima.ppcre)
+(def-suite :trivia.ppcre)
+(in-suite :trivia.ppcre)
 
 (defmacro is-match (arg pattern)
   `(is-true (match ,arg (,pattern t))))
@@ -34,5 +34,5 @@
                 (list year month day))))))
 
 (eval-when (:load-toplevel :execute)
-  (run! :optima.ppcre))
+  (run! :trivia.ppcre))
 

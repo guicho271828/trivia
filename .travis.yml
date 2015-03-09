@@ -1,16 +1,4 @@
 language: lisp
-# blacklist
-# branches:
-#   except:
-#     - legacy
-#     - experimental
-
-# whitelist
-branches:
-  only:
-    # - master
-    # - stable
-    - v2
 
 env:
   matrix:

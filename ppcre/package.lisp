@@ -1,14 +1,14 @@
-(defpackage :optima.ppcre
+(defpackage :trivia.ppcre
   (:export :ppcre))
 
-(defpackage :optima.ppcre.impl
+(defpackage :trivia.ppcre.impl
   (:use :cl :ppcre :alexandria
-        :optima.level0
-        :optima.level1
-        :optima.level2
-        :optima.ppcre))
+        :trivia.level0
+        :trivia.level1
+        :trivia.level2
+        :trivia.ppcre))
 
-(in-package :optima.ppcre.impl)
+(in-package :trivia.ppcre.impl)
 
 ;; we may even be able to implement ppcre-specific optimizer, do we?
 

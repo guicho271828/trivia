@@ -1,5 +1,6 @@
-;;;; optima level2
-(defpackage :optima.level2
+;;;; trivia level2
+(defpackage :trivia.level2
+  (:use :trivia.level1)
   (:export :match :match*
            :ematch :ematch*
            :cmatch :cmatch*
@@ -7,10 +8,17 @@
            :match-error
            :match-error-pattern
            :match-error-values
-           ;; 
            :multiple-value-cmatch
            :multiple-value-ematch
            :multiple-value-match
+           ;; level1
+           :match1* :match1 :or1 :guard1 :variables
+           :*or-pattern-allow-unshared-variables*
+           :or1-pattern-inconsistency
+           :guard1-pattern-nonlinear
+           :conflicts :pattern :repair-pattern
+           :correct-pattern
+           :preprocess-symopts
            ;; 
            :guard
            :alist
@@ -23,34 +31,21 @@
            :pattern-expand-1
            :pattern-expand-all
            :defoptimizer
-           :predicatep
-           :predicate-p
-           ;; pattern utils
-           :pattern-compatible-p
-           ;; test utils
-           :define-inference-rule
-           :test-type
-           :type-tests
-           :test-compatible-p
-           ;; type utils
-           :disjointp
-           :all-subclasses
-           :exhaustive-partitions
-           :exhaustive-union
            ;; optimizer
            :optimizer
            :*optimizer*
            :in-optimizer
-           :defoptimizer))
+           :defoptimizer)
+  (:nicknames :trivia))
 
-(defpackage :optima.level2.impl
+(defpackage :trivia.level2.impl
   (:use :cl :alexandria
-        :introspect-environment
-        :optima.level0
-        :optima.level1
-        :optima.level2))
+        :trivia.level0
+        :trivia.level1
+        :trivia.level2)
+  (:export :predicatep :predicate-p))
 
-(in-package :optima.level2.impl)
+(in-package :trivia.level2.impl)
 
 
 

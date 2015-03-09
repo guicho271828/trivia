@@ -1,10 +1,10 @@
 
-(defpackage :optima.level0.test
-  (:use :cl :fiveam :optima.level0))
-(in-package :optima.level0.test)
+(defpackage :trivia.level0.test
+  (:use :cl :fiveam :trivia.level0))
+(in-package :trivia.level0.test)
 
-(def-suite :optima.level0)
-(in-suite :optima.level0)
+(def-suite :trivia.level0)
+(in-suite :trivia.level0)
 
 (defun testfn (x) 
   (match0 x
@@ -41,5 +41,5 @@
 
 
 (eval-when (:load-toplevel :execute)
-  (run! :optima.level0))
+  (run! :trivia.level0))
 

@@ -1,19 +1,19 @@
 
-(defpackage :optima.level0
+(defpackage :trivia.level0
   (:use :cl)
   (:export #:match0
            #:ematch0
            #:lambda-match0
            #:lambda-ematch0))
 
-(in-package :optima.level0)
+(in-package :trivia.level0)
 
 'once-only
 
 (in-package :alexandria)
 
 ;; from alexandria, but adds `ignorable'
-(defmacro optima.level0::once-only (specs &body forms)
+(defmacro trivia.level0::once-only (specs &body forms)
   (let ((gensyms (make-gensym-list (length specs) "ONCE-ONLY"))
         (names-and-forms (mapcar (lambda (spec)
                                    (etypecase spec
@@ -36,7 +36,7 @@
                          names-and-forms gensyms)
              ,@forms)))))
 
-(in-package :optima.level0)
+(in-package :trivia.level0)
 
 (defvar *what*)
 (defvar *bindings*)

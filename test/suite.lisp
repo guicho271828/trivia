@@ -5,13 +5,14 @@
 ;;; INCOMPATIBILITY NOTE: `place' no longer effective: to simplify level1
 ;;; INCOMPATIBILITY NOTE: `match' no longer expanded in 1-pass through
 ;;; `macroexpand': they are now replaced with eval
-(defpackage :optima.test
-  (:use :cl :fiveam :optima.level2))
+(defpackage :trivia.test
+  (:use :cl :fiveam :trivia.level2 :trivia.level1
+        :trivia.level2.impl))
 
-(in-package :optima.test)
+(in-package :trivia.test)
 
-(def-suite :optima)
-(in-suite :optima)
+(def-suite :trivia)
+(in-suite :trivia)
 
 ;;; Pattern matching
 
@@ -449,4 +450,4 @@
   (is-match '(2) (list (access #'^2 4))))
 
 (eval-when (:load-toplevel :execute)
-  (run! :optima))
+  (run! :trivia))
