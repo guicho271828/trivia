@@ -162,7 +162,13 @@
           clauses))
 
 (defmacro match (what &body clauses)
-  `(match* (,what) ,@(ensure-multipattern clauses)))
+  `(match1 ,what
+     ,@(funcall (symbol-optimizer *optimizer*)
+                `(t)
+                (mapcar (lambda-ematch0
+                          ((list* pattern body)
+                           (list* (pattern-expand-all pattern) body)))
+                        clauses))))
 
 (defmacro match* (whats &body clauses)
   `(match+ ,whats
@@ -174,10 +180,7 @@
 
 (defmacro match+ ((&rest whats) (&rest types) &body clauses)
   "Variant of match* : can specify the inferred types of each argument"
-  (%match whats types clauses))
-
-(defun %match (args types clauses)
-  `(match1* ,args
+  `(match1* ,whats
      ,@(funcall (symbol-optimizer *optimizer*)
                 types
                 (mapcar (lambda-ematch0
