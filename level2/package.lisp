@@ -159,7 +159,9 @@
   `(match+ ,whats
        ,(make-list (length whats) :initial-element t)
      ;; ^^^^ this part can surely be improved by using &environment intensively!
-     ,@clauses))
+     ,@(mapcar (lambda (clause)
+                 (pad (length whats) clause))
+               clauses)))
 
 (defmacro match+ ((&rest whats) (&rest types) &body clauses)
   "Variant of match* : can specify the inferred types of each argument"

@@ -449,5 +449,11 @@
 (test access
   (is-match '(2) (list (access #'^2 4))))
 
+(test match*
+  (match* ((list 2) (list 3) (list 5))
+    (((list x) (list y) (list (guard z (= z (+ x y)))))
+     (is (= 5 z)))
+    (_ (fail))))
+
 (eval-when (:load-toplevel :execute)
   (run! :trivia))
