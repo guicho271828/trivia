@@ -3,21 +3,21 @@
 ;; patterns defined using level2 matchers and patterns
 
 ;; matches against guard1 pattern (form) itself
-(defpattern $guard1 (sym options test &rest more-patterns)
+(defpattern $guard1 (sym options test more-patterns)
   (with-gensyms (symopts)
     `(list* 'guard1
             (guard1 ,symopts t
                     (preprocess-symopts ,symopts ,symopts)
                     (list* ,sym ,options))
-            ,test ,@more-patterns)))
+            ,test ,more-patterns)))
 
-(defpattern $or1 (sym options test &rest more-patterns)
+(defpattern $or1 (sym options test more-patterns)
   (with-gensyms (symopts)
     `(list* 'or1
             (guard ,symopts t
                    (preprocess-symopts ,symopts ,symopts)
                    (list* ,sym ,options))
-            ,test ,@more-patterns)))
+            ,test ,more-patterns)))
 
 (defpattern <> (pattern value &optional (var (gensym "BIND")))
   "The current matching value is bound to `var'.
