@@ -1,7 +1,7 @@
 ;;; level1 implementation
 
 (defpackage :trivia.level1
-  (:export :match1* :match1 :or1 :guard1 :variables
+  (:export :match1 :or1 :guard1 :variables
            :*or-pattern-allow-unshared-variables*
            :or1-pattern-inconsistency
            :guard1-pattern-nonlinear
@@ -18,23 +18,6 @@
 (in-package :trivia.level1.impl)
 
 ;;; API
-
-(defmacro match1* (whats &body clauses)
-  "based on match1"
-  (assert (listp whats))
-  (let* ((args (mapcar (gensym* "ARG") whats))
-         (bindings (mapcar #'list args whats))
-         (clauses
-          (mapcar (lambda (clause)
-                    (with-gensyms (it) ;; peudo arg
-                      (ematch0 clause
-                        ((list* patterns body)
-                         (list* `(guard1 ,it t ,@(mappend #'list args patterns))
-                                body)))))
-                  clauses)))
-    `(let ,bindings
-       (declare (ignorable ,@args))
-       (match1 t ,@clauses))))
 
 (defmacro match1 (what &body clauses)
   (let ((whatvar (gensym "WHAT1")))

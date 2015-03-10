@@ -175,22 +175,45 @@
 (defmacro match* (whats &body clauses)
   `(match+ ,whats
        ,(make-list (length whats) :initial-element t)
-     ;; ^^^^ this part can surely be improved by using &environment intensively!
+     ;; ,(mapcar #'form-type whats)
+     ;; 
+     ;; ^^^^ this part can surely be improved by using &environment and
+     ;; Bike/compiler-macro intensively!
      ,@(mapcar (lambda (clause)
                  (pad (length whats) clause))
                clauses)))
 
+(defun gensym* (name)
+  (lambda (x)
+    (declare (ignore x))
+    (gensym name)))
+
 (defmacro match+ ((&rest whats) (&rest types) &body clauses)
   "Variant of match* : can specify the inferred types of each argument"
-  `(match1* ,whats
-     ,@(funcall (symbol-optimizer *optimizer*)
-                types
-                (mapcar (lambda-ematch0
-                          ((list* patterns body)
-                           (list* (mapcar (compose #'correct-pattern
-                                                   #'pattern-expand-all)
-                                          patterns) body)))
-                        clauses))))
+  (let* ((args (mapcar (gensym* "ARG") whats))
+         (bindings (mapcar #'list args whats)))
+    `(let ,bindings
+       (declare (ignorable ,@args))
+       (declare ,@(remove nil
+                          (mapcar (lambda (arg type)
+                                    (unless (eq t type) `(type ,type ,arg)))
+                                  args types)))
+       (match t
+         ,@(convert-to-single-match args types clauses)))))
+
+(defun convert-to-single-match (args types clauses)
+  (mapcar
+   (lambda-ematch0
+     ((list* patterns body)
+      (with-gensyms (it) ;; peudo arg
+        `((guard1 ,it t
+                  ,@(mappend
+                     (lambda (arg p type)
+                       (with-gensyms (typed)
+                         `(,arg (guard1 (,typed :type ,type) t ,typed ,p))))
+                     args patterns types))
+          ,@body))))
+   clauses))
 
 ;;;; more external apis
 
