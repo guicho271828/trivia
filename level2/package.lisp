@@ -126,11 +126,12 @@
 
   
 (defmacro defpattern (name args &body body)
-  `(setf (symbol-pattern ',name)
-         #+sbcl
-         (sb-int:named-lambda ',name ,args ,@body)
-         #-sbcl
-         (lambda ,args ,@body)))
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (setf (symbol-pattern ',name)
+           #+sbcl
+           (sb-int:named-lambda ',name ,args ,@body)
+           #-sbcl
+           (lambda ,args ,@body))))
 
 
 
