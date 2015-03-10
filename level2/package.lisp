@@ -138,8 +138,7 @@
 
 
 ;;;; optimizer database
-
-(lispn:define-namespace optimizer (function (list list &key &allow-other-keys) list))
+(lispn:define-namespace optimizer (function (list &key &allow-other-keys) list))
 (defvar *optimizer* :trivial)
 (defmacro in-optimizer (name)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
@@ -153,8 +152,7 @@
            #-sbcl
            (lambda ,args ,@body))))
 
-(defoptimizer :trivial (types clauses)
-  (declare (ignore types))
+(defoptimizer :trivial (clauses)
   clauses)
 
 ;;;; external apis
@@ -168,7 +166,6 @@
 (defmacro match (what &body clauses)
   `(match1 ,what
      ,@(funcall (symbol-optimizer *optimizer*)
-                `(t)
                 (mapcar (lambda-ematch0
                           ((list* pattern body)
                            (list* (correct-pattern
