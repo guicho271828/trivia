@@ -1,7 +1,7 @@
 ;;; level1 implementation
 
 (defpackage :trivia.level1
-  (:export :match1 :or1 :guard1 :variables
+  (:export :match1 :or1 :guard1 :variables :next
            :*or-pattern-allow-unshared-variables*
            :or1-pattern-inconsistency
            :guard1-pattern-nonlinear
@@ -9,11 +9,14 @@
            :correct-pattern
            :preprocess-symopts))
 
+(defpackage :trivia.fail (:export :fail))
+
 (defpackage :trivia.level1.impl
   (:use :cl
         :alexandria
         :trivia.level0
-        :trivia.level1))
+        :trivia.level1
+        :trivia.fail))
 
 (in-package :trivia.level1.impl)
 
@@ -57,14 +60,94 @@
   `(block nil
      ,@(match-clauses arg clauses)))
 
+;;; `next' implementation
+;; we use block-based one, due to the simplicity of the implementation.
+;; this, however, does not allow the use of (next) in the last matching
+;; clause. This should be handled by the level2 layer, which appends (_
+;; nil) clause (in case of normal match) and (_ (error ...)) (in ematch
+;; family).
+;;;; block-based `next' implementation
+
 (defun match-clauses (arg clauses)
-  (mapcar
-   (lambda-ematch0
-     ((list* pattern body)
-      (match-clause arg
-                    (correct-pattern pattern)
-                    `(return (locally ,@body)))))
+  (mapcar1-with-last
+   (lambda (clause last?)
+     (ematch0 clause
+       ((list* pattern body)
+        ((lambda (x) (if last? x `(block clause ,x)))
+         (match-clause arg
+                       (correct-pattern pattern)
+                       `(return (locally ,@body)))))))
    clauses))
+
+(defun mapcar1-with-last (fn list)
+  (ematch0 list
+    ((cons it nil)
+     (cons (funcall fn it t) nil))
+    ((cons it rest)
+     (cons (funcall fn it nil) (mapcar1-with-last fn rest)))))
+
+(defmacro next () `(return-from clause nil))
+(defmacro fail () `(next))
+
+;;;; catch-based `next' implementation
+;; using catch is not appropriate for our purpose, according to CLHS,
+;; "catch and throw are normally used when the exit point must have dynamic
+;; scope (e.g., the throw is not lexically enclosed by the catch), while
+;; block and return are used when lexical scope is sufficient. "
+
+
+;; (defun match-clauses (arg clauses)
+;;   (mapcar1-with-last
+;;    (lambda (clause last?)
+;;      (ematch0 clause
+;;        ((list* pattern body)
+;;         ((lambda (x) (if last? x `(catch 'next ,x)))
+;;          (match-clause arg
+;;                        (correct-pattern pattern)
+;;                        `(return (locally ,@body)))))))
+;;    clauses))
+;; 
+;; (defun mapcar1-with-last (fn list)
+;;   (ematch0 list
+;;     ((cons it nil)
+;;      (cons (funcall fn it t) nil))
+;;     ((cons it rest)
+;;      (cons (funcall fn it nil) (mapcar1-with-last fn rest)))))
+;; 
+;; (declaim (inline next fail))
+;; (defun next () (throw 'next nil))
+;; (defun fail () (next))
+
+;;;; tagbody-based `next' implementation
+;; This implementation results in a bloated expansion which contains lots
+;; of macrolets.
+
+;; (defun match-clauses (arg clauses)
+;;   `((tagbody
+;;       ,@(mappend
+;;          (lambda (clause)
+;;            (ematch0 clause
+;;              ((list* pattern body)
+;;               ((lambda (x)
+;;                  (with-gensyms (tag)
+;;                    `((with-next (,tag) ,x) ,tag)))
+;;                (match-clause arg
+;;                              (correct-pattern pattern)
+;;                              `(return (locally ,@body)))))))
+;;          clauses))))
+;; 
+;; (defun mapcar1-with-last (fn list)
+;;   (ematch0 list
+;;     ((cons it nil)
+;;      (cons (funcall fn it t) nil))
+;;     ((cons it rest)
+;;      (cons (funcall fn it nil) (mapcar1-with-last fn rest)))))
+;; 
+;; (defmacro with-next ((tag) &body body)
+;;   `(macrolet ((next () `(go ,',tag))) ,@body))
+;; 
+;; (defmacro next () `(error "NEXT called outside matching clauses"))
+;; (defmacro fail () `(next))
 
 ;;; pattern syntax validation
 

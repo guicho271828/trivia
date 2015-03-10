@@ -455,5 +455,55 @@
      (is (= 5 z)))
     (_ (fail))))
 
+(test next
+  ;; optima:fail --> trivia:next : it causes synbol conflict with fiveam
+  ;; and not convenient but note that it you :use optima.fail package, it
+  ;; exports 'trivia:fail, same functionality as in optima
+  (is-false (match 1 (1 (next))))
+  (is-true (match 1
+              (1 (next))
+              (1 t)))
+  (is-true (match 1
+             (1 (next))
+             (1 t)
+             (_ nil)))
+  (is (eql 1
+           (match (cons 1 2)
+             ((cons x y)
+              (if (eql x 1)
+                  (next)
+                  y))
+             ((cons x 2)
+              x))))
+  (is-true (multiple-value-match (values 1 2)
+             ((1 2) (next))
+             ((_ _) t)))
+  (is-true (ematch 1
+             (1 (next))
+             (_ t)))
+  (signals match-error
+    (ematch 1
+      (1 (next))
+      (1 (next))))
+  
+  (signals match-error
+    (multiple-value-ematch (values 1 2)
+      ((1 2) (next))))
+  (is-true (match 1 (_ (next)) (_ t)))
+
+  (signals match-error
+    (ematch 1
+      (1 (match2 1 ;; this should be match2, since 
+           (1 (next)) 
+           (1 (next)) ;; <<--- this `next' jumps to the 
+           ))
+      (1  ;; <<--- next matching clause here
+       (next))))
+
+  (let ((x `(match2 1 (1 (next)))))
+    (signals PROGRAM-ERROR
+      ;; using `next' in the last clause of match2
+      (eval x))))
+
 (eval-when (:load-toplevel :execute)
   (run! :trivia))

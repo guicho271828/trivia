@@ -1,7 +1,8 @@
 ;;;; trivia level2
 (defpackage :trivia.level2
   (:use :trivia.level1)
-  (:export :match :match*
+  (:export :match2 :match2*
+           :match :match*
            :ematch :ematch*
            :cmatch :cmatch*
            :match+
@@ -155,15 +156,17 @@
 (defoptimizer :trivial (clauses)
   clauses)
 
-;;;; external apis
+;;;; primitive apis
 
-(defun ensure-multipattern (clauses)
-  (mapcar (lambda-ematch0
-                 ((list* pattern body)
-                  (list* (list pattern) body)))
-          clauses))
+(defun gensym* (name)
+  (lambda (x)
+    (declare (ignore x))
+    (gensym name)))
 
-(defmacro match (what &body clauses)
+(defmacro match2 (what &body clauses)
+  "In match2/match2*, the last clause is not enclosed in a block.
+Therefore, using `next' in the last clause results in jumping to the next innermost matching construct,
+or results in a compilation error when this is the outermost matching construct."
   `(match1 ,what
      ,@(funcall (symbol-optimizer *optimizer*)
                 (mapcar (lambda-ematch0
@@ -172,8 +175,11 @@
                                    (pattern-expand-all pattern)) body)))
                         clauses))))
 
-(defmacro match* (whats &body clauses)
-  `(match+ ,whats
+(defmacro match2* (whats &body clauses)
+  "In match2/match2*, the last clause is not enclosed in a block.
+Therefore, using `next' in the last clause results in jumping to the next innermost matching construct,
+or results in a compilation error when this is the outermost matching construct."
+  `(match2+ ,whats
        ,(make-list (length whats) :initial-element t)
      ;; ,(mapcar #'form-type whats)
      ;; 
@@ -183,12 +189,7 @@
                  (pad (length whats) clause))
                clauses)))
 
-(defun gensym* (name)
-  (lambda (x)
-    (declare (ignore x))
-    (gensym name)))
-
-(defmacro match+ ((&rest whats) (&rest types) &body clauses)
+(defmacro match2+ ((&rest whats) (&rest types) &body clauses)
   "Variant of match* : can specify the inferred types of each argument"
   (let* ((args (mapcar (gensym* "ARG") whats))
          (bindings (mapcar #'list args whats)))
@@ -198,7 +199,7 @@
                           (mapcar (lambda (arg type)
                                     (unless (eq t type) `(type ,type ,arg)))
                                   args types)))
-       (match t
+       (match2 t
          ,@(convert-to-single-match args types clauses)))))
 
 (defun convert-to-single-match (args types clauses)
@@ -215,7 +216,17 @@
           ,@body))))
    clauses))
 
-;;;; more external apis
+;;;; external apis
+
+(defmacro match (what &body clauses)
+  `(match2 ,what
+     ,@clauses
+     (_ nil)))
+
+(defmacro match* (whats &body clauses)
+  `(match2* ,whats
+     ,@clauses
+     (_ nil)))
 
 (defun make-gensyms (list &optional (name "G"))
   (mapcar (lambda (x) (declare (ignore x)) (gensym name)) list))
@@ -226,31 +237,29 @@
 
 (defmacro ematch (what &body clauses)
   (with-gensyms (otherwise)
-    `(match ,what
+    `(match2 ,what
        ,@clauses
        (,otherwise (error 'match-error :pattern ',clauses :values (list ,otherwise))))))
 
 (defmacro ematch* (whats &body clauses)
   (let ((temps (make-gensyms whats "OTHERWISE")))
-    `(match* ,whats
+    `(match2* ,whats
        ,@clauses
        (,temps
         (error 'match-error :pattern ',clauses :values (list ,@temps))))))
 
 (defmacro cmatch (what &body clauses)
   (with-gensyms (otherwise)
-    `(match ,what
+    `(match2 ,what
        ,@clauses
        (,otherwise (cerror "continue" 'match-error :pattern ',clauses :values (list ,otherwise))))))
 
 (defmacro cmatch* (whats &body clauses)
   (let ((temps (make-gensyms whats "OTHERWISE")))
-    `(match* ,whats
+    `(match2* ,whats
        ,@clauses
        (,temps
         (cerror "continue" 'match-error :pattern ',clauses :values (list ,@temps))))))
-
-
 
 ;;;; multiple values
 
