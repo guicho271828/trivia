@@ -19,3 +19,9 @@
                    (list* ,sym ,options))
             ,test ,@more-patterns)))
 
+(defpattern <> (pattern value &optional (var (gensym "BIND")))
+  "The current matching value is bound to `var'.
+The result of evaluating `value' using `var' is then matched against `pattern'.
+`var' can be omitted."
+  (assert (symbolp var))
+  `(guard1 ,var t ,value ,pattern))
