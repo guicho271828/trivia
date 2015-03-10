@@ -247,8 +247,8 @@
              ;; (subtypep type 'standard-object)
              )
         (let ((c (find-class type)))
-          #+sbcl
-          (c2mop:finalize-inheritance c)
+          (ignore-errors
+            (c2mop:finalize-inheritance c))
           (mappend (lambda-ematch0
                      ((list slot pattern)
                       (if-let ((dslot (find-direct-slot slot c)))
