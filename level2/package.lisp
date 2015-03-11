@@ -1,6 +1,10 @@
 ;;;; trivia level2
 (defpackage :trivia.level2
   (:use :trivia.level1)
+  ;; level1
+  #.(let (acc)
+      (do-external-symbols (s :trivia.level1 `(:export ,@acc))
+        (push s acc)))
   (:export :match2 :match2*
            :match :match*
            :ematch :ematch*
@@ -15,14 +19,6 @@
            :lambda-match
            :lambda-ematch
            :lambda-cmatch
-           ;; level1
-           :match1* :match1 :or1 :guard1 :variables
-           :*or-pattern-allow-unshared-variables*
-           :or1-pattern-inconsistency
-           :guard1-pattern-nonlinear
-           :conflicts :pattern :repair-pattern
-           :correct-pattern
-           :preprocess-symopts
            ;; 
            :guard
            :alist
