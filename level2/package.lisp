@@ -73,8 +73,7 @@
   "expand the given pattern once, just like macroexpand-1"
   (if (atom p)
       (values (cond
-                ((typep p 'sequence) `(equal ,p))
-                ((constantp p) `(eq ,p))
+                ((constantp p) `(constant ,p)) ;; see derived
                 ((wildcardp p) 
                  (signal 'wildcard) ;; upper pattern-expand would handle this
                  (with-gensyms (it) `(guard1 ,it t)))

@@ -323,3 +323,18 @@
     sym))
 
 
+(defpattern constant (x)
+  (typecase x
+    (simple-base-string `(simple-base-string ,@(coerce x 'list)))
+    (base-string `(base-string ,@(coerce x 'list)))
+    (simple-string `(simple-string ,@(coerce x 'list)))
+    (string `(string ,@(coerce x 'list)))
+    (simple-bit-vector `(simple-bit-vector ,@(coerce x 'list)))
+    (bit-vector `(bit-vector ,@(coerce x 'list)))
+    (simple-vector `(simple-vector ,@(coerce x 'list)))
+    (vector `(vector ,@(coerce x 'list)))
+    ((or structure-object hash-table) `(equalp ,x))
+    ((or array pathname) `(equal ,x))
+    (cons `(equal ,x)) ;; (quote ...)
+    ((or number character) `(eql ,x))
+    (t `(eq ,x))))
