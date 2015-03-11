@@ -57,7 +57,7 @@
 
 
 (defun %match (arg clauses)
-  `(block nil
+  `(block nil ;; << return from the whole match
      ,@(match-clauses arg clauses)))
 
 ;;; `next' implementation
@@ -73,9 +73,13 @@
    (lambda (clause last?)
      (ematch0 clause
        ((list* pattern body)
+        
         ((lambda (x) (if last? x `(block clause ,x)))
+         ;; << (return-from clause) = go to next clause
+         ;; the last pattern does not have this block, allowing a direct jump to the upper block
          (match-clause arg
                        (correct-pattern pattern)
+                       ;; << return from the whole match
                        `(return (locally ,@body)))))))
    clauses))
 
@@ -251,11 +255,13 @@
              ,@(when (getf options :ignorable)
                  `((declare (ignorable ,symbol))))
              ,((lambda (x)
-                 (if (eq t test-form) x
+                 (if (eq t test-form)
+                     ;; remove redundunt IF. x contains a return to NIL==toplevel.
+                     x
                      `(when ,test-form ,x)))
                (let ((type (getf options :type)))
                  ((lambda (x)
-                    (if (eq t type) x
+                    (if (eq t type) x ;; remove redundunt DECLARE
                         `(locally (declare (type ,type ,symbol)) ,x)))
                   (destructure-guard1-subpatterns more-patterns body)))))))))
     ((list* 'or1 subpatterns)
