@@ -185,15 +185,15 @@ or results in a compilation error when this is the outermost matching construct.
 Therefore, using `next' in the last clause results in jumping to the next innermost matching construct,
 or results in a compilation error when this is the outermost matching construct."
   (if whats ; length longer than 1
-  `(match2+ ,whats
-       ,(make-list (length whats) :initial-element t)
-     ;; ,(mapcar #'form-type whats)
-     ;; 
-     ;; ^^^^ this part can surely be improved by using &environment and
-     ;; Bike/compiler-macro intensively!
-     ,@(mapcar (lambda (clause)
+      `(match2+ ,whats
+           ,(make-list (length whats) :initial-element t)
+         ;; ,(mapcar #'form-type whats)
+         ;; 
+         ;; ^^^^ this part can surely be improved by using &environment and
+         ;; Bike/compiler-macro intensively!
+         ,@(mapcar (lambda (clause)
                      ;; length longer than 1
-                 (pad (length whats) clause))
+                     (pad (length whats) clause))
                    clauses))
       `(match2+ () ()
          ,@(mapcar (lambda (clause)
