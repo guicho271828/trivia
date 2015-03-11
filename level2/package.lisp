@@ -188,6 +188,7 @@ or results in a compilation error when this is the outermost matching construct.
   "In match2/match2*, the last clause is not enclosed in a block.
 Therefore, using `next' in the last clause results in jumping to the next innermost matching construct,
 or results in a compilation error when this is the outermost matching construct."
+  (if whats ; length longer than 1
   `(match2+ ,whats
        ,(make-list (length whats) :initial-element t)
      ;; ,(mapcar #'form-type whats)
@@ -195,8 +196,14 @@ or results in a compilation error when this is the outermost matching construct.
      ;; ^^^^ this part can surely be improved by using &environment and
      ;; Bike/compiler-macro intensively!
      ,@(mapcar (lambda (clause)
+                     ;; length longer than 1
                  (pad (length whats) clause))
-               clauses)))
+                   clauses))
+      `(match2+ () ()
+         ,@(mapcar (lambda (clause)
+                     ;; length longer than 1
+                     (list* nil (cdr clause)))
+                   clauses))))
 
 (defmacro match2+ ((&rest whats) (&rest types) &body clauses)
   "Variant of match* : can specify the inferred types of each argument"

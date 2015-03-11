@@ -13,6 +13,9 @@
 (test defpattern
   (finishes (print (pattern-expand '(cons a b)))))
 
+(test pad
+  (is (= 1 (match* nil (() 1) (() 1)))))
+
 (eval-when (:load-toplevel :execute)
   (run! :trivia.level2))
 
