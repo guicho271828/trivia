@@ -12,6 +12,9 @@
            :multiple-value-cmatch
            :multiple-value-ematch
            :multiple-value-match
+           :lambda-match
+           :lambda-ematch
+           :lambda-cmatch
            ;; level1
            :match1* :match1 :or1 :guard1 :variables
            :*or-pattern-allow-unshared-variables*
@@ -300,3 +303,22 @@ or results in a compilation error when this is the outermost matching construct.
           ,@clauses
           (,temps
            (cerror "continue" 'match-error :pattern ',clauses :values (list ,@temps))))))))
+
+
+;;;; lambda-match family
+
+(defmacro lambda-match (&body clauses)
+  (with-gensyms (clause)
+    `(lambda (,clause)
+       (match ,clause
+         ,@clauses))))
+(defmacro lambda-ematch (&body clauses)
+  (with-gensyms (clause)
+    `(lambda (,clause)
+       (ematch ,clause
+         ,@clauses))))
+(defmacro lambda-cmatch (&body clauses)
+  (with-gensyms (clause)
+    `(lambda (,clause)
+       (cmatch ,clause
+         ,@clauses))))
