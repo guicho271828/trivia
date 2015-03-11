@@ -64,9 +64,7 @@
   `(or1 ,@subpatterns))
 
 (defpattern quote (x)
-  (if (typep x 'sequence)
-      `(equal ',x)
-      `(eql ',x)))
+  `(constant ',x))
 
 (defpattern cons (a b)
   (with-gensyms (it)
