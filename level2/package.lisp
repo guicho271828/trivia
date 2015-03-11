@@ -158,10 +158,16 @@
 
 ;;;; primitive apis
 
-(defun gensym* (name)
-  (lambda (x)
-    (declare (ignore x))
-    (gensym name)))
+
+(defun make-gensyms (list &optional (name "G"))
+  (mapcar (lambda (x) (declare (ignore x)) (gensym name)) list))
+(defun pad (max clause)
+  (ematch0 clause
+    ((list* patterns body)
+     (let ((patterns (ensure-list patterns)))
+       (list* (append patterns
+                      (make-list (- max (length patterns)) :initial-element '_)) 
+              body)))))
 
 (defmacro match2 (what &body clauses)
   "In match2/match2*, the last clause is not enclosed in a block.
@@ -191,7 +197,7 @@ or results in a compilation error when this is the outermost matching construct.
 
 (defmacro match2+ ((&rest whats) (&rest types) &body clauses)
   "Variant of match* : can specify the inferred types of each argument"
-  (let* ((args (mapcar (gensym* "ARG") whats))
+  (let* ((args (make-gensyms whats "ARG"))
          (bindings (mapcar #'list args whats)))
     `(let ,bindings
        (declare (ignorable ,@args))
@@ -228,8 +234,7 @@ or results in a compilation error when this is the outermost matching construct.
      ,@clauses
      (_ nil)))
 
-(defun make-gensyms (list &optional (name "G"))
-  (mapcar (lambda (x) (declare (ignore x)) (gensym name)) list))
+
 
 (define-condition match-error (error)
   ((pattern :initarg :pattern :reader match-error-pattern)
@@ -261,15 +266,6 @@ or results in a compilation error when this is the outermost matching construct.
        (,temps
         (cerror "continue" 'match-error :pattern ',clauses :values (list ,@temps))))))
 
-;;;; multiple values
-
-(defun pad (max clause)
-  (ematch0 clause
-    ((list* patterns body)
-     (let ((patterns (ensure-list patterns)))
-       (list* (append patterns
-                      (make-list (- max (length patterns)) :initial-element '_)) 
-              body)))))
 
 (defun call-with-mvb-temp-vars (clauses fn)
   (let* ((max (reduce #'max (mapcar (compose #'length #'ensure-list #'car) clauses)))
