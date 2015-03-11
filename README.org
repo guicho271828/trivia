@@ -1,213 +1,73 @@
 
 [[https://travis-ci.org/guicho271828/trivia][https://travis-ci.org/guicho271828/trivia.svg?branch=master]]
 
-* Introduction
-
-Pattern matching is a powerful syntactic construct widely accepted in the
-community of ML languages. It abstracts object destructuring, algebraic
-data types, and conditional expression at once. While most pattern matching
-macros in Common Lisp are based on interpreter and slow, however recently
-[[https://github.com/m2ym/optima][Optima]] has gain popularity largely due to its reasonable set of patterns
-covering the most usecases, extensible interface using defpattern, and also
-the speed, achieved by applying the sophisticated compilation methods in
-(Fabrice et. al. '00).
-
-However, any library has its own problem.  To avoid the dependency as much
-as possible, currently, Optima itself is implemented in an imperative
-style. Given its goal is to ease functional programming, this is an
-irony. As a result, Core algorithm and optimization are intermixed into a
-large conglomerate, and how the optimization work is not visually intuitive
-(in a source-code basis). 
-
-Also, even with the extensibility provided by `defpattern`, it is still
-difficult to add a pattern that cannot be derived from the original
-patterns, such as a regular-expression binding pattern in =:optima.ppcre= .
-Such a pattern should be implemented using an internal, non-exported
-structures and methods.
-
-[1] Optimizing Pattern Matching by Fabrice Le Fessant, Luc Maranget
+NEWS: [[https://github.com/guicho271828/trivia/wiki/Benchmarking-Results][performance comparison against optima]] available.
 
 * Trivia : Pattern Matcher with Multi-Layered Architecture
 
-In light of this, I designed a compatible alternative to Optima with a
-better architecture, called Trivia.
+Trivia is a pattern matching library with modularized structure
+that separates /matcher/ and /optimizer/. It was named after Optima,
+a pattern matching library which is now gaining the popularity.
+In Optima, sophisticated patterns that cannot be derived from the primitive
+patterns should be written by hacking the unexported symbols, but this is
+not the case with Trivia.
 
-Optima is written in an imperative style with lots of loop macros. Pattern
-matcher eases the effort of writing a recursive algorithm, but it needs
-Optima itself, or need some other library.  One way to avoid this
-dependency is to include a primitive pattern matcher for
-bootstrapping optima.
-
-# In the past, I wrote
-# https://github.com/guicho271828/optima-clone as "self-compiling optima",
-# but that goal is not yet achieved because I wrote them in a monolithic
-# manner -- failed to separate optimization part from bootstrapping part.
-
-The source code of Trivia is divided into 3 levels, level 0, 1 and 2, where
+The codebase of Trivia is divided into 3 levels, level 0, 1 and 2, where
 lower level bootstraps the higher level. Each level has its own =match=
-macro, e.g., level 0 has =match0= and so on.  In detail, each level handles
-the following functionality:
+macro, e.g., level 0 has =match0= and so on. 
 
-+ level 0 : list destructuring :: =match0= is a simple wrapper over
++ [[https://github.com/guicho271828/trivia/wiki/Level-0-Patterns][level 0 : list destructuring]] :: =match0= is a simple wrapper over
      destructuring-bind, which supports list, list*, variable, =_=, and
-     constant patterns only. This is used primarily for parsing the
-     input sexp.
-+ level 1 : core patterns :: =match1= supports =or1= and =guard1= patterns
-     only. These two patterns are the minimal set of primitive patterns
-     that is needed to implement a pattern matcher. =match1= expands into
-     nested =let= and =if= forms, and this result constitutes the final
-     expansion of Trivia.
-+ level 2a : pattern expander :: =match= is a wrapper macro over
-     =match1=. All derived patterns are expanded into level1 patterns. All
-     primitive patterns in Optima are now defined as derived patterns
-     in Trivia.
-+ level 2b : optimizer :: After the pattern expansion, resulting level1
-     patterns are post-processed by a pattern optimizer function. Level 2
-     provides an extensible user interface to switch between
-     different optimizer.
+     constant patterns for s-exp parsing.
++ [[https://github.com/guicho271828/trivia/wiki/Level-1-Patterns][level 1 : core patterns]] :: =match1= supports =or1= and =guard1= patterns
+     only. These are the minimal set of patterns that is needed to
+     implement a matcher. =match1= simply expands into nested =let= and
+     =if= forms.
++ [[https://github.com/guicho271828/trivia/wiki/Level-2-Patterns][level 2a : pattern expander]] :: Level 2 expands derived patterns into
+     level 1 patterns. In Trivia, all useful patterns are derived from
+     level 1 patterns, while there are several built-in patterns in Optima.
++ [[https://github.com/guicho271828/trivia/wiki/Optimizer-API][level 2b : optimizer]] :: After the expansion, resulting level 1 patterns
+     are post-processed by a pattern optimizer. Level 2 provides an
+     extensible user interface to switch between different optimizer.
+
+Now Trivia comes with 2 optimizers:
+
 + =:trivial= optimizer :: runs no optimization, and returns the pattern as
-     it is. *Status*: All 168 tests in Optima pass.
+     it is. Interestingly, experiments suggests the gap between Optima and
+     =:trivial= is minimal, and not so slow. Bug-ridden, and reliable.
++ =:emilie2006= optimizer :: Implements /Fusion/ , /Intersection/ and
+     /Swapping/ optimization in (Emilie 2006). Currently [[https://github.com/guicho271828/trivia.emilie2006][hosted in a
+     separate repository]].  Achieved *60x* speedup in some domains. All
+     tests are passing, however there may be a hidden bug compared to
+     =:trivial=.
 
 Since now we have a trivial optimizer and fully functional pattern matcher,
 the next version of the optimizer in Trivia can be implemented using
 Trivia itself.
 
-** Level 0 Patterns and API
-
-Patterns : list, list*, cons, constant, variable, wildcard (_)
-
-Any symbols are considered as variable, except constant symbols (namely,
- =t=, =nil= and keywords) and those named as =_= (checked by symbol name).
- These are identical to the corresponding patterns in Optima.
-
-=ematch0= signals an error when the input did not match any
-patterns. =lambda-match0= and =lambda-ematch0= expands to =lambda= which
-takes an argument and pass it to =match0= and =ematch0=, respectively.
-
-** Level 1 Patterns
-
-First of all, =match1= accepts or1/guard1 patterns only.
-syntax:
-
-: (or1 subpattens*)
-: (guard1 symbol
-:         test-form {generator-form subpattern}*)
-
-+ Unlike original =guard= pattern, guard1 patterns do not allow subpatterns
-  in =symbol=. 1 guard1 pattern corresponds to exactly 1 type checking.
-  Instead, =symbol= may contain additional lexical
-  information. For details see [[./GUARD1.org][GUARD1.org]] .
-+ Level-1 patterns should be canonical. That is, there should be no
-  forward-referenced symbols.
-
-Thus, compilation of =match1= is equivalent to just building a
-form consisting of =if= and =let= binding. =match1= assumes the
-matching tree is already valid and optimized.
-
-Example:
-
-#+BEGIN_SRC lisp
-(match1 '(1 2)
-  ((guard1 temp (consp temp)
-           (car temp) (guard1 a t)
-           (cadr temp) (guard1 b t))
-   (vector a b)))
-
-;; --> #(1 2)
-#+END_SRC
-
-Note that, since even variable patterns are missing in Level 1,
-one should use =(guard1 a t)= to bind the value generated by =(car
-temp)=. It produces a code like below.
-
-#+BEGIN_SRC lisp
-(LET ((#:WHAT1862 '(1 2)))
-  (BLOCK NIL
-    (LET ((TEMP #:WHAT1862))
-      (WHEN (CONSP TEMP)
-        (LET ((#:FIELD1863 (CAR TEMP)))
-          (LET ((A #:FIELD1863))
-            (WHEN T
-              (LET ((#:FIELD1864 (CADR TEMP)))
-                (LET ((B #:FIELD1864))
-                  (WHEN T (RETURN (LOCALLY (VECTOR A B)))))))))))))
-#+END_SRC
-
-** Level 2 Patterns
-
-This includes all the patterns in =:optima= and =:optima.extra= package,
-plus [[./ADDITIONAL-PATTERNS.org][additional patterns]].
-
-
-** Level 2 Matcher variants
-
-As in optima, there are several variants in the matcher construct:
-
-: [ec]?match value &body clauses
-: [ec]?match* (&rest values) &body multi-match-clauses
-: multiple-value-[ec]?match values-form &body multi-match-clauses
-
-Optima has =match*= variants internally, but it is not exporting the
-symbols.  It takes a list of forms as the first argument and matches the
-values against each multi-pattern. For any multi-patterns, the values are
-checked in left-to-right.
-
-*Example*:
-
-#+BEGIN_SRC lisp
-(match* ((list 2) (list 3) (list 5))
-  (((list x) (list y) (list (guard z (= z (+ x y))))) z)) ;; --> 5
-#+END_SRC
-
-=match+=, in contrast, is NOT a clause intended for the standard use of
-Trivia. It is rather for the programmer who is writing an optimizer.
-
-#+BEGIN_SRC lisp
-macro match+ ((&rest whats) (&rest types) &body clauses)
-#+END_SRC
-
-types, not evaluated, is a list of type specifiers. Optimzer can benefit
-from this type information by eliminating redundunt branches.
-
-** Optimizer API
-
-*** Syntax:
-
-namespace *optimizer*
-
-function *symbol-optimizer* /symbol/ -> /function/
-
-function *(setf symbol-optimizer)* /symbol/ -> /symbol/
-
-variable =*optimizer*=
-
-macro *in-optimizer* /name/
-
-macro *defoptimizer* /name args/ &body /body/
-
-*** Arguments and Values:
-
-/*optimizer*/ : a symbol naming an optimizer function.
-
-/function/ : an optimizer function of complex signature.
-
-/name/ : a symbol, not evaluated
-
-/args/ : a /function-lambda-list/.
-
-*** Description:
-
-/function/ should be of type =(function (list list &key &allow-other-keys)
- list)=. The first argument should be a list of types. The second argument
- is a list of multi-matching clauses. The function should return a list of 
- modified matching clauses.
-
-=defoptimizer= is a convenience macro that registers the given function definition as
-the optimizer.
+Detailed documentation is in [[https://github.com/guicho271828/trivia/wiki][github wiki]].
 
 * Dependency & Testing
 
 + Level 0,1 : Alexandria only.
 + Level 2 : Additionally, lisp-namespace and closer-mop.
 
-To run the tests, =(asdf:test-system :trivia)= .
+To run the tests with trivial optimizer, =(asdf:test-system :trivia)= .
+
+In order to run the test with =:emilie2006= optimizer activated, run follows:
+
+#+BEGIN_SRC lisp
+;; $ git clone https://github.com/guicho271828/trivia.emilie2006
+;; $ git clone https://github.com/guicho271828/type-i
+
+(asdf:load-system :trivia.emilie2006)
+(trivia:in-optimizer :emilie2006)
+(asdf:test-system :trivia)
+#+END_SRC
+
+To run the benchmark:
+
+#+BEGIN_SRC lisp
+(asdf:load-system :trivia.benchmark)
+(trivia.benchmark:run-benchmarks '((speed 3) (debug 0) (space 0) (safety 0)))
+#+END_SRC
