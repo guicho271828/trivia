@@ -193,19 +193,39 @@
 
 (defpattern structure (name &rest slots)
   (with-gensyms (it)
-    `(guard1 ,@(cond
-                 ((find-class name nil) `((,it :type ,name) (typep ,it ',name)))
-                 ((fboundp (predicatep name)) `(,it (,(predicatep name) ,it)))
-                 ((fboundp (predicate-p name)) `(,it (,(predicate-p name) ,it)))
-                 (t (simple-style-warning 
-                     "failed to infer the type-checking predicate of ~a in compile time, forced to use runtime check!"
-                     name)
-                    `(,it
-                      (or (typep ,it ',name)
-                          (when (fboundp ',(predicatep name)) (funcall (symbol-function ',(predicatep name)) ,it))
-                          (when (fboundp ',(predicate-p name)) (funcall (symbol-function ',(predicate-p name)) ,it))))))
-             ,@(map-accessors (parse-slots slots)
-                              it name))))
+    `(guard1
+      ,@(cond
+          ((find-class name nil)
+           `((,it :type ,name) (typep ,it ',name)))
+          ((fboundp (predicatep name))
+           (let ((fn-name (predicatep name)))
+             `((,it :type ,(easy-infer-type fn-name)) (,fn-name ,it))))
+          ((fboundp (predicate-p name))
+           (let ((fn-name (predicate-p name)))
+             `((,it :type ,(easy-infer-type fn-name)) (,fn-name ,it))))
+          (t (simple-style-warning 
+              "failed to infer the type-checking predicate of ~a in compile time, forced to use runtime check!"
+              name)
+             `(,it
+               (or (typep ,it ',name)
+                   (when (fboundp ',(predicatep name)) (funcall (symbol-function ',(predicatep name)) ,it))
+                   (when (fboundp ',(predicate-p name)) (funcall (symbol-function ',(predicate-p name)) ,it))))))
+      ,@(map-accessors (parse-slots slots)
+                       it name))))
+
+(defun easy-infer-type (fn-sym)
+  "same thing as in type-i:unary-function. copied here in order to remove dependency"
+  (let* ((name (symbol-name fn-sym))
+         (l (length name)))
+    (match0 (coerce (subseq name (- l 2) l) 'list)
+      ((list #\- #\P)
+       (when-let ((typesym (find-symbol (subseq name 0 (- l 2))
+                                        (symbol-package fn-sym))))
+         (if (subtypep typesym t) typesym t)))
+      ((list _ #\P)
+       (when-let ((typesym (find-symbol (subseq name 0 (- l 1))
+                                        (symbol-package fn-sym))))
+         (if (subtypep typesym t) typesym t))))))
 
 (defun predicatep (type)
   (let* ((name (symbol-name type)))
