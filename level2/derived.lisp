@@ -134,11 +134,18 @@
     `(guard1 ,it (,predicate-name ,it))))
 
 ;; here is a lot of possibility; e.g. strings can be compared in char-wise, etc.
-(dolist (s '(eq eql equal equalp))
+(dolist (s '(equal equalp))
   (setf (symbol-pattern s)
         (lambda (arg)
           (with-gensyms (it)
-            `(guard1 ,it (,s ,it ,arg))))))
+            `(guard1 (,it :type ,(if (constantp arg)
+                                     (type-of arg) t))
+                     (,s ,it ,arg))))))
+(dolist (s '(eq eql))
+  (setf (symbol-pattern s)
+        (lambda (arg)
+          (with-gensyms (it)
+            `(guard1 (,it :type (eql ,arg)) (,s ,it ,arg))))))
 
 
 (defpattern type (type-specifier)
