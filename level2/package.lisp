@@ -6,10 +6,10 @@
       (do-external-symbols (s :trivia.level1 `(:export ,@acc))
         (push s acc)))
   (:export :match2 :match2*
+           :match2+ :match2*+
            :match :match*
            :ematch :ematch*
            :cmatch :cmatch*
-           :match+
            :match-error
            :match-error-pattern
            :match-error-values
@@ -174,33 +174,40 @@
   "In match2/match2*, the last clause is not enclosed in a block.
 Therefore, using `next' in the last clause results in jumping to the next innermost matching construct,
 or results in a compilation error when this is the outermost matching construct."
-  `(match1 ,what
-     ,@(funcall (symbol-optimizer *optimizer*)
+  `(match2+ ,what t ,@clauses))
+
+(defmacro match2+ (what type &body clauses)
+  "Variant of match2 : can specify the inferred type of the argument"
+  `(match1 ,what ,@(optimize-clauses type clauses)))
+
+(defun optimize-clauses (type clauses)
+  (funcall (symbol-optimizer *optimizer*)
                 (mapcar (lambda-ematch0
                           ((list* pattern body)
                            (list* (correct-pattern
                                    (pattern-expand-all pattern)) body)))
-                        clauses))))
+                        clauses)
+           :type type))
+
+;;;; primitive multi-match
 
 (defmacro match2* (whats &body clauses)
   "In match2/match2*, the last clause is not enclosed in a block.
 Therefore, using `next' in the last clause results in jumping to the next innermost matching construct,
 or results in a compilation error when this is the outermost matching construct."
-  `(match2+ ,whats
+  `(match2*+ ,whats
        ,(make-list (length whats) :initial-element t)
      ;; ,(mapcar #'form-type whats)
-     ;; 
-     ;; ^^^^ this part can surely be improved by using &environment and
-     ;; Bike/compiler-macro intensively!
-     ,@(mapcar (lambda (clause)
-                 ;; length longer than 1
-                 (pad (length whats) clause))
-               clauses)))
+     ;; ^^^^^^^^^^^^^^^^^^^^^^^^^^ TODO: use Bike/compiler-macro
+     ,@clauses))
 
-(defmacro match2+ ((&rest whats) (&rest types) &body clauses)
-  "Variant of match* : can specify the inferred types of each argument"
+(defmacro match2*+ ((&rest whats) (&rest types) &body clauses)
+  "Variant of match2* : can specify the inferred types of each argument"
   (let* ((args (make-gensyms whats "ARG"))
-         (bindings (mapcar #'list args whats)))
+         (bindings (mapcar #'list args whats)) 
+         (clauses (mapcar (lambda (clause)
+                            (pad (length whats) clause))
+                          clauses)))
     `(let ,bindings
        (declare (ignorable ,@args))
        (declare ,@(remove nil
@@ -215,12 +222,13 @@ or results in a compilation error when this is the outermost matching construct.
    (lambda-ematch0
      ((list* patterns body)
       (with-gensyms (it) ;; peudo arg
-        `((guard1 ,it t
-                  ,@(mappend
-                     (lambda (arg p type)
-                       (with-gensyms (typed)
-                         `(,arg (guard1 (,typed :type ,type) t ,typed ,p))))
-                     args patterns types))
+        `((guard1
+           ,it t
+           ,@(mappend
+              (lambda (arg p type)
+                (with-gensyms (typed)
+                  `(,arg (guard1 (,typed :type ,type) t ,typed ,p))))
+              args patterns types))
           ,@body))))
    clauses))
 
