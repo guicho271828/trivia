@@ -33,6 +33,7 @@ install:
     else
       curl https://raw.githubusercontent.com/luismbo/cl-travis/master/install.sh | sh;
     fi     
+  - git clone --depth=1 https://github.com/guicho271828/lisp-namespace.git ~/lisp/lisp-namespace
 
 # this bit is just testing that travis correctly sets up ASDF to find
 # systems placed somewhere within ~/lisp. You can remove this section
