@@ -54,15 +54,13 @@ Detailed documentation is in [[https://github.com/guicho271828/trivia/wiki][gith
 
 To run the tests with trivial optimizer, =(asdf:test-system :trivia)= .
 
-In order to run the test with =:emilie2006= optimizer activated, run follows:
+In order to run the same test with =:emilie2006= optimizer activated, run follows:
 
 #+BEGIN_SRC lisp
 ;; $ git clone https://github.com/guicho271828/trivia.emilie2006
 ;; $ git clone https://github.com/guicho271828/type-i
 
-(asdf:load-system :trivia.emilie2006)
-(trivia:in-optimizer :emilie2006)
-(asdf:test-system :trivia)
+(asdf:test-system :trivia.emilie2006.enabled)
 #+END_SRC
 
 To run the benchmark:
