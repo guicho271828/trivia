@@ -151,7 +151,7 @@
            #-sbcl
            (lambda ,args ,@body))))
 
-(defoptimizer :trivial (clauses)
+(defoptimizer :trivial (clauses &key &allow-other-keys)
   clauses)
 
 ;;;; primitive apis
