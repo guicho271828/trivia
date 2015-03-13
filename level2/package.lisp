@@ -230,41 +230,31 @@ or results in a compilation error when this is the outermost matching construct.
      (cons (funcall fn it t) (mapcar1-with-next fn rest)))))
 
 (defun generate-multi-matcher (args types *lexvars* clauses &optional next)
-  (if args
-      ((lambda (x) (macroexpand x) x) ;; for error checking
-       `(match2+ ,(first args) ,(first types)
-          ,@(mapcar1-with-next
-             (lambda (clause next-children)
-               (ematch0 clause
-                 ((list* (list* pattern patterns) body)
-                  `(,pattern
-                    ,(generate-multi-matcher
-                      (rest args) (rest types)
-                      (append *lexvars* (variables pattern)) ;; bind *lexvars*
-                      `((,patterns ,@body))
-                      ;; +----this condition is a little bit
-                      ;; | complicated. `next' should be added as long as the
-                      ;; | current source position have a block
-                      ;; | `clause'. Such a condition is either the parent
-                      ;; | clause has the next clause, or this child clause
-                      ;; | has the next clause
-                      (or next next-children))))))
-             clauses)
-          ;; when failed, go to the next match clause
-          ,@(when next `((_ (next))))))
-      `(match2 nil
-         ,@(mapcar
-            (lambda (clause)
-              (ematch0 clause
-                ((list* nil body)
-                 `(_ ,@body))))
-            clauses)
-         ,@(when next `((_ (next)))))))
+  ;; take 3 : switch to the genuine BDD-based matcher
+  ((lambda (x) (macroexpand x) x) ;; for error checking
+   `(match2+ ,(first args) ,(if types (first types) T)
+      ,@(mapcar1-with-next
+         (lambda (clause next-children)
+           (ematch0 clause
+             ((list* nil body)
+              `(_ ,@body))
+             ((list* (list* pattern patterns) body)
+              `(,pattern
+                ,(generate-multi-matcher
+                  (rest args) (rest types)
+                  (append *lexvars* (variables pattern)) ;; bind *lexvars*
+                  `((,patterns ,@body))
+                  ;; +----this condition is a little bit
+                  ;; | complicated. `next' should be added as long as the
+                  ;; | current source position have a block
+                  ;; | `clause'. Such a condition is either the parent
+                  ;; | clause has the next clause, or this child clause
+                  ;; | has the next clause
+                  (or next next-children))))))
+         clauses)
+      ;; when failed, go to the next match clause
+      ,@(when next `((_ (next)))))))
 
-;; ,@(unless outermost
-;;               `((,(mapcar (constantly
-;;                            (pattern-expand-all '_))
-;;                           patterns) (next))))
 
 ;;;; external apis
 
