@@ -210,8 +210,11 @@ or results in a compilation error when this is the outermost matching construct.
                                (list* (expand-multipatterns patterns)
                                       body))))
                           clauses))
-         (clauses* (funcall (symbol-optimizer *optimizer*)
-                            clauses :types types)))
+         (clauses* (if args
+                       (funcall (symbol-optimizer *optimizer*)
+                                clauses :types types)
+                       ;; if the number of argument is zero, there is no use
+                       clauses)))
     `(let ,bindings
        (declare (ignorable ,@args))
        (declare ,@(remove nil
