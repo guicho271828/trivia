@@ -3,6 +3,7 @@
 (defpackage :trivia.level1
   (:export :match1 :or1 :guard1 :variables :next
            :*or-pattern-allow-unshared-variables*
+           :*lexvars*
            :or1-pattern-inconsistency
            :guard1-pattern-nonlinear
            :conflicts :pattern :repair-pattern

@@ -5,8 +5,10 @@
   #.(let (acc)
       (do-external-symbols (s :trivia.level1 `(:export ,@acc))
         (push s acc)))
-  (:export :match2 :match2*
+  (:export :match2 :match2* ; primitives
            :match2+ :match2*+
+           :generate-multi-matcher
+           ;; external
            :match :match*
            :ematch :ematch*
            :cmatch :cmatch*
@@ -206,7 +208,11 @@ or results in a compilation error when this is the outermost matching construct.
   (let* ((args (make-gensyms whats "ARG"))
          (bindings (mapcar #'list args whats)) 
          (clauses (mapcar (lambda (clause)
-                            (pad (length whats) clause))
+                            (ematch0 (pad (length whats) clause)
+                              ((list* patterns body)
+                               (list* (mapcar #'pattern-expand-all
+                                              patterns)
+                                      body))))
                           clauses)))
     `(let ,bindings
        (declare (ignorable ,@args))
@@ -214,23 +220,51 @@ or results in a compilation error when this is the outermost matching construct.
                           (mapcar (lambda (arg type)
                                     (unless (eq t type) `(type ,type ,arg)))
                                   args types)))
-       (match2 t
-         ,@(convert-to-single-match args types clauses)))))
+       ,(generate-multi-matcher args types nil clauses))))
 
-(defun convert-to-single-match (args types clauses)
-  (mapcar
-   (lambda-ematch0
-     ((list* patterns body)
-      (with-gensyms (it) ;; peudo arg
-        `((guard1
-           ,it t
-           ,@(mappend
-              (lambda (arg p type)
-                (with-gensyms (typed)
-                  `(,arg (guard1 (,typed :type ,type) t ,typed ,p))))
-              args patterns types))
-          ,@body))))
-   clauses))
+(defun mapcar1-with-next (fn list)
+  (ematch0 list
+    ((cons it nil)
+     (cons (funcall fn it nil) nil))
+    ((cons it rest)
+     (cons (funcall fn it t) (mapcar1-with-next fn rest)))))
+
+(defun generate-multi-matcher (args types *lexvars* clauses &optional next)
+  (if args
+      ((lambda (x) (macroexpand x) x) ;; for error checking
+       `(match2+ ,(first args) ,(first types)
+          ,@(mapcar1-with-next
+             (lambda (clause next-children)
+               (ematch0 clause
+                 ((list* (list* pattern patterns) body)
+                  `(,pattern
+                    ,(generate-multi-matcher
+                      (rest args) (rest types)
+                      (append *lexvars* (variables pattern)) ;; bind *lexvars*
+                      `((,patterns ,@body))
+                      ;; +----this condition is a little bit
+                      ;; | complicated. `next' should be added as long as the
+                      ;; | current source position have a block
+                      ;; | `clause'. Such a condition is either the parent
+                      ;; | clause has the next clause, or this child clause
+                      ;; | has the next clause
+                      (or next next-children))))))
+             clauses)
+          ;; when failed, go to the next match clause
+          ,@(when next `((_ (next))))))
+      `(match2 nil
+         ,@(mapcar
+            (lambda (clause)
+              (ematch0 clause
+                ((list* nil body)
+                 `(_ ,@body))))
+            clauses)
+         ,@(when next `((_ (next)))))))
+
+;; ,@(unless outermost
+;;               `((,(mapcar (constantly
+;;                            (pattern-expand-all '_))
+;;                           patterns) (next))))
 
 ;;;; external apis
 
