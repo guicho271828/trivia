@@ -3,12 +3,10 @@
 (declaim (sb-ext:muffle-conditions sb-ext:compiler-note))
 
 (defpackage :trivia.benchmark
-  (:use :cl :alexandria :iterate)
-  (:import-from :trivia
-                :*optimizer*
-                :in-optimizer)
+  (:use :cl :alexandria :iterate :trivia :trivia.level1)
   (:export
-   #:run-benchmarks))
+   #:run-benchmarks)
+  (:shadow :next))
 (in-package :trivia.benchmark)
 
 (defvar *optimization* nil)
@@ -269,7 +267,7 @@
   (format t "~&-------------------- ~a ----------------------------------------~&" name)
   (list 
    (let ((fibonacci (compile nil (fibonacci-form matcher))))
-     (time (iter (repeat 3000)
+     (time (iter (repeat 200)
                  (collect (funcall fibonacci 32)))))
 
    (let ((gomoku (compile nil (gomoku-form matcher))))
@@ -295,13 +293,14 @@
              sum)))))
 
 (defun run-benchmarks (&optional *optimization*)
-  (let ((optima (run-benchmark 'optima:match :optima))
+  (let ((emilia (let ((*optimizer* :emilie2006))
+                  (run-benchmark 'trivia:match :emilie)))
+        (optima (run-benchmark 'optima:match :optima))
         (trivia (let ((*optimizer* :trivial))
-                  (run-benchmark 'trivia:match :trivial)))
-        (emilia (let ((*optimizer* :emilie2006))
-                  (run-benchmark 'trivia:match :emilie))))
-    (assert (equal optima trivia))
-    (assert (equal optima emilia))))
+                  (run-benchmark 'trivia:match :trivial))))
+    (print emilia)
+    (print optima)
+    (print trivia)))
 
 
 
@@ -310,25 +309,6 @@
  (let ((*optimizer* :emilie2006))
    (sb-cltl2:macroexpand-all
     (gomoku-form 'trivia:match))))
-
-
-;; for debugging : 2-moku 
-
-(defun nimoku (v)
-  (trivia:match v
-    ((or (simple-vector 1 _ _ 1)
-         (simple-vector _ 1 1 _)
-         (simple-vector 1 1 _ _)
-         (simple-vector _ _ 1 1)
-         (simple-vector 1 _ 1 _)
-         (simple-vector _ 1 _ 1)) 1)
-    ((or (simple-vector 0 _ _ 0)
-         (simple-vector _ 0 0 _)
-         (simple-vector 0 0 _ _)
-         (simple-vector _ _ 0 0)
-         (simple-vector 0 _ 0 _)
-         (simple-vector _ 0 _ 0)) 0)
-    (_ 2)))
 
 ;; (sb-cltl2:macroexpand-all
 ;;  (nimoku-form 'trivia:match))

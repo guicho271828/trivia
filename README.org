@@ -66,6 +66,5 @@ In order to run the same test with =:emilie2006= optimizer activated, run follow
 To run the benchmark:
 
 #+BEGIN_SRC lisp
-(asdf:load-system :trivia.benchmark)
-(trivia.benchmark:run-benchmarks '((speed 3) (debug 0) (space 0) (safety 0)))
+(asdf:test-system :trivia.benchmark)
 #+END_SRC
