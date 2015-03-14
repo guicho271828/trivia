@@ -505,5 +505,9 @@
       ;; using `next' in the last clause of match2
       (eval x))))
 
+(test hash-table
+  (match (make-hash-table)
+    ((hash-table count) (is (= count 0)))))
+
 (eval-when (:load-toplevel :execute)
   (run! :trivia))

@@ -272,15 +272,17 @@
 
 (defun map-accessors (parsed it type)
   (let ((package (symbol-package type)))
-    (if (and (find-class type nil)
-             ;; (subtypep type 'standard-object)
-             )
+    (if (find-class type nil)
+        (mappend (curry #'map-accessors-class it package type) parsed)
+        (mappend (curry #'map-accessors-function it package type) parsed))))
+
+(defun map-accessors-class (it package type parsed1)
         (let ((c (find-class type)))
           (ignore-errors
             (c2mop:finalize-inheritance c))
-          (mappend (lambda-ematch0
+    (ematch0 parsed1
                      ((list slot pattern)
-                      (if-let ((dslot (find-direct-slot slot c)))
+       (or (if-let ((dslot (find-direct-slot slot c)))
                         (if-let ((reader (first (c2mop:slot-definition-readers dslot))))
                           `((,reader ,it) ,pattern)
                           (progn
@@ -288,14 +290,14 @@
                              "No reader for slot ~a in class ~a: Forced to use slot-value"
                              (c2mop:slot-definition-name dslot) type)
                             `((slot-value ,it ',(c2mop:slot-definition-name dslot))
-                              ,pattern)))
-                        (progn
-                          (simple-style-warning
-                           "Failed to find slot ~a in class ~a: Forced to use slot-value"
-                           slot type)
-                          `((slot-value ,it ',slot) ,pattern)))))
-                   parsed))
-        (mappend (lambda-ematch0
+                   ,pattern))))
+           ;; (simple-style-warning
+           ;;  "Failed to find slot ~a in class ~a: Forced to infer function-based accessor"
+           ;;  slot type)
+           (map-accessors-function it package type parsed1))))))
+
+(defun map-accessors-function (it package type parsed1)
+  (ematch0 parsed1
                    ((list slot pattern)
                     (let* ((h (hyphened type slot package))
                            (c (concname type slot package))
@@ -309,8 +311,7 @@
                             (simple-style-warning
                              "failed to find the accessor for slot ~a! Using ~a"
                              slot h)
-                            `((,h ,it) ,pattern))))))
-                 parsed))))
+             `((,h ,it) ,pattern)))))))
 
 (defun find-direct-slot (slot/keyword c)
   (or (find slot/keyword (c2mop:class-direct-slots c)
@@ -360,3 +361,5 @@
     (cons `(equal ,x)) ;; (quote ...)
     ((or number character) `(eql ,x))
     (t `(eq ,x))))
+
+
