@@ -1,7 +1,7 @@
 (in-package :trivia.benchmark)
 
 ;; for debugging : 2-moku 
-(in-optimizer :emilie2006)
+(in-optimizer :balland2006)
 (defun nimoku (v)
   (trivia:match v
     ((or (simple-vector 1 _ _ 1)
