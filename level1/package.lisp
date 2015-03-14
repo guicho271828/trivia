@@ -28,10 +28,18 @@
 ;;; API
 
 (defmacro match1 (what &body clauses)
-  (let ((whatvar (gensym "WHAT1")))
-    `(let ((,whatvar ,what))
-       (declare (ignorable ,whatvar))
-       ,(%match whatvar clauses))))
+  (let ((whatvar (gensym "WHAT1"))
+        (toplevel-place-pattern nil))
+    (let ((bodyform 
+           (handler-bind ((place-pattern
+                           (lambda (c)
+                             (declare (ignore c))
+                             (setf toplevel-place-pattern t))))
+             (%match whatvar clauses))))
+      `(,(if toplevel-place-pattern 'symbol-macrolet 'let) ((,whatvar ,what))
+         (declare (ignorable ,whatvar))
+         ,bodyform))))
+      
 
 ;;; syntax error
 
@@ -246,7 +254,7 @@
 
 ;;; matching form generation
 
-(define-condition place-pattern () ())
+(define-condition place-pattern (warning) ())
 
 (defun match-clause (arg pattern body)
   ;; All patterns are corrected by correct-pattern. The first argument of
@@ -257,7 +265,11 @@
      (let ((*lexvars* (cons symopts *lexvars*)))
        (ematch0 symopts
          ((list* symbol options)
-          `(,(if (getf options :place) 'symbol-macrolet 'let) ((,symbol ,arg))
+          `(,(if (getf options :place)
+                 (progn (warn 'place-pattern)
+                        'symbol-macrolet)
+                 'let)
+             ((,symbol ,arg))
              ,@(when (getf options :ignorable)
                  `((declare (ignorable ,symbol))))
              ,((lambda (x)
@@ -269,7 +281,8 @@
                  ((lambda (x)
                     (if (eq t type) x ;; remove redundunt DECLARE
                         `(locally (declare (type ,type ,symbol)) ,x)))
-                  (destructure-guard1-subpatterns more-patterns body)))))))))
+                  (handler-bind ((place-pattern #'muffle-warning))
+                    (destructure-guard1-subpatterns more-patterns body))))))))))
     ((list* 'or1 subpatterns)
      (let* ((vars (variables pattern)))
        (with-gensyms (fn)

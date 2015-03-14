@@ -363,3 +363,6 @@
     (t `(eq ,x))))
 
 
+
+(defpattern place (x)
+  `(guard1 (,x :place t) t))

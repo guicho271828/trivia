@@ -5,7 +5,6 @@
 ;;; Also, :trivia.next and :trivia.skip exports `next' (conflicts with
 ;;; `iterate:next') and `skip', respectively. all 3 macros have the same meaning.
 ;;; 
-;;; INCOMPATIBILITY NOTE: `place' no longer effective: to simplify level1
 ;;; INCOMPATIBILITY NOTE: `match' no longer expanded in 1-pass through
 ;;; `macroexpand': some tests are now replaced with eval
 (defpackage :trivia.test
@@ -57,7 +56,6 @@
            (match '(1 2 3)
              ((list x y z) (+ x y z))))))
 
-#+nil
 (test place-pattern
   ;; level 0
   (let ((z 1))

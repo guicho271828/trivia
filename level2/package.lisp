@@ -33,6 +33,7 @@
            :$guard1
            :$or1
            :<>
+           :place
            ;; 
            :defpattern
            :pattern-expand
@@ -216,7 +217,7 @@ or results in a compilation error when this is the outermost matching construct.
                                 clauses :types types)
                        ;; if the number of argument is zero, there is no use
                        clauses)))
-    `(let ,bindings
+    `(symbol-macrolet ,bindings
        (declare (ignorable ,@args))
        (declare ,@(remove nil
                           (mapcar (lambda (arg type)
