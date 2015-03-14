@@ -232,12 +232,12 @@ or results in a compilation error when this is the outermost matching construct.
              (let ((*lexvars* (variables first*)))
                (expand-multipatterns rest)))))))
 
-(defun generate-multi-matcher (args *lexvars* clauses)
+(defun generate-multi-matcher (args *lexvars* clauses &optional in-clause-block)
   ;; take 3 : switch to the genuine BDD-based matcher
-                                        ;((lambda (x) (macroexpand x) x) ;; for error checking
+  ;;((lambda (x) (macroexpand x) x) ;; for error checking
   `(match1 ,(first args)
-     ,@(mapcar
-        (lambda (clause)
+     ,@(mapcar1-with-next 
+        (lambda (clause next-clause-exists)
           (ematch0 clause
             ((list* nil body)
              `(,(pattern-expand '_) ,@body))
@@ -246,9 +246,17 @@ or results in a compilation error when this is the outermost matching construct.
                ,(generate-multi-matcher
                  (rest args)
                  (append *lexvars* (variables pattern)) ;; bind *lexvars*
-                 `((,patterns ,@body)))))))
-        clauses)))
+                 `((,patterns ,@body))
+                 (or in-clause-block next-clause-exists))))))
+        clauses)
+     ,@(when in-clause-block `((,(pattern-expand-all '_) (next))))))
 
+(defun mapcar1-with-next (fn list)
+  (ematch0 list
+    ((cons it nil)
+     (cons (funcall fn it nil) nil))
+    ((cons it rest)
+     (cons (funcall fn it t) (mapcar1-with-next fn rest)))))
 
 ;;;; external apis
 
