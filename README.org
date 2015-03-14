@@ -1,45 +1,24 @@
 
 [[https://travis-ci.org/guicho271828/trivia][https://travis-ci.org/guicho271828/trivia.svg?branch=master]]
 
-NEWS: [[https://github.com/guicho271828/trivia/wiki/Benchmarking-Results][performance comparison against optima]] available.
+* Trivia : Trivial Pattern Matching Compiler
 
-* Trivia : Pattern Matcher with Multi-Layered Architecture
+Trivia is a pattern matching compiler that separates /matcher/ and
+/optimizer/. It was named after Optima, a pattern match compiler now
+gaining the popularity.  In Optima, sophisticated patterns that cannot be
+derived from the primitive patterns should be written by hacking the
+internals, but this is not the case with Trivia.
 
-Trivia is a pattern matching library with modularized structure
-that separates /matcher/ and /optimizer/. It was named after Optima,
-a pattern matching library which is now gaining the popularity.
-In Optima, sophisticated patterns that cannot be derived from the primitive
-patterns should be written by hacking the unexported symbols, but this is
-not the case with Trivia.
-
-The codebase of Trivia is divided into 3 levels, level 0, 1 and 2, where
-lower level bootstraps the higher level. Each level has its own =match=
-macro, e.g., level 0 has =match0= and so on. 
-
-+ [[https://github.com/guicho271828/trivia/wiki/Level-0-Patterns][level 0 : list destructuring]] :: =match0= is a simple wrapper over
-     destructuring-bind, which supports list, list*, variable, =_=, and
-     constant patterns for s-exp parsing.
-+ [[https://github.com/guicho271828/trivia/wiki/Level-1-Patterns][level 1 : core patterns]] :: =match1= supports =or1= and =guard1= patterns
-     only. These are the minimal set of patterns that is needed to
-     implement a matcher. =match1= simply expands into nested =let= and
-     =if= forms.
-+ [[https://github.com/guicho271828/trivia/wiki/Level-2-Patterns][level 2a : pattern expander]] :: Level 2 expands derived patterns into
-     level 1 patterns. In Trivia, all useful patterns are derived from
-     level 1 patterns, while there are several built-in patterns in Optima.
-+ [[https://github.com/guicho271828/trivia/wiki/Optimizer-API][level 2b : optimizer]] :: After the expansion, resulting level 1 patterns
-     are post-processed by a pattern optimizer. Level 2 provides an
-     extensible user interface to switch between different optimizer.
-
-Now Trivia comes with 2 optimizers:
+Trivia comes with 2 optimizers:
 
 + =:trivial= optimizer :: runs no optimization, and returns the pattern as
      it is. Interestingly, experiments suggests the gap between Optima and
-     =:trivial= is minimal, and not so slow. Bug-ridden, and reliable.
+     =:trivial= is minimal, and not so slow. Trivially correct and reliable.
 + =:emilie2006= optimizer :: Implements /Fusion/ , /Intersection/ and
      /Swapping/ optimization in (Emilie 2006). Currently [[https://github.com/guicho271828/trivia.emilie2006][hosted in a
-     separate repository]].  Achieved *60x* speedup in some domains. All
-     tests are passing, however there may be a hidden bug compared to
-     =:trivial=.
+     separate repository]].  Compared to Optima, achieved a performance
+     improvements up to 80x speedup. All tests are passing, however there
+     may be a hidden bug compared to =:trivial=.
 
 Since now we have a trivial optimizer and fully functional pattern matcher,
 the next version of the optimizer in Trivia can be implemented using
