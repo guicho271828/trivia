@@ -1,7 +1,7 @@
 ;;; level1 implementation
 
 (defpackage :trivia.level1
-  (:export :match1 :or1 :guard1 :variables :next
+  (:export :match1 :or1 :guard1 :variables
            :*or-pattern-allow-unshared-variables*
            :*lexvars*
            :or1-pattern-inconsistency
@@ -11,23 +11,35 @@
            :preprocess-symopts))
 
 (defpackage :trivia.fail (:export :fail))
+(defpackage :trivia.skip (:export :skip))
+(defpackage :trivia.next (:export :next))
 
 (defpackage :trivia.level1.impl
   (:use :cl
         :alexandria
         :trivia.level0
         :trivia.level1
-        :trivia.fail))
+        :trivia.fail
+        :trivia.skip
+        :trivia.next))
 
 (in-package :trivia.level1.impl)
 
 ;;; API
 
 (defmacro match1 (what &body clauses)
-  (let ((whatvar (gensym "WHAT1")))
-    `(let ((,whatvar ,what))
-       (declare (ignorable ,whatvar))
-       ,(%match whatvar clauses))))
+  (let ((whatvar (gensym "WHAT1"))
+        (toplevel-place-pattern nil))
+    (let ((bodyform 
+           (handler-bind ((place-pattern
+                           (lambda (c)
+                             (declare (ignore c))
+                             (setf toplevel-place-pattern t))))
+             (%match whatvar clauses))))
+      `(,(if toplevel-place-pattern 'symbol-macrolet 'let) ((,whatvar ,what))
+         (declare (ignorable ,whatvar))
+         ,bodyform))))
+      
 
 ;;; syntax error
 
@@ -93,6 +105,7 @@
 
 (defmacro next () `(return-from clause nil))
 (defmacro fail () `(next))
+(defmacro skip () `(next))
 
 ;;;; catch-based `next' implementation
 ;; using catch is not appropriate for our purpose, according to CLHS,
@@ -241,7 +254,7 @@
 
 ;;; matching form generation
 
-(define-condition place-pattern () ())
+(define-condition place-pattern (warning) ())
 
 (defun match-clause (arg pattern body)
   ;; All patterns are corrected by correct-pattern. The first argument of
@@ -252,7 +265,11 @@
      (let ((*lexvars* (cons symopts *lexvars*)))
        (ematch0 symopts
          ((list* symbol options)
-          `(,(if (getf options :place) 'symbol-macrolet 'let) ((,symbol ,arg))
+          `(,(if (getf options :place)
+                 (progn (warn 'place-pattern)
+                        'symbol-macrolet)
+                 'let)
+             ((,symbol ,arg))
              ,@(when (getf options :ignorable)
                  `((declare (ignorable ,symbol))))
              ,((lambda (x)
@@ -264,7 +281,8 @@
                  ((lambda (x)
                     (if (eq t type) x ;; remove redundunt DECLARE
                         `(locally (declare (type ,type ,symbol)) ,x)))
-                  (destructure-guard1-subpatterns more-patterns body)))))))))
+                  (handler-bind ((place-pattern #'muffle-warning))
+                    (destructure-guard1-subpatterns more-patterns body))))))))))
     ((list* 'or1 subpatterns)
      (let* ((vars (variables pattern)))
        (with-gensyms (fn)
