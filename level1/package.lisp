@@ -1,7 +1,7 @@
 ;;; level1 implementation
 
 (defpackage :trivia.level1
-  (:export :match1 :or1 :guard1 :variables :next
+  (:export :match1 :or1 :guard1 :variables
            :*or-pattern-allow-unshared-variables*
            :*lexvars*
            :or1-pattern-inconsistency
@@ -11,13 +11,17 @@
            :preprocess-symopts))
 
 (defpackage :trivia.fail (:export :fail))
+(defpackage :trivia.skip (:export :skip))
+(defpackage :trivia.next (:export :next))
 
 (defpackage :trivia.level1.impl
   (:use :cl
         :alexandria
         :trivia.level0
         :trivia.level1
-        :trivia.fail))
+        :trivia.fail
+        :trivia.skip
+        :trivia.next))
 
 (in-package :trivia.level1.impl)
 
@@ -93,6 +97,7 @@
 
 (defmacro next () `(return-from clause nil))
 (defmacro fail () `(next))
+(defmacro skip () `(next))
 
 ;;;; catch-based `next' implementation
 ;; using catch is not appropriate for our purpose, according to CLHS,

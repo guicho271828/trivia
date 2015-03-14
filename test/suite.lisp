@@ -1,12 +1,18 @@
 ;;; integrated testing including derived patterns
 ;;;
-;;; INCOMPATIBILITY NOTE: `fail' no longer effective: it forces the
-;;; optimization algorithm to be backtracking-automata specific
+;;; INCOMPATIBILITY NOTE: `fail' no longer effective by default: it is now exported
+;;; separately from :trivia.fail to avoid the common conflict against fiveam.
+;;; Also, :trivia.next and :trivia.skip exports `next' (conflicts with
+;;; `iterate:next') and `skip', respectively. all 3 macros have the same meaning.
+;;; 
 ;;; INCOMPATIBILITY NOTE: `place' no longer effective: to simplify level1
 ;;; INCOMPATIBILITY NOTE: `match' no longer expanded in 1-pass through
-;;; `macroexpand': they are now replaced with eval
+;;; `macroexpand': some tests are now replaced with eval
 (defpackage :trivia.test
-  (:use :cl :fiveam :trivia.level2 :trivia.level1
+  (:use :cl :fiveam
+        :trivia.level2
+        :trivia.level1
+        :trivia.next
         :trivia.level2.impl))
 
 (in-package :trivia.test)

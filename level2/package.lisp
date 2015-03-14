@@ -49,6 +49,7 @@
 
 (defpackage :trivia.level2.impl
   (:use :cl :alexandria
+        :trivia.next
         :trivia.level0
         :trivia.level1
         :trivia.level2)
