@@ -293,8 +293,8 @@
              sum)))))
 
 (defun run-benchmarks (&optional *optimization*)
-  (let ((emilia (let ((*optimizer* :emilie2006))
-                  (run-benchmark 'trivia:match :emilie)))
+  (let ((emilia (let ((*optimizer* :balland2006))
+                  (run-benchmark 'trivia:match :balland)))
         (optima (run-benchmark 'optima:match :optima))
         (trivia (let ((*optimizer* :trivial))
                   (run-benchmark 'trivia:match :trivial))))
@@ -306,7 +306,7 @@
 
 #+nil
 (print
- (let ((*optimizer* :emilie2006))
+ (let ((*optimizer* :balland2006))
    (sb-cltl2:macroexpand-all
     (gomoku-form 'trivia:match))))
 

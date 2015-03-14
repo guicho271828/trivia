@@ -1,5 +1,5 @@
 (defsystem :trivia.benchmark
-  :depends-on (:trivia :optima :trivia.emilie2006 :iterate)
+  :depends-on (:trivia :optima :trivia.balland2006 :iterate)
   :pathname "bench/"
   :components ((:file "definitions"))
   :in-order-to ((test-op (load-op :trivia.benchmark.run))))

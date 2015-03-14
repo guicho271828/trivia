@@ -14,8 +14,8 @@ Trivia comes with 2 optimizers:
 + =:trivial= optimizer :: runs no optimization, and returns the pattern as
      it is. Interestingly, experiments suggests the gap between Optima and
      =:trivial= is minimal, and not so slow. Trivially correct and reliable.
-+ =:emilie2006= optimizer :: Implements /Fusion/ , /Intersection/ and
-     /Swapping/ optimization in (Emilie 2006). Currently [[https://github.com/guicho271828/trivia.emilie2006][hosted in a
++ =:balland2006= optimizer :: Implements /Fusion/ , /Intersection/ and
+     /Swapping/ optimization in (Balland 2006). Currently [[https://github.com/guicho271828/trivia.balland2006][hosted in a
      separate repository]].  Compared to Optima, achieved a performance
      improvements up to 80x speedup. All tests are passing, however there
      may be a hidden bug compared to =:trivial=.
@@ -33,13 +33,13 @@ Detailed documentation is in [[https://github.com/guicho271828/trivia/wiki][gith
 
 To run the tests with trivial optimizer, =(asdf:test-system :trivia)= .
 
-In order to run the same test with =:emilie2006= optimizer activated, run follows:
+In order to run the same test with =:balland2006= optimizer activated, run follows:
 
 #+BEGIN_SRC lisp
-;; $ git clone https://github.com/guicho271828/trivia.emilie2006
+;; $ git clone https://github.com/guicho271828/trivia.balland2006
 ;; $ git clone https://github.com/guicho271828/type-i
 
-(asdf:test-system :trivia.emilie2006.enabled)
+(asdf:test-system :trivia.balland2006.enabled)
 #+END_SRC
 
 To run the benchmark:
