@@ -6,5 +6,6 @@
   :depends-on (:trivia.level0)
   :pathname "level1/"
   :serial t
-  :components ((:file "package"))
+  :components ((:file "package")
+               (:file "impl"))
   :in-order-to ((test-op (load-op :trivia.level1.test))))
