@@ -1,13 +1,8 @@
 
+
+(in-package :trivia.benchmark)
 #+sbcl
 (declaim (sb-ext:muffle-conditions sb-ext:compiler-note))
-
-(defpackage :trivia.benchmark
-  (:use :cl :alexandria :iterate :trivia :trivia.level1)
-  (:export
-   #:run-benchmarks)
-  (:shadow :next))
-(in-package :trivia.benchmark)
 
 (defvar *optimization* nil)
 
