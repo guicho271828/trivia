@@ -21,6 +21,9 @@
            :lambda-match
            :lambda-ematch
            :lambda-cmatch
+           :lambda-match*
+           :lambda-ematch*
+           :lambda-cmatch*
            ;; 
            :guard
            :alist
@@ -40,7 +43,8 @@
            :optimizer
            :*optimizer*
            :in-optimizer
-           :defoptimizer)
+           :defoptimizer
+           :symbol-optimizer)
   (:nicknames :trivia))
 
 (defpackage :trivia.level2.impl
@@ -204,12 +208,8 @@ or results in a compilation error when this is the outermost matching construct.
   ;; Actually, this is the main expander
   (let* ((args (make-gensyms whats "ARG"))
          (bindings (mapcar #'list args whats)) 
-         (clauses (mapcar (lambda (clause)
-                            (ematch0 (pad (length whats) clause)
-                              ((list* patterns body)
-                               (list* (expand-multipatterns patterns)
-                                      body))))
-                          clauses))
+         (clauses (mapcar (curry #'pad (length whats)) clauses))
+         (clauses (mapcar #'expand-clause clauses))
          (clauses* (if args
                        (funcall (symbol-optimizer *optimizer*)
                                 clauses :types types)
@@ -223,6 +223,11 @@ or results in a compilation error when this is the outermost matching construct.
                                   args types)))
        ,(generate-multi-matcher args nil clauses*))))
 
+(defun expand-clause (clause)
+  (ematch0 clause
+    ((list* patterns body)
+     (list* (expand-multipatterns patterns)
+            body))))
 (defun expand-multipatterns (patterns)
   (ematch0 patterns
     ((list) nil)
@@ -354,4 +359,20 @@ or results in a compilation error when this is the outermost matching construct.
   (with-gensyms (clause)
     `(lambda (,clause)
        (cmatch ,clause
+         ,@clauses))))
+
+(defmacro lambda-match* (&body clauses)
+  (let ((gensyms (make-gensyms (caar clauses))))
+    `(lambda ,gensyms
+       (match* ,gensyms
+         ,@clauses))))
+(defmacro lambda-ematch* (&body clauses)
+  (let ((gensyms (make-gensyms (caar clauses))))
+    `(lambda ,gensyms
+       (ematch* ,gensyms
+         ,@clauses))))
+(defmacro lambda-cmatch* (&body clauses)
+  (let ((gensyms (make-gensyms (caar clauses))))
+    `(lambda ,gensyms
+       (cmatch* ,gensyms
          ,@clauses))))
