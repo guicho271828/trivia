@@ -343,3 +343,31 @@ or results in a compilation error when this is the outermost matching construct.
     `(lambda ,gensyms
        (cmatch* ,gensyms
          ,@clauses))))
+
+
+(defmacro defun-match (name (arg) clauses)
+  `(defun ,name (,arg)
+     (match ,arg
+       ,@clauses)))
+(defmacro defun-ematch (name (arg) clauses)
+  `(defun ,name (,arg)
+     (ematch ,arg
+       ,@clauses)))
+(defmacro defun-cmatch (name (arg) clauses)
+  `(defun ,name (,arg)
+     (cmatch ,arg
+       ,@clauses)))
+
+(defmacro defun-match* (name args clauses)
+  `(defun ,name ,args
+     (match* ,args
+       ,@clauses)))
+(defmacro defun-ematch* (name args clauses)
+  `(defun ,name ,args
+     (ematch* ,args
+       ,@clauses)))
+(defmacro defun-cmatch* (name args clauses)
+  `(defun ,name ,args
+     (cmatch* ,args
+       ,@clauses)))
+
