@@ -285,12 +285,16 @@
        (or (if-let ((dslot (find-direct-slot slot c)))
              (if-let ((reader (first (c2mop:slot-definition-readers dslot))))
                `((,reader ,it) ,pattern)
-               (progn
-                 (simple-style-warning
-                  "No reader for slot ~a in class ~a: Forced to use slot-value"
-                  (c2mop:slot-definition-name dslot) type)
-                 `((slot-value ,it ',(c2mop:slot-definition-name dslot))
-                   ,pattern))))
+               ;; structures
+               (if-let ((reader (hyphened type slot package)))
+                 `((,reader ,it) ,pattern)
+                 (progn
+                   (simple-style-warning
+                    "No reader for slot ~a in class ~a: Forced to use slot-value.
+Maybe using conc-name for the structure-object?"
+                    (c2mop:slot-definition-name dslot) type)
+                   `((slot-value ,it ',(c2mop:slot-definition-name dslot))
+                     ,pattern)))))
            ;; (simple-style-warning
            ;;  "Failed to find slot ~a in class ~a: Forced to infer function-based accessor"
            ;;  slot type)
