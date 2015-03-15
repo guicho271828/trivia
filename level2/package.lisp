@@ -24,6 +24,12 @@
            :lambda-match*
            :lambda-ematch*
            :lambda-cmatch*
+           :defun-match
+           :defun-ematch
+           :defun-cmatch
+           :defun-match*
+           :defun-ematch*
+           :defun-cmatch*
            ;; 
            :guard
            :alist
