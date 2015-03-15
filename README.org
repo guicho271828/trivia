@@ -3,26 +3,39 @@
 
 * Trivia : Trivial Pattern Matching Compiler
 
-Trivia is a pattern matching compiler that separates /matcher/ and
-/optimizer/. It was named after Optima, a pattern match compiler now
-gaining the popularity.  In Optima, sophisticated patterns that cannot be
-derived from the primitive patterns should be written by hacking the
-internals, but this is not the case with Trivia.
+Trivia is a pattern matching compiler that is *compatible with Optima*.
+It share the same testing code with Optima and it acts as a
+drop-in replacement. Therefore, for the usage, consult [[https://github.com/m2ym/optima][Optima's website.]]
 
-Trivia comes with 2 optimizers:
+#+BEGIN_SRC diff
+(defpackage :playwithit
+  (:use :cl 
+-       :optima))
++       :trivia))
+(in-package :playwithit)
 
-+ =:trivial= optimizer :: runs no optimization, and returns the pattern as
-     it is. Interestingly, experiments suggests the gap between Optima and
-     =:trivial= is minimal, and not so slow. Trivially correct and reliable.
-+ =:balland2006= optimizer :: Implements /Fusion/ , /Intersection/ and
-     /Swapping/ optimization in (Balland 2006). Currently [[https://github.com/guicho271828/trivia.balland2006][hosted in a
-     separate repository]].  Compared to Optima, achieved a performance
-     improvements up to 80x speedup. All tests are passing, however there
-     may be a hidden bug compared to =:trivial=.
+(match '(something #(0 1 2))
+  ((list a (string 0 _ b))
+   (values a b)))
+;; --> SOMETHING, 2
+#+END_SRC
 
-Since now we have a trivial optimizer and fully functional pattern matcher,
-the next version of the optimizer in Trivia can be implemented using
-Trivia itself.
+Pattern expansion by Trivia runs *[[https://github.com/guicho271828/trivia/wiki/Benchmarking-Results][faster than Optima]]*.
+
+| runtime [sec]        | fibonacci | gomoku | string-match |
+|----------------------+-----------+--------+--------------|
+| optima               |      11.5 |   39.8 |         82.5 |
+| trivia + balland2006 |    *9.68* | *37.4* |       *1.57* |
+
+... and allows *much finer extension compared to Optima*. Trivia's =defpattern= is more
+primitive, and in fact, it is able to implement the
+predefined, unmodifiable pattern language in Optima within itself.
+
+#+BEGIN_SRC lisp
+(defpattern cons (a b)
+  (with-gensyms (it)
+    `(guard1 (,it :type cons) (consp ,it) (car ,it) ,a (cdr ,it) ,b)))
+#+END_SRC
 
 Detailed documentation is in [[https://github.com/guicho271828/trivia/wiki][github wiki]].
 
