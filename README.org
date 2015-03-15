@@ -4,8 +4,8 @@
 * Trivia : Trivial Pattern Matching Compiler
 
 Trivia is a pattern matching compiler that is *compatible with Optima*.
-It share the same testing code with Optima and it acts as a
-drop-in replacement. Therefore, for the usage, consult [[https://github.com/m2ym/optima][Optima's website.]]
+It shares the same testing code with Optima and acts as a
+drop-in replacement. For the basic usage, consult [[https://github.com/m2ym/optima][Optima's website.]]
 
 #+BEGIN_SRC diff
 (defpackage :playwithit
@@ -20,16 +20,17 @@ drop-in replacement. Therefore, for the usage, consult [[https://github.com/m2ym
 ;; --> SOMETHING, 2
 #+END_SRC
 
-Pattern expansion by Trivia runs *[[https://github.com/guicho271828/trivia/wiki/Benchmarking-Results][faster than Optima]]*.
+Patterns compiled with Trivia runs *[[https://github.com/guicho271828/trivia/wiki/Benchmarking-Results][faster than Optima]]*. 
 
-| runtime [sec]        | fibonacci | gomoku | string-match |
-|----------------------+-----------+--------+--------------|
-| optima               |      11.5 |   39.8 |         82.5 |
-| trivia + balland2006 |    *9.68* | *37.4* |       *1.57* |
+| runtime [sec] | [[https://github.com/guicho271828/trivia/blob/master/bench/definitions.lisp#L11][fibonacci]] | [[https://github.com/guicho271828/trivia/blob/master/bench/definitions.lisp#L40][gomoku]] | [[https://github.com/guicho271828/trivia/blob/master/bench/definitions.lisp#L214][string-match]] |
+|---------------+-----------+--------+--------------|
+| optima        | 11.5      | 39.8   | 82.5         |
+| trivia [1]    | *9.68*    | *37.4* | *1.57*       |
 
-... and allows *much finer extension compared to Optima*. Trivia's =defpattern= is more
-primitive, and in fact, it is able to implement the
-predefined, unmodifiable pattern language in Optima within itself.
+[1]: trivia is using :balland2006 optimiizer
+
+... and Trivia is *more extensible*. In fact, Trivia's =defpattern= is able
+to implement all of [[https://github.com/m2ym/optima#constructor-pattern][unmodifiable, core pattern language]] in Optima within itself.
 
 #+BEGIN_SRC lisp
 (defpattern cons (a b)
