@@ -68,11 +68,11 @@
                      (list (cons generator (pattern-expand-all subpattern)))
                    (wildcard () ;; remove wildcard pattern
                      nil))))
-                     (plist-alist more-patterns)))))
+              (plist-alist more-patterns)))))
     ((list* 'or1 subpatterns)
      (list* 'or1 (mapcar #'pattern-expand-all subpatterns)))))
 
-  
+
 (defmacro defpattern (name args &body body)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (setf (symbol-pattern ',name)

@@ -14,7 +14,7 @@
       `(,(if toplevel-place-pattern 'symbol-macrolet 'let) ((,whatvar ,what))
          (declare (ignorable ,whatvar))
          ,bodyform))))
-      
+
 
 ;;; syntax error
 
