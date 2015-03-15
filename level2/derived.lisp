@@ -41,24 +41,24 @@
   (with-gensyms (guard)
     `(and ,subpattern
           (guard1 ,guard ,test-form ,@more-patterns))))
-  
+
 (defpattern not (subpattern)
   (ematch0 (pattern-expand subpattern)
     ((list* 'guard1 sym test guard1-subpatterns)
      (with-gensyms (notsym)
        (let ((sym (car (preprocess-symopts sym subpattern))))
-       ;; no symbols are visible from the body
+         ;; no symbols are visible from the body
          (subst notsym sym
-              (if guard1-subpatterns
-                  `(or1 (guard1 ,sym (not ,test))
-                        (guard1 ,sym ,test
-                                ,@(alist-plist
-                                   (mapcar
-                                    (lambda-ematch0
-                                      ((cons generator test-form)
-                                       (cons generator `(not ,test-form)))) 
-                                    (plist-alist guard1-subpatterns)))))
-                  `(guard1 ,sym (not ,test)))))))
+                (if guard1-subpatterns
+                    `(or1 (guard1 ,sym (not ,test))
+                          (guard1 ,sym ,test
+                                  ,@(alist-plist
+                                     (mapcar
+                                      (lambda-ematch0
+                                        ((cons generator test-form)
+                                         (cons generator `(not ,test-form)))) 
+                                      (plist-alist guard1-subpatterns)))))
+                    `(guard1 ,sym (not ,test)))))))
     ((list* 'or1 or-subpatterns)
      `(and ,@(mapcar (lambda (or-sp)
                        `(not ,or-sp))
@@ -277,20 +277,24 @@
         (mappend (curry #'map-accessors-function it package type) parsed))))
 
 (defun map-accessors-class (it package type parsed1)
-        (let ((c (find-class type)))
-          (ignore-errors
-            (c2mop:finalize-inheritance c))
+  (let ((c (find-class type)))
+    (ignore-errors
+      (c2mop:finalize-inheritance c))
     (ematch0 parsed1
-                     ((list slot pattern)
+      ((list slot pattern)
        (or (if-let ((dslot (find-direct-slot slot c)))
-                        (if-let ((reader (first (c2mop:slot-definition-readers dslot))))
-                          `((,reader ,it) ,pattern)
-                          (progn
-                            (simple-style-warning
-                             "No reader for slot ~a in class ~a: Forced to use slot-value"
-                             (c2mop:slot-definition-name dslot) type)
-                            `((slot-value ,it ',(c2mop:slot-definition-name dslot))
-                   ,pattern))))
+             (if-let ((reader (first (c2mop:slot-definition-readers dslot))))
+               `((,reader ,it) ,pattern)
+               ;; structures
+               (if-let ((reader (hyphened type slot package)))
+                 `((,reader ,it) ,pattern)
+                 (progn
+                   (simple-style-warning
+                    "No reader for slot ~a in class ~a: Forced to use slot-value.
+Maybe using conc-name for the structure-object?"
+                    (c2mop:slot-definition-name dslot) type)
+                   `((slot-value ,it ',(c2mop:slot-definition-name dslot))
+                     ,pattern)))))
            ;; (simple-style-warning
            ;;  "Failed to find slot ~a in class ~a: Forced to infer function-based accessor"
            ;;  slot type)
@@ -298,19 +302,19 @@
 
 (defun map-accessors-function (it package type parsed1)
   (ematch0 parsed1
-                   ((list slot pattern)
-                    (let* ((h (hyphened type slot package))
-                           (c (concname type slot package))
-                           (n (nameonly type slot package))
-                           (reader (cond ((fboundp h) h)
-                                         ((fboundp c) c)
-                                         ((fboundp n) n))))
-                      (if reader
-                          `((,reader ,it) ,pattern)
-                          (progn
-                            (simple-style-warning
-                             "failed to find the accessor for slot ~a! Using ~a"
-                             slot h)
+    ((list slot pattern)
+     (let* ((h (hyphened type slot package))
+            (c (concname type slot package))
+            (n (nameonly type slot package))
+            (reader (cond ((fboundp h) h)
+                          ((fboundp c) c)
+                          ((fboundp n) n))))
+       (if reader
+           `((,reader ,it) ,pattern)
+           (progn
+             (simple-style-warning
+              "failed to find the accessor for slot ~a! Using ~a"
+              slot h)
              `((,h ,it) ,pattern)))))))
 
 (defun find-direct-slot (slot/keyword c)

@@ -29,7 +29,7 @@
        ;; bind in final expansion
        `(let (,,@(mapcar (lambda (g n)
                            ``(,,g ,,(cdr n)))
-                         gensyms names-and-forms))
+                   gensyms names-and-forms))
           (declare (ignorable ,,@gensyms))
           ;; bind in user-macro
           ,(let ,(mapcar (lambda (n g) (list (car n) g))

@@ -68,22 +68,47 @@
                      (list (cons generator (pattern-expand-all subpattern)))
                    (wildcard () ;; remove wildcard pattern
                      nil))))
-                     (plist-alist more-patterns)))))
+              (plist-alist more-patterns)))))
     ((list* 'or1 subpatterns)
      (list* 'or1 (mapcar #'pattern-expand-all subpatterns)))))
 
-  
+
 (defmacro defpattern (name args &body body)
+  "Adds a new derived pattern. &optional arguments are, when the default
+value is not supplied, defaulted to '_, instead of nil."
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (setf (symbol-pattern ',name)
            #+sbcl
-           (sb-int:named-lambda ',name ,args ,@body)
+           (sb-int:named-lambda ',name ,(process-lambda-args args) ,@body)
            #-sbcl
-           (lambda ,args ,@body))))
+           (lambda ,(process-lambda-args args) ,@body))))
 
+(defun process-lambda-args (args)
+  (ematch0 args
+    (nil nil)
+    ((list* '&optional rest)
+     (list* '&optional (process-optional-args rest)))
+    ((list* '&key rest) args)
+    ((list* '&rest rest) args)
+    ((list* '&aux rest) args)
+    ((list* thing rest)
+     (list* thing (process-lambda-args rest)))))
 
-
-
+(defun process-optional-args (args)
+  (ematch0 args
+    (nil nil)
+    ((list* '&key rest) args)
+    ((list* '&rest rest) args)
+    ((list* '&aux rest) args)
+    ((list* (list name) rest)
+     (list* (list name ''_) (process-optional-args rest)))
+    ((list* (list name default) rest)
+     (list* (list name default) (process-optional-args rest)))
+    ((list* (list name default pred) rest)
+     (list* (list name default pred) (process-optional-args rest)))
+    ((list* name rest)
+     (list* (list name ''_) (process-optional-args rest)))))
+      
 ;;;; optimizer database
 (lispn:define-namespace optimizer (function (list &key &allow-other-keys) list))
 (defvar *optimizer* :trivial)
