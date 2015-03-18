@@ -5,7 +5,7 @@
 
 Trivia is a pattern matching compiler that is *compatible with Optima*.
 It shares the same testing code with Optima and acts as a
-drop-in replacement. For the basic usage, consult [[https://github.com/guicho271828/trivia/wiki/Basic-Usage:-What-is-a-pattern-matching%3F-Benefits%3F][our wiki]].
+drop-in replacement. For the basic usage, consult [[https://github.com/guicho271828/trivia/wiki][our wiki]].
 
 #+BEGIN_SRC diff
 (defpackage :playwithit
