@@ -171,19 +171,22 @@
                          ,@(when key `(:key ,key))
                          ,@(when test `(:test ,test)))) ,pattern)))
 
-(defpattern property (key pattern)
+(defpattern property (key pattern &optional (default nil supplied-p))
   (with-gensyms (it)
     `(guard1 (,it :type list)
              (listp ,it)
-             (getf ,it ,key) ,pattern)))
+             ,(if supplied-p
+                  `(getf ,it ,key ,default)
+                  `(getf ,it ,key))
+             ,pattern)))
 
-(defpattern alist (&rest args &key &allow-other-keys)
+(defpattern alist (&rest args)
   `(and ,@(mapcar (lambda-match0
                     ((cons key pattern)
                      `(assoc ,key ,pattern)))
                   args)))
 
-(defpattern plist (&rest args &key &allow-other-keys)
+(defpattern plist (&rest args)
   `(and ,@(mapcar (lambda-match0
                     ((cons key pattern)
                      `(property ,key ,pattern)))

@@ -22,12 +22,12 @@
        (fib arg))))
 
 
-;;; Eratosthene computes primes numbers up to 1000, using associative list
-;; matching. The improvement comes from the Inlining rules which avoids
-;; computing a substitution unless the rule applies (i.e. the conditions
-;; are verified).
-
-
+;;; Eratosthene
+;; (i.e. sieve of Eratosthenes
+;; https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes) computes primes
+;; numbers up to 1000, using associative list matching. The improvement
+;; comes from the Inlining rules which avoids computing a substitution
+;; unless the rule applies (i.e. the conditions are verified).
 
 ;;; Gomoku looks for five pawn on a go board, using list matching.
 ;; This example contains more than 40 patterns and illustrates the interest of test-sharing.
@@ -261,16 +261,18 @@
 (defun run-benchmark (matcher name)
   (format t "~&-------------------- ~a ----------------------------------------~&" name)
   (list 
-   (let ((fibonacci (compile nil (fibonacci-form matcher))))
+   (let ((fn (compile nil (fibonacci-form matcher))))
+     (format t "~&Running Fibonacci")
      (time (iter (repeat 200)
-                 (collect (funcall fibonacci 32)))))
+                 (collect (funcall fn 32)))))
 
-   (let ((gomoku (compile nil (gomoku-form matcher))))
+   (let ((fn (compile nil (gomoku-form matcher))))
+     (format t "~&Running Gomoku")
      (time
       (iter outer
-            (repeat 180)
+            (repeat 100)
             (iter (for test in *gomoku-testset*)
-                  (case (funcall gomoku test)
+                  (case (funcall fn test)
                     (0 (in outer (counting t into black)))
                     (1 (in outer (counting t into white)))))
             (finally
@@ -279,21 +281,29 @@
                      (- (* 30 (length *gomoku-testset*))
                         black white))
              (return-from outer (list black white))))))
-   (let ((strmatch (compile nil (strmatch-form matcher))))
-     (time (let ((sum (iter (repeat 100000)
+   #+nil
+   (let ((fn (compile nil (eratosthenes-form matcher)))
+         (input 100000))
+     (format t "~&Running Eratosthenes-sieve with input=~a" input)
+     (let ((res (time (funcall fn input))))
+       (format t "~&~a primes" (length res))
+       res))
+   (let ((fn (compile nil (strmatch-form matcher))))
+     (format t "~&Running String-match")
+     (time (let ((sum (iter (repeat 10000)
                          (summing
                           (iter (for word in *longstr*)
-                                (count (funcall strmatch word)))))))
+                                (count (funcall fn word)))))))
              (format t "~& Matched ~a times" sum)
              sum)))))
 
 (defun run-benchmarks (&optional *optimization*)
-  (let ((emilia (let ((*optimizer* :balland2006))
+  (let ((balland (let ((*optimizer* :balland2006))
                   (run-benchmark 'trivia:match :balland)))
         (optima (run-benchmark 'optima:match :optima))
         (trivia (let ((*optimizer* :trivial))
                   (run-benchmark 'trivia:match :trivial))))
-    (print emilia)
+    (print balland)
     (print optima)
     (print trivia)))
 
