@@ -15,7 +15,7 @@ drop-in replacement. For the basic usage, consult [[https://github.com/guicho271
 (in-package :playwithit)
 
 (match '(something #(0 1 2))
-  ((list a (string 0 _ b))
+  ((list a (vector 0 _ b))
    (values a b)))
 ;; --> SOMETHING, 2
 #+END_SRC
