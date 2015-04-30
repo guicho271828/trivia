@@ -6,30 +6,28 @@
     `(guard1 (,it :type cons) (consp ,it) (car ,it) ,a (cdr ,it) ,b)))
 
 (defpattern < (upper-bound)
-  (with-gensyms (it)
+  (with-gensyms (it it2)
     `(guard1 (,it :type real) (realp ,it)
              ,it
-             (guard1 ,it (< ,it ,upper-bound)))))
+             (guard1 ,it2 (< ,it2 ,upper-bound)))))
 
 (defpattern > (lower-bound)
-  (with-gensyms (it)
+  (with-gensyms (it it2)
     `(guard1 (,it :type real) (realp ,it)
              ,it
-             (guard1 ,it (< ,lower-bound ,it)))))
+             (guard1 ,it2 (< ,lower-bound ,it2)))))
 
 (defpattern = (number)
-  (with-gensyms (it)
+  (with-gensyms (it it2)
     `(guard1 (,it :type number) (numberp ,it)
              ,it
-             (guard1 ,it
-                     (= ,number ,it)))))
+             (guard1 ,it2 (= ,number ,it2)))))
 
 (defpattern /= (number)
-  (with-gensyms (it)
+  (with-gensyms (it it2)
     `(guard1 (,it :type number) (numberp ,it)
              ,it
-             (guard1 ,it
-                     (/= ,number ,it)))))
+             (guard1 ,it2 (/= ,number ,it2)))))
 
 
 
