@@ -12,6 +12,7 @@
   :components ((:file "package")
                (:file "impl")
                (:file "derived")
-               (:file "derived2"))
+               (:file "derived2")
+               (:file "derived-numbers"))
   :in-order-to ((test-op (load-op :trivia.level2.test))))
 
