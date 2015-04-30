@@ -5,23 +5,17 @@
   (with-gensyms (it)
     `(guard1 (,it :type cons) (consp ,it) (car ,it) ,a (cdr ,it) ,b)))
 
-(defpattern < (lower &optional upper)
+(defpattern < (upper-bound)
   (with-gensyms (it)
     `(guard1 (,it :type real) (realp ,it)
              ,it
-             (guard1 ,it
-                     ,(if upper
-                          `(< ,lower ,it ,upper)
-                          `(< ,lower ,it))))))
+             (guard1 ,it (< ,it ,upper-bound)))))
 
-(defpattern > (upper &optional lower)
+(defpattern > (lower-bound)
   (with-gensyms (it)
     `(guard1 (,it :type real) (realp ,it)
              ,it
-             (guard1 ,it
-                     ,(if upper
-                          `(< ,upper ,it ,lower)
-                          `(< ,upper ,it))))))
+             (guard1 ,it (< ,lower-bound ,it)))))
 
 (defpattern = (number)
   (with-gensyms (it)
@@ -29,6 +23,13 @@
              ,it
              (guard1 ,it
                      (= ,number ,it)))))
+
+(defpattern /= (number)
+  (with-gensyms (it)
+    `(guard1 (,it :type number) (numberp ,it)
+             ,it
+             (guard1 ,it
+                     (/= ,number ,it)))))
 
 
 
