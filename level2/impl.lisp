@@ -246,7 +246,11 @@ or results in a compilation error when this is the outermost matching construct.
 
 (define-condition match-error (error)
   ((pattern :initarg :pattern :reader match-error-pattern)
-   (values :initarg :values :reader match-error-values)))
+   (values :initarg :values :reader match-error-values))
+  (:report (lambda (c s)
+             (format s "Pattern: ~s ~& Values: ~s ~&"
+                     (match-error-pattern c)
+                     (match-error-values c)))))
 
 (defmacro ematch (what &body clauses)
   (with-gensyms (otherwise)
