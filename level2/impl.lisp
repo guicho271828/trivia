@@ -66,7 +66,7 @@
                 ((cons generator subpattern)
                  (handler-case
                      (list (cons generator (pattern-expand-all subpattern)))
-                   (wildcard () ;; remove wildcard pattern
+                   (wildcard () ;; remove unnecessary wildcard pattern
                      nil))))
               (plist-alist more-patterns)))))
     ((list* 'or1 subpatterns)
