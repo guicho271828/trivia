@@ -1,5 +1,5 @@
 (asdf:defsystem :trivia.level0
-  :description "Bootstrapping Pattern Matching Library for implementing trivia"
+  :description "Bootstrapping Pattern Matching Library for implementing Trivia"
   :version "0.1"
   :author "Masataro Asai"
   :license "LLGPL"
