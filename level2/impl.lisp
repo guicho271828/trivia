@@ -66,7 +66,7 @@
                 ((cons generator subpattern)
                  (handler-case
                      (list (cons generator (pattern-expand-all subpattern)))
-                   (wildcard () ;; remove wildcard pattern
+                   (wildcard () ;; remove unnecessary wildcard pattern
                      nil))))
               (plist-alist more-patterns)))))
     ((list* 'or1 subpatterns)
@@ -246,7 +246,11 @@ or results in a compilation error when this is the outermost matching construct.
 
 (define-condition match-error (error)
   ((pattern :initarg :pattern :reader match-error-pattern)
-   (values :initarg :values :reader match-error-values)))
+   (values :initarg :values :reader match-error-values))
+  (:report (lambda (c s)
+             (format s "Pattern: ~s ~& Values: ~s ~&"
+                     (match-error-pattern c)
+                     (match-error-values c)))))
 
 (defmacro ematch (what &body clauses)
   (with-gensyms (otherwise)
@@ -345,28 +349,28 @@ or results in a compilation error when this is the outermost matching construct.
          ,@clauses))))
 
 
-(defmacro defun-match (name (arg) clauses)
+(defmacro defun-match (name (arg) &body clauses)
   `(defun ,name (,arg)
      (match ,arg
        ,@clauses)))
-(defmacro defun-ematch (name (arg) clauses)
+(defmacro defun-ematch (name (arg) &body clauses)
   `(defun ,name (,arg)
      (ematch ,arg
        ,@clauses)))
-(defmacro defun-cmatch (name (arg) clauses)
+(defmacro defun-cmatch (name (arg) &body clauses)
   `(defun ,name (,arg)
      (cmatch ,arg
        ,@clauses)))
 
-(defmacro defun-match* (name args clauses)
+(defmacro defun-match* (name args &body clauses)
   `(defun ,name ,args
      (match* ,args
        ,@clauses)))
-(defmacro defun-ematch* (name args clauses)
+(defmacro defun-ematch* (name args &body clauses)
   `(defun ,name ,args
      (ematch* ,args
        ,@clauses)))
-(defmacro defun-cmatch* (name args clauses)
+(defmacro defun-cmatch* (name args &body clauses)
   `(defun ,name ,args
      (cmatch* ,args
        ,@clauses)))

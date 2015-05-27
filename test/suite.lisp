@@ -459,6 +459,16 @@
      (is (= 5 z)))
     (_ (fail))))
 
+(test defun-match*
+  (defun-match* myfunc (x y)
+    ((1 2) 3)
+    ((4 5) 6)
+    ((_ _) nil))
+  (is (= 3 (myfunc 1 2))) 
+  (is (= 6 (myfunc 4 5))) 
+  (is-false (myfunc 7 8)))
+
+
 (test next
   ;; optima:fail --> trivia:next : it causes synbol conflict with fiveam
   ;; and not convenient but note that it you :use optima.fail package, it

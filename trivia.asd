@@ -8,6 +8,7 @@
                           str))
   :version "0.1"
   :author "Masataro Asai"
+  :mailto "guicho2.71828@gmail.com"
   :license "LLGPL"
   :depends-on (:trivia.level2)
   :in-order-to ((test-op (load-op :trivia.level2.test))))

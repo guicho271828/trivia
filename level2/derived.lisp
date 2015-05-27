@@ -371,5 +371,6 @@ Maybe using conc-name for the structure-object?"
 
 
 
-(defpattern place (x)
-  `(guard1 (,x :place t) t))
+(defpattern place (place &optional eager)
+  ;; optional arguments in defpattern is defaulted to _, not nil
+  `(guard1 (,place :place t) t ,place ,eager))

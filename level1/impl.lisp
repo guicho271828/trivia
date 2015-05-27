@@ -45,7 +45,7 @@
 
 
 (defun %match (arg clauses)
-  `(block nil ;; << return from the whole match
+  `(block whole ;; << return from the whole match
      ,@(match-clauses arg clauses)))
 
 ;;; `next' implementation
@@ -68,7 +68,7 @@
          (match-clause arg
                        (correct-pattern pattern)
                        ;; << return from the whole match
-                       `(return (locally ,@body)))))))
+                       `(return-from whole (locally ,@body)))))))
    clauses))
 
 (defun mapcar1-with-last (fn list)
