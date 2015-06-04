@@ -23,7 +23,7 @@
              ,it
              (guard1 ,it2 (<= ,it2 ,upper-bound)))))
 
-(defpattern => (lower-bound)
+(defpattern >= (lower-bound)
   (with-gensyms (it it2)
     `(guard1 (,it :type real) (realp ,it)
              ,it
