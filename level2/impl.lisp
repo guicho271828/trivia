@@ -18,7 +18,8 @@
 
 
 (defun pattern-expand-1 (p)
-  "expand the given pattern once, just like macroexpand-1"
+  "expand the given pattern once, just like macroexpand-1.
+ Returns (values expansion-form expanded-p)"
   (if (atom p)
       (values (cond
                 ((constantp p) `(constant ,p)) ;; see derived
@@ -33,11 +34,16 @@
         ((list* 'guard1 _) p)
         ((list* 'or1 _)    p)
         ((list* name args)
-         ;; handle implicit patterns
          (values 
           (handler-case
+              ;; If the derived pattern exists, then call the expander function
               (apply (symbol-pattern name) args)
             (unbound-pattern (c)
+              ;; otherwise, unbound-pattern is signalled.
+              ;; (see the macroexpansion of (lispn:define-namespace pattern function).)
+              ;; If the pattern name matches some convention, like a class name,
+              ;; then it is handled as an implicit pattern.
+              ;; Otherwise, signal a compile error.
               (if (or (find-class name nil)
                       (fboundp (predicatep name))
                       (fboundp (predicate-p name)))
@@ -46,7 +52,8 @@
           t)))))
 
 (defun pattern-expand (p)
-  "expand the given pattern once, just like macroexpand"
+  "expand the given pattern downto level1 pattern (i.e. until no expansion is available),
+just like macroexpand"
   (let (expanded)
     (do () (nil)
       (multiple-value-bind (new expanded1) (pattern-expand-1 p)
@@ -55,7 +62,7 @@
             (return (values new expanded)))))))
 
 (defun pattern-expand-all (p)
-  "expand the given pattern once, just like macroexpand-all"
+  "expand the given pattern recursively"
   ;; should start by guard1 or or1
   (ematch0 (pattern-expand p)
     ((list* 'guard1 sym test more-patterns)
@@ -74,8 +81,8 @@
 
 
 (defmacro defpattern (name args &body body)
-  "Adds a new derived pattern. &optional arguments are, when the default
-value is not supplied, defaulted to '_, instead of nil."
+  "Adds a new derived pattern.
+The default value of &optional arguments are '_, instead of nil."
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (setf (symbol-pattern ',name)
            #+sbcl
