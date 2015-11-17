@@ -40,6 +40,8 @@
            :$or1
            :<>
            :place
+	   :lambda-list
+	   :λlist
            ;; 
            :defpattern
            :pattern-expand
