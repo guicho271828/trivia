@@ -22,23 +22,21 @@
 		 (t `(,(second (assoc :match macros)) ,p)))))
       `(macrolet (,@(mapcar #'cdr macros)) ,(recurse x)))))
 
-(defun getf! (place indicator &optional checkp indicatorp)
+(defun getf! (place indicator &optional checkp)
   (declare (type keyword indicator)
 	   (type list place))
   (let ((lst+ (cons :head place)))
     (do ((x (cdr lst+) (cddr x))
 	 (x- lst+ (cdr x)))
-	((or (not x)
-	     (and (not checkp)		  
-		  (progn
-		    (assert (and (consp (cdr x)) (keywordp (first x))) nil "invalid property list.")
-		    (eql (first x) indicator))))
-	 (when x ;;move matching to the head
-	   (setf (cdr x-) (cddr x)
-		 (cddr x) (cdr lst+)
-		 (cdr lst+) x)
-	   (if (not indicatorp) x
-	       (list* t x)))))))
+	((or (not (and x (consp (cdr x)) (keywordp (first x))))
+	     (and (not checkp) (eql (first x) indicator)))
+	 (cond
+	   ((not x) (values t (cdr lst+)))
+	   ((not (and (consp (cdr x)) (keywordp (first x)))) (values nil (cdr lst+)))
+	   (t (setf (cdr x-) (cddr x)
+		    (cddr x) (cdr lst+)
+		    (cdr lst+) x)
+	      (values t (cdr lst+))))))))
 
 (defun parse-lambda-list (pattern &aux (ptn pattern) compiler accum)
   (if (recurse-maadi
@@ -50,7 +48,7 @@
 	(:. (setf accum nil) t)
 	(:* (:and (:. (consp ptn)) (:not (:λkey)) (:. (push (first ptn) accum)) (:pop)))
 	(:. (push `(:atom ,@(reverse accum)) compiler) t)
-	;;&optional       
+	;;&optional
 	(:or (:not (:. (listp ptn)))
 	     (:and '&optional (:pop)
 		   (:. (setf accum nil) t)
@@ -96,10 +94,17 @@
 	  (:atom `(list* ,@(cdr head) ,(compile-destructuring-pattern (cdr ops))))
 	  (:optional
 	   (if-let ((tail (cdr head)))
-	     (destructuring-bind (var &optional default (key nil keyp) &aux (lst (gensym))) (car tail)
-	       (assert (and (typep var 'variable-symbol) (or (not keyp) (typep key 'variable-symbol))) nil "invalid lambda list")
-	       `(trivia:<> (list* ,@(if keyp `(,key)) ,var ,(compile-destructuring-pattern (list* (list* :optional (cdr tail)) (cdr ops))))
-			   (or (and ,lst ,@(if keyp `((cons t ,lst)))) (list ,@(if keyp `(nil)) ,default)) ,lst))
+	     (let ((guard nil) (optpat (car tail)))
+	       (when (eql (car optpat) 'guard)
+		 (destructuring-bind (guard-sym pattern predicate &rest more-patterns) optpat
+		   (declare (ignorable guard-sym))
+		   (setf guard `(t (guard1 ,(gensym) ,predicate ,@more-patterns))
+			 optpat (ensure-list pattern))))
+	       (destructuring-bind (var &optional default (key nil keyp) &aux (lst (gensym))) optpat
+		 (assert (and (typep var 'variable-symbol) (or (not keyp) (typep key 'variable-symbol))) nil "invalid lambda list")
+		 `(guard1 (,lst :type list) (listp ,lst) (if ,lst (car ,lst) ,default) ,var ,@(if keyp `((if ,lst t nil) ,key))
+			  ,@guard
+			  (cdr ,lst) ,(compile-destructuring-pattern (list* (list* :optional (cdr tail)) (cdr ops))))))
 	     (compile-destructuring-pattern (cdr ops))))
 	  (:rest
 	   (let ((var (second head)))
@@ -107,32 +112,42 @@
 	     `(trivia:<> ,(compile-destructuring-pattern (cdr ops) '_) ,var ,var)))
 	  (:keyword
 	   (with-gensyms (lst)
-	     `(and (type list) (trivia:<> ,(compile-destructuring-pattern (list* (list* :keyword-processing (cdr head)) (cdr ops))) (copy-list ,lst) ,lst))))
+	     `(guard1 ,lst (listp ,lst) (copy-list ,lst) ,(compile-destructuring-pattern (list* (list* :keyword-processing (cdr head)) (cdr ops))))))
 	  (:keyword-processing
 	   (if-let ((tail (cdr head)))
 	     (if (eql (car tail) :more-keywords)
 		 (with-gensyms (lst)
-		   `(and (guard ,lst (getf! ,lst nil t nil)) ,(compile-destructuring-pattern (cdr ops) '_)))
-		 (destructuring-bind (var &optional default (key nil keyp) &aux (lst (gensym))) (car tail)
-		   (assert (and (typep var 'variable-symbol) (or (not keyp) (typep key 'variable-symbol))) nil "invalid lambda list")
-		   (let ((varkey (intern (symbol-name var) :keyword)))
-		     `(trivia:<> (list* ,@(if keyp `(,key)) ,varkey ,var ,(compile-destructuring-pattern (list* (list* :keyword-processing (cdr tail)) (cdr ops))))
-				 (or (getf! ,lst ,varkey nil ,(if keyp t nil)) (list* ,@(if keyp `(nil)) ,varkey ,default ,lst)) ,lst))))
+		   `(guard1 (,lst :type list) (getf! ,lst nil t) nil (compile-destructuring-pattern (cdr ops) '_)))
+		 (let ((guard nil) (keypat (car tail)))
+		   (when (eql (car keypat) 'guard)
+		     (destructuring-bind (guard-sym pattern predicate &rest more-patterns) keypat
+		       (declare (ignorable guard-sym))
+		       (setf guard `(t (guard1 ,(gensym) ,predicate ,@more-patterns))
+			     keypat (ensure-list pattern))))
+		   (destructuring-bind (var &optional default (key nil keyp) &aux (varkey (intern (symbol-name var) :keyword))) keypat
+		     (assert (and (typep var 'variable-symbol) (or (not keyp) (typep key 'variable-symbol))) nil "invalid lambda list")
+		     (with-gensyms (lst plistp newlst found-key?)
+		       `(guard1 (,lst :type list) (multiple-value-bind (,plistp ,newlst) (getf! ,lst ',varkey)
+						    (when ,plistp (setf ,lst ,newlst) t))
+				(eql (first ,lst) ',varkey) ,found-key?
+				(if ,found-key? (second ,lst) ,default) ,var ,@(if keyp `((if ,found-key? t nil) ,key))
+				,@guard
+				(if ,found-key? (cddr ,lst) ,lst) ,(compile-destructuring-pattern (list* (list* :keyword-processing (cdr tail)) (cdr ops))))))))
 	     (compile-destructuring-pattern (cdr ops))))
 	  (:aux
-	   `(and ,default ,@(mapcar #'(lambda (x)
-					(destructuring-bind (var &optional expr) (ensure-list x)
-					  (assert (typep var 'variable-symbol) nil "invalid lambda list")
-					  `(trivia:<> ,var ,expr)))
-				    (cdr head))))))))
+	   `(and ,default (guard1 ,(gensym) t ,@(mapcan #'(lambda (x)
+							    (destructuring-bind (var &optional expr) (ensure-list x)
+							      (assert (typep var 'variable-symbol) nil "invalid lambda list")
+							      `(,expr ,var)))
+							(cdr head)))))))))
 
 ;(compile-destructuring-pattern (parse-lambda-list '(a . b)))
 
 (defpattern lambda-list (&rest pattern)
-  (compile-destructuring-pattern (parse-lambda-list pattern)))
+  (compile-destructuring-pattern (or (parse-lambda-list pattern) (error "invalid lambda list"))))
 
 (defpattern λlist (&rest pattern)
-  (compile-destructuring-pattern (parse-lambda-list pattern)))
+  (compile-destructuring-pattern (or (parse-lambda-list pattern) (error "invalid lambda list"))))
 
 #+nil
 (trivia:match '(1 (2 3) -1)
