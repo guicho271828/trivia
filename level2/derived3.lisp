@@ -22,6 +22,7 @@
 		 (t `(,(second (assoc :match macros)) ,p)))))
       `(macrolet (,@(mapcar #'cdr macros)) ,(recurse x)))))
 
+(declaim (inline getf!))
 (defun getf! (place indicator &optional checkp)
   (declare (type keyword indicator)
 	   (type list place))
@@ -117,7 +118,7 @@
 	   (if-let ((tail (cdr head)))
 	     (if (eql (car tail) :more-keywords)
 		 (with-gensyms (lst)
-		   `(guard1 (,lst :type list) (getf! ,lst nil t) nil (compile-destructuring-pattern (cdr ops) '_)))
+		   `(guard1 (,lst :type list) (getf! ,lst :more-keywords t) nil ,(compile-destructuring-pattern (cdr ops) '_)))
 		 (let ((guard nil) (keypat (car tail)))
 		   (when (eql (car keypat) 'guard)
 		     (destructuring-bind (guard-sym pattern predicate &rest more-patterns) keypat
@@ -127,8 +128,7 @@
 		   (destructuring-bind (var &optional default (key nil keyp) &aux (varkey (intern (symbol-name var) :keyword))) keypat
 		     (assert (and (typep var 'variable-symbol) (or (not keyp) (typep key 'variable-symbol))) nil "invalid lambda list")
 		     (with-gensyms (lst plistp newlst found-key?)
-		       `(guard1 (,lst :type list) (multiple-value-bind (,plistp ,newlst) (getf! ,lst ',varkey)
-						    (when ,plistp (setf ,lst ,newlst) t))
+		       `(guard1 (,lst :type list) (multiple-value-bind (,plistp ,newlst) (getf! ,lst ',varkey) (when ,plistp (setf ,lst ,newlst) t))
 				(eql (first ,lst) ',varkey) ,found-key?
 				(if ,found-key? (second ,lst) ,default) ,var ,@(if keyp `((if ,found-key? t nil) ,key))
 				,@guard
@@ -158,7 +158,6 @@
 #+nil
 (trivia:match '(1 :c 2)
   ((lambda-list a &key (c -1) &aux (xx (+ a c))) xx))
-
 
 #+nil
 (defpattern <> (pattern value &optional (var (gensym "BIND")))
