@@ -14,6 +14,7 @@
                (:file "impl")
                (:file "derived")
                (:file "derived2")
+	       (:file "derived3")
                (:file "derived-numbers"))
   :in-order-to ((test-op (load-op :trivia.level2.test))))
 
