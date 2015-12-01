@@ -1,11 +1,14 @@
 (in-package :trivia.level2.impl)
 
 (defpattern and (&rest subpatterns)
+  (expand-and subpatterns))
+(defun expand-and (subpatterns)
   (ematch0 subpatterns
     ((list) '_)
     ((list sp) sp)
     ((list* subpatterns)
-     (let* ((subpatterns (mapcar #'pattern-expand subpatterns))
+     (let* ((subpatterns (handler-bind ((wildcard (lambda (c) (continue c))))
+                           (mapcar #'pattern-expand subpatterns)))
             (or1  (find 'or1 subpatterns :key #'car))
             (rest (remove or1 subpatterns)))
        (if or1
@@ -26,16 +29,10 @@
                                     ,intersection ,(wrap-test (rest syms) t-rest body))))))
                ;; now that all subpatterns are guard1, we can safely assume this;
                (let* ((symopts (mapcar #'second rest))
-                      #+nil
-                      (syms   (mapcar (compose #'first #'ensure-list) symopts))
-                      (tests  (mapcar #'third rest))
-                      #+nil
-                      (wholes (mapcar (constantly whole) rest))
-                      #+nil
-                      (tests* (mapcar #'subst wholes syms tests)))
+                      (tests  (mapcar #'third rest)))
                  `(guard1 ,intersection t
                           ,intersection
-                          ,(wrap-test symopts tests #+nil tests* (mappend #'cdddr rest)))))))))))
+                          ,(wrap-test symopts tests (mappend #'cdddr rest)))))))))))
 
 (defpattern guard (subpattern test-form &rest more-patterns)
   (with-gensyms (guard)

@@ -22,8 +22,10 @@
   (if (atom p)
       (values (cond
                 ((constantp p) `(constant ,p)) ;; see derived
-                ((wildcardp p) 
-                 (signal 'wildcard) ;; upper pattern-expand would handle this
+                ((wildcardp p)
+                 (restart-case
+                     (signal 'wildcard) ;; upper pattern-expand would handle this
+                   (continue ()))
                  (with-gensyms (it) `(guard1 ,it t)))
                 ((variablep p)
                  `(guard1 ,p t))
