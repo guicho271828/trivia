@@ -4,25 +4,6 @@
 
 (deftype variable-symbol () `(and symbol (not (member ,@lambda-list-keywords)) (not keyword) (not boolean)))
 ;;Borrowed from Matlisp
-(defmacro recurse-maadi (x match &rest dispatchers)
-  ;;recurse-ಮಾಡಿ ಸಕ್ಕತ್ತಾಗಿ!
-  (assert (eql (first match) :match) nil "invalid dispatch name")
-  (let ((macros (mapcar #'(lambda (x) (list* (the (and keyword (not (member :and :or :* :not :.))) (car x))
-					     (gensym "dispatch") (cdr x))) (list* match dispatchers))))
-    (labels ((recurse (p)
-	       (cond
-		 ((and (listp p) (member (car p) (list* :and :or :* :not :. (mapcar #'car (cdr macros)))))
-		  (case (car p)
-		    (:and `(and ,@(mapcar #'recurse (cdr p))))
-		    (:or `(or ,@(mapcar #'recurse (cdr p))))
-		    ((:* :not) (destructuring-bind (term clause) p
-				 `(not ,(if (eql term :*)
-					    `(do () ((not ,(recurse clause))))
-					    (recurse clause)))))
-		    (:. `(locally ,@(cdr p)))
-		    (t `(,(second (assoc (car p) macros)) ,@(cdr p)))))
-		 (t `(,(second (assoc :match macros)) ,p)))))
-      `(macrolet (,@(mapcar #'cdr macros)) ,(recurse x)))))
 
 (declaim (inline getf!))
 (defun getf! (place indicator &optional checkp)
@@ -41,51 +22,101 @@
 		    (cdr lst+) x)
 	      (values t (cdr lst+))))))))
 
-(defun parse-lambda-list (pattern)
-  (let ((ptn pattern) compiler accum)
-  (if (recurse-maadi
-       (:and
-	;;&whole
-	(:or (:and '&whole (:. (push `(:whole ,(second ptn)) compiler)) (:pop 2))
-	     (:and))
-	;;args
-	(:. (setf accum nil) t)
-	(:* (:and (:. (consp ptn)) (:not (:λkey)) (:. (push (first ptn) accum)) (:pop)))
-	(:. (push `(:atom ,@(reverse accum)) compiler) t)
-	;;&optional
-	(:or (:not (:. (listp ptn)))
-	     (:and '&optional (:pop)
-		   (:. (setf accum nil) t)
-		   (:* (:and (:. (consp ptn)) (:not (:λkey))
-			     (:. (push (ensure-list (first ptn)) accum)) (:pop)))
-		   (:. (push `(:optional ,@(reverse accum)) compiler) t))
-	     (:and))
-	;;&rest
-	(:or (:and (:. (not (listp ptn))) (:. (push `(:rest ,ptn) compiler) (setq ptn nil) t))
-	     (:and (:or '&rest '&body) (:. (push `(:rest ,(second ptn)) compiler)) (:pop 2))
-	     (:and))
-	;;&key
-	(:or (:and '&key (:pop)
-		   (:. (setf accum nil) t)
-		   (:* (:and (:. (consp ptn)) (:not (:λkey))
-			     (:. (push (ensure-list (first ptn)) accum)) (:pop)))
-		   ;;&allow-other-keys
-		   (:or (:and '&allow-other-keys (:pop) (:. (push :more-keywords accum)))
-			(:and))
-		   (:. (push `(:keyword ,@(reverse accum)) compiler) t))
-	     (:and))
-	;;&aux
-	(:or (:and '&aux (:pop)
-		   (:. (setf accum nil) t)
-		   (:* (:and (:. (consp ptn)) (:. (push (first ptn) accum)) (:pop)))
-		   (:. (push `(:aux ,@(reverse accum)) compiler)))
-	     (:and))
-	(:. (null ptn)))
-       ;;
-       (:match (x) `(eql (car ptn) ,x))
-       (:λkey () `(member (car ptn) cl:lambda-list-keywords))
-       (:pop (&optional (n 1)) `(progn ,@(loop :repeat n :collect `(pop ptn)))))
-        (reverse compiler))))
+
+
+(defun take-while (list predicate)
+  "
+Checks if predicate returns true, for each element of a list.
+Collect the elements until it returns false.
+Returns the collected elements and the remaining elements.
+If the list exhausted by cdr of the list being an atom (not necessarily nil),
+then similarly returns the collected elements and the atom, which might be nil in case of regular list,
+or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) returns (values '(a) 'b)).
+"
+  (let (acc)
+    (loop for sub on list
+          do (unless (funcall predicate (car sub))
+               (return (values (nreverse acc) sub)))
+             (push (car sub) acc)
+          finally (return (values (nreverse acc) sub)))))
+
+;; (take-while '(1 3 5 7 8 3) #'evenp)
+;; NIL
+;; (1 3 5 7 8 3)
+;; (take-while '(1 3 5 7 8 3) #'oddp)
+;; (1 3 5 7)
+;; (8 3)
+;; (take-while '(1 3 5 7 3) #'oddp)
+;; (1 3 5 7 3)
+;; NIL
+;; (take-while '(1 3 5 7 . 3) #'oddp)
+;; (1 3 5 7)
+;; 3
+
+(defun parse-lambda-list (argv)
+  (let (results)
+    (labels ((lambda-list-keyword-p (thing) (not (member thing lambda-list-keywords)))
+             (parse-whole (argv)
+               (match argv
+                 ((list* '&whole var rest)
+                  (push (list :whole var) results)
+                  (parse-required rest))
+                 (_
+                  (parse-required argv))))
+             (parse-required (argv)
+               (multiple-value-bind (argv rest) (take-while argv #'lambda-list-keyword-p)
+                 (when argv (push `(:atom ,@argv) results))
+                 (ematch rest
+                   (nil)                ;do nothing
+                   ((type atom) (push (list :rest rest) results))
+                   ((type cons) (parse-optional rest)))))
+             (parse-optional (argv)
+               (match argv
+                 ((list* '&optional argv)
+                  (multiple-value-bind (argv rest) (take-while argv #'lambda-list-keyword-p)
+                    (when argv (push `(:optional ,@(mapcar #'ensure-list argv)) results))
+                    (ematch rest
+                      (nil)                ;do nothing
+                      ((type atom) (push (list :rest rest) results))
+                      ((type cons) (parse-rest rest)))))
+                 (_
+                  (parse-rest argv))))
+             (parse-rest (argv)
+               (match argv
+                 ((list* (or '&rest '&body) var rest)
+                  (push `(:rest ,var) results)
+                  (parse-key rest))
+                 (_
+                  (parse-key argv))))
+             (parse-key (argv)
+               (match argv
+                 ((list* '&key argv)
+                  (multiple-value-bind (argv rest) (take-while argv #'lambda-list-keyword-p)
+                    (when argv
+                      (match rest
+                        ((list* '&allow-other-keys rest2)
+                         (push `(:keyword ,@(mapcar #'ensure-list argv) :more-keywords) results)
+                         (setf rest rest2))
+                        (_
+                         (push `(:keyword ,@(mapcar #'ensure-list argv)) results))))
+                    (ematch rest
+                      (nil)                ;do nothing
+                      ((type atom) (push (list :rest rest) results))
+                      ((type cons) (parse-aux rest)))))
+                 (_
+                  (parse-aux argv))))
+             (parse-aux (argv)
+               (match argv
+                 ((list* '&aux argv)
+                  (multiple-value-bind (argv rest) (take-while argv #'lambda-list-keyword-p)
+                    (when argv (push `(:aux ,@(mapcar #'ensure-list argv)) results))
+                    (ematch rest
+                      (nil)                ; do nothing
+                      ((type atom) (push (list :rest rest) results))
+                      ((type cons)))))  ; do nothing
+                 (_))))                   ; do nothing
+      (parse-whole argv)
+      (nreverse results))))
 
 ;; (parse-lambda-list '(a . b))         ((:ATOM A) (:REST B))
 ;; (parse-lambda-list '(a &optional b)) ((:ATOM A) (:OPTIONAL (B)))
