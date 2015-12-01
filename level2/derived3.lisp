@@ -1,5 +1,7 @@
 (in-package :trivia.level2.impl)
 
+;; FIXME --- this is hard to understand! Why not using trivia itself to implement this?
+
 (deftype variable-symbol () `(and symbol (not (member ,@lambda-list-keywords)) (not keyword) (not boolean)))
 ;;Borrowed from Matlisp
 (defmacro recurse-maadi (x match &rest dispatchers)
