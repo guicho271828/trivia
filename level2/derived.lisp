@@ -1,11 +1,14 @@
 (in-package :trivia.level2.impl)
 
 (defpattern and (&rest subpatterns)
+  (expand-and subpatterns))
+(defun expand-and (subpatterns)
   (ematch0 subpatterns
     ((list) '_)
     ((list sp) sp)
     ((list* subpatterns)
-     (let* ((subpatterns (mapcar #'pattern-expand subpatterns))
+     (let* ((subpatterns (handler-bind ((wildcard (lambda (c) (continue c))))
+                           (mapcar #'pattern-expand subpatterns)))
             (or1  (find 'or1 subpatterns :key #'car))
             (rest (remove or1 subpatterns)))
        (if or1
