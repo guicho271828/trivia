@@ -1,46 +1,42 @@
-sudo: required
-language: lisp
+language: common-lisp
+sudo: false
+
+addons:
+  apt:
+    packages:
+      - libc6-i386
+      - clisp
+      - openjdk-7-jre
 
 env:
+  global:
+    - PATH=~/.roswell/bin:$PATH
+    - ROSWELL_INSTALL_DIR=$HOME/.roswell
   matrix:
+    - LISP=sbcl-bin
+    - LISP=ccl-bin
     - LISP=abcl
-    - LISP=allegro
-    - LISP=sbcl
-    - LISP=sbcl32
-    - LISP=ccl
-    - LISP=ccl32
-    # - LISP=clisp
-    # - LISP=clisp32
-    # - LISP=cmucl
+    - LISP=clisp
     - LISP=ecl
+    - LISP=cmucl
+    - LISP=alisp
 
 matrix:
   allow_failures:
-    # CIM not available for CMUCL
-    # - env: LISP=cmucl
-    # free edition --- heap exhausted
-    - env: LISP=allegro
-    - env: LISP=abcl            # until lisp-namespace is updated
-    # - env: LISP=clisp
-    # - env: LISP=clisp32
+    - env: LISP=clisp
+    - env: LISP=abcl
     - env: LISP=ecl
+    - env: LISP=cmucl
+    - env: LISP=alisp
 
-# either use a local install.sh script or install it via curl. Feel
-# free to simplify this section in your own .travis.yml file.
 install:
-  - if [ -x ./install.sh ] && head -2 ./install.sh | grep '^# cl-travis' > /dev/null;
-    then
-      ./install.sh;
-    else
-      curl https://raw.githubusercontent.com/luismbo/cl-travis/master/install.sh | sh;
-    fi     
-  - git clone --depth=1 https://github.com/guicho271828/lisp-namespace.git ~/lisp/lisp-namespace
+  - curl -L https://raw.githubusercontent.com/snmsts/roswell/release/scripts/install-for-ci.sh | sh
+  - ros install trivia
 
-# this bit is just testing that travis correctly sets up ASDF to find
-# systems placed somewhere within ~/lisp. You can remove this section
-# in your own .travis.yml file.
-before_script:
-  - echo "(defsystem :dummy-cl-travis-system)" > ~/lisp/dummy-cl-travis-system.asd
+cache:
+  directories:
+    - $HOME/.roswell
+    - $HOME/.config/common-lisp
 
 script:
-  - cl --eval '(progn (ql:quickload :fiveam)(load "testscr.lisp"))'
+  - ros testscr.ros
