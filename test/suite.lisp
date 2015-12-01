@@ -524,3 +524,9 @@
     ((hash-table count) (is (= count 0)))))
 
 
+(test and-wildcard-bug
+  ;; unintended unwinding by "wildcard" condition
+  (is-true
+   (match 3
+     ((guard1 it t it (and (type number) a _))
+      (eq a 3)))))
