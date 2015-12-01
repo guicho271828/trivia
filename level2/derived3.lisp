@@ -86,6 +86,13 @@
        (:pop (&optional (n 1)) `(progn ,@(loop :repeat n :collect `(pop ptn)))))
       (reverse compiler)))
 
+;; (parse-lambda-list '(a . b))         ((:ATOM A) (:REST B))
+;; (parse-lambda-list '(a &optional b)) ((:ATOM A) (:OPTIONAL (B)))
+;; (parse-lambda-list '(a &optional b x))  ((:ATOM A) (:OPTIONAL (B) (X)))
+;; (parse-lambda-list '(a &optional (b 1) x)) ((:ATOM A) (:OPTIONAL (B 1) (X)))
+;; (parse-lambda-list '(a &optional (b 1 supplied) x)) ((:ATOM A) (:OPTIONAL (B 1 SUPPLIED) (X)))
+;; (parse-lambda-list '(&whole whole a &optional (b 1 supplied) x)) ((:WHOLE WHOLE) (:ATOM A) (:OPTIONAL (B 1 SUPPLIED) (X)))
+
 (defun compile-destructuring-pattern (ops &optional (default '(type null)))
   (if (not ops) default
       (let ((head (first ops)))
