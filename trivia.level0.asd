@@ -9,4 +9,4 @@
   :serial t
   :components ((:file "package")
                (:file "impl"))
-  :in-order-to ((test-op (load-op :trivia.level0.test))))
+  :in-order-to ((test-op (test-op :trivia.level0.test))))

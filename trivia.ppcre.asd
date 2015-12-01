@@ -8,4 +8,4 @@
   :pathname "ppcre/"
   :serial t
   :components ((:file "package"))
-  :in-order-to ((test-op (load-op :trivia.ppcre.test))))
+  :in-order-to ((test-op (test-op :trivia.ppcre.test))))

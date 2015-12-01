@@ -33,6 +33,4 @@
                ((ppcre "^(\\d+)-(\\d+)-(\\d+)$" year month day)
                 (list year month day))))))
 
-(eval-when (:load-toplevel :execute)
-  (run! :trivia.ppcre))
 

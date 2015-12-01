@@ -5,4 +5,5 @@
     :depends-on (:fiveam :trivia.ppcre)
     :pathname "test/"
     :serial t
-    :components ((:file "ppcre")))
+    :components ((:file "ppcre"))
+    :perform (test-op :after (op c) (eval (read-from-string "(every #'fiveam::TEST-PASSED-P (5am:run! :trivia.ppcre))"))))

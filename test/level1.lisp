@@ -131,6 +131,4 @@
                   (cadr it) (guard1 cadr (= 1 cadr))))
      t)))
 
-(eval-when (:load-toplevel :execute)
-  (run! :trivia.level1))
 
