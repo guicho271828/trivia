@@ -523,5 +523,4 @@
   (match (make-hash-table)
     ((hash-table count) (is (= count 0)))))
 
-(eval-when (:load-toplevel :execute)
-  (run! :trivia))
+

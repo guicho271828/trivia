@@ -4,5 +4,7 @@
     :description "Test system of trivia.level2"
     :depends-on (:fiveam :trivia.level2)
     :pathname "test/"
-    :components ((:file "level2")
-                 (:file "suite")))
+    :components ((:file "suite")
+                 (:file "level2"))
+    :perform (test-op :after (op c)
+                      (eval (read-from-string "(every #'fiveam::TEST-PASSED-P (5am:run! :trivia))"))))

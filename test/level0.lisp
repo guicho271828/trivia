@@ -39,7 +39,3 @@
 
 
 
-
-(eval-when (:load-toplevel :execute)
-  (run! :trivia.level0))
-
