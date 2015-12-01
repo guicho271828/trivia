@@ -118,6 +118,21 @@
   (is-not-match 1 (property :a 1))
   (is-not-match '(:a 1) (property :b 1))
   (is-not-match '(:a 1 :b 2) (property :b 3)))
+
+(test property-default-foundp
+  (is (= 3 (match '(:a 1 :b 2)
+             ((property :c c 3)
+              c))))
+  (is-false (match '(:a 1 :b 2)
+              ((property :c c 3 foundp)
+               foundp)))
+  (is (= 2 (match '(:a 1 :b 2)
+             ((property :b b 3)
+              b))))
+  (is-true (match '(:a 1 :b 2)
+              ((property :b b 3 foundp)
+               foundp))))
+
 (test vector
   (is-match (vector 1 2) (vector 1 2))
   (match (vector 1 2)
