@@ -3,26 +3,6 @@
 ;; FIXME --- this is hard to understand! Why not using trivia itself to implement this?
 
 (deftype variable-symbol () `(and symbol (not (member ,@lambda-list-keywords)) (not keyword) (not boolean)))
-;;Borrowed from Matlisp
-
-(declaim (inline getf!))
-(defun getf! (place indicator &optional checkp)
-  (declare (type keyword indicator)
-	   (type list place))
-  (let ((lst+ (cons :head place)))
-    (do ((x (cdr lst+) (cddr x))
-	 (x- lst+ (cdr x)))
-	((or (not (and x (consp (cdr x)) (keywordp (first x))))
-	     (and (not checkp) (eql (first x) indicator)))
-	 (cond
-	   ((not x) (values t (cdr lst+)))
-	   ((not (and (consp (cdr x)) (keywordp (first x)))) (values nil (cdr lst+)))
-	   (t (setf (cdr x-) (cddr x)
-		    (cddr x) (cdr lst+)
-		    (cdr lst+) x)
-	      (values t (cdr lst+))))))))
-
-
 
 (defun take-while (list predicate)
   "
@@ -55,7 +35,7 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
 
 (defun parse-lambda-list (argv)
   (let (results)
-    (labels ((lambda-list-keyword-p (thing) (not (member thing lambda-list-keywords)))
+    (labels ((!lambda-list-keyword-p (thing) (not (member thing lambda-list-keywords)))
              (parse-whole (argv)
                (match argv
                  ((list* '&whole var rest)
@@ -64,7 +44,7 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
                  (_
                   (parse-required argv))))
              (parse-required (argv)
-               (multiple-value-bind (argv rest) (take-while argv #'lambda-list-keyword-p)
+               (multiple-value-bind (argv rest) (take-while argv #'!lambda-list-keyword-p)
                  (when argv (push `(:atom ,@argv) results))
                  (ematch rest
                    (nil)                ;do nothing
@@ -73,7 +53,7 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
              (parse-optional (argv)
                (match argv
                  ((list* '&optional argv)
-                  (multiple-value-bind (argv rest) (take-while argv #'lambda-list-keyword-p)
+                  (multiple-value-bind (argv rest) (take-while argv #'!lambda-list-keyword-p)
                     (when argv (push `(:optional ,@(mapcar #'ensure-list argv)) results))
                     (ematch rest
                       (nil)                ;do nothing
@@ -88,17 +68,27 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
                   (parse-key rest))
                  (_
                   (parse-key argv))))
+             (compile-keyword-pattern (keypat)
+               ;; destructuring-lambda-list-keyword     := var | ({var | (keyword-name var)}        [init-form [supplied-p-parameter]])
+               ;; destructuring-pattern-keyword-pattern := var | ({var | (keyword-name subpattern)} [init-form [supplied-p-parameter]])
+               ;; (&key (a 1) b ((c subpattern) 1 supplied-p)) -> (((a a) 1) ((b b)) ((c subpattern) 1 supplied-p))
+               (destructuring-bind (var-or-var-subpattern &rest rest) (ensure-list keypat)
+                 (ematch var-or-var-subpattern
+                   ((or (and (type variable-symbol) var subpattern) ; var == subpattern, both are the same symbol
+                        (list (and var (type variable-symbol)) subpattern)) ; ((var subpattern) nil supplied-p)
+                    `((,var ,subpattern) ,@rest)))))
              (parse-key (argv)
                (match argv
                  ((list* '&key argv)
-                  (multiple-value-bind (argv rest) (take-while argv #'lambda-list-keyword-p)
+                  (multiple-value-bind (argv rest) (take-while argv #'!lambda-list-keyword-p)
                     (when argv
                       (match rest
                         ((list* '&allow-other-keys rest2)
-                         (push `(:keyword ,@(mapcar #'ensure-list argv) :more-keywords) results)
+                         (push `(:keyword-allow-other-keys
+                                 ,@(mapcar #'compile-keyword-pattern argv)) results)
                          (setf rest rest2))
                         (_
-                         (push `(:keyword ,@(mapcar #'ensure-list argv)) results))))
+                         (push `(:keyword ,@(mapcar #'compile-keyword-pattern argv)) results))))
                     (ematch rest
                       (nil)                ;do nothing
                       ((type atom) (push (list :rest rest) results))
@@ -108,7 +98,7 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
              (parse-aux (argv)
                (match argv
                  ((list* '&aux argv)
-                  (multiple-value-bind (argv rest) (take-while argv #'lambda-list-keyword-p)
+                  (multiple-value-bind (argv rest) (take-while argv #'!lambda-list-keyword-p)
                     (when argv (push `(:aux ,@(mapcar #'ensure-list argv)) results))
                     (ematch rest
                       (nil)                ; do nothing
@@ -125,62 +115,56 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
 ;; (parse-lambda-list '(a &optional (b 1 supplied) x)) ((:ATOM A) (:OPTIONAL (B 1 SUPPLIED) (X)))
 ;; (parse-lambda-list '(&whole whole a &optional (b 1 supplied) x)) ((:WHOLE WHOLE) (:ATOM A) (:OPTIONAL (B 1 SUPPLIED) (X)))
 
-(defun compile-destructuring-pattern (ops &optional (default '(type null)))
-  (if (not ops) default
-      (let ((head (first ops)))
-	(ecase (first head)
-	  (:whole
-	   (let ((var (second head)))
-	     (assert (typep var 'variable-symbol) nil "invalid lambda list")
-	     `(trivia:<> ,(compile-destructuring-pattern (cdr ops)) ,var ,var)))
-	  (:atom `(list* ,@(cdr head) ,(compile-destructuring-pattern (cdr ops))))
-	  (:optional
-	   (if-let ((tail (cdr head)))
-	     (let ((guard nil) (optpat (car tail)))
-	       (when (eql (car optpat) 'guard)
-		 (destructuring-bind (guard-sym pattern predicate &rest more-patterns) optpat
-		   (declare (ignorable guard-sym))
-		   (setf guard `(t (guard1 ,(gensym) ,predicate ,@more-patterns))
-			 optpat (ensure-list pattern))))
-	       (destructuring-bind (var &optional default (key nil keyp) &aux (lst (gensym))) optpat
-		 (assert (and (typep var 'variable-symbol) (or (not keyp) (typep key 'variable-symbol))) nil "invalid lambda list")
-		 `(guard1 (,lst :type list) (listp ,lst) (if ,lst (car ,lst) ,default) ,var ,@(if keyp `((if ,lst t nil) ,key))
-			  ,@guard
-			  (cdr ,lst) ,(compile-destructuring-pattern (list* (list* :optional (cdr tail)) (cdr ops))))))
-	     (compile-destructuring-pattern (cdr ops))))
-	  (:rest
-	   (let ((var (second head)))
-	     (assert (typep var 'variable-symbol) nil "invalid lambda list")
-	     `(trivia:<> ,(compile-destructuring-pattern (cdr ops) '_) ,var ,var)))
-	  (:keyword
-	   (with-gensyms (lst)
-	     `(guard1 ,lst (listp ,lst) (copy-list ,lst) ,(compile-destructuring-pattern (list* (list* :keyword-processing (cdr head)) (cdr ops))))))
-	  (:keyword-processing
-	   (if-let ((tail (cdr head)))
-	     (if (eql (car tail) :more-keywords)
-		 (with-gensyms (lst)
-		   `(guard1 (,lst :type list) (getf! ,lst :more-keywords t) nil ,(compile-destructuring-pattern (cdr ops) '_)))
-		 (let ((guard nil) (keypat (car tail)))
-		   (when (eql (car keypat) 'guard)
-		     (destructuring-bind (guard-sym pattern predicate &rest more-patterns) keypat
-		       (declare (ignorable guard-sym))
-		       (setf guard `(t (guard1 ,(gensym) ,predicate ,@more-patterns))
-			     keypat (ensure-list pattern))))
-		   (destructuring-bind (var &optional default (key nil keyp) &aux (varkey (intern (symbol-name var) :keyword))) keypat
-		     (assert (and (typep var 'variable-symbol) (or (not keyp) (typep key 'variable-symbol))) nil "invalid lambda list")
-		     (with-gensyms (lst plistp newlst found-key?)
-		       `(guard1 (,lst :type list) (multiple-value-bind (,plistp ,newlst) (getf! ,lst ',varkey) (when ,plistp (setf ,lst ,newlst) t))
-				(eql (first ,lst) ',varkey) ,found-key?
-				(if ,found-key? (second ,lst) ,default) ,var ,@(if keyp `((if ,found-key? t nil) ,key))
-				,@guard
-				(if ,found-key? (cddr ,lst) ,lst) ,(compile-destructuring-pattern (list* (list* :keyword-processing (cdr tail)) (cdr ops))))))))
-	     (compile-destructuring-pattern (cdr ops))))
-	  (:aux
-	   `(and ,default (guard1 ,(gensym) t ,@(mapcan #'(lambda (x)
-							    (destructuring-bind (var &optional expr) (ensure-list x)
-							      (assert (typep var 'variable-symbol) nil "invalid lambda list")
-							      `(,expr ,var)))
-							(cdr head)))))))))
+(defun compile-destructuring-pattern (ops &optional (default '_))
+  (match ops
+    (nil default)
+    ((list* (list :whole subpattern) rest)
+     `(and ,subpattern ,(compile-destructuring-pattern rest)))
+    ((list* (list* :atom subpatterns) rest)
+     `(list* ,@subpatterns ,(compile-destructuring-pattern rest)))
+    ((list* (list :optional) rest)
+     (compile-destructuring-pattern rest))
+    ((list* (list* :optional subpattern more-subpatterns) rest)
+     (with-gensyms (lst supplied-p-default-sym)
+       (destructuring-bind (subpattern &optional default (supplied-p-pattern supplied-p-default-sym supplied-p-pattern-supplied)) subpattern
+         `(guard1 (,lst :type list) (listp ,lst)
+                  (if ,lst (car ,lst) ,default) ,subpattern
+                  ,@(when supplied-p-pattern-supplied
+                      `((if ,lst t nil) ,supplied-p-pattern))
+                  (cdr ,lst) ,(compile-destructuring-pattern `((:optional ,@more-subpatterns) ,@rest))))))
+    ((list* (list :rest pattern) rest)
+     `(and ,pattern ,(compile-destructuring-pattern rest)))
+    ((list* (list* (and mode (or :keyword :keyword-allow-other-keys)) subpatterns) rest)
+     ;; case 1,2 are already compiled into the 3rd pattern ; see parse-lambda-list
+     ((lambda (property-patterns)               ; lambda form (see CLHS lambda-form)
+        (with-gensyms (it)
+          `(and (type list)
+                ;; proper plist
+                (guard1 ,it (evenp (length ,it)))
+                ,@(when (eq mode :keyword)
+                    ;; match only when there are no invalid keywords.
+                    ;; In contrast, :keyword-allow-other-keys does not check the invalid keywords
+                    (let ((valid-keywords (mapcar (compose #'make-keyword #'caar) subpatterns)))
+                      (with-gensyms (lst key)
+                        `((guard1 ,lst (loop for ,key in ,lst by #'cddr always (member ,key ',valid-keywords)))))))
+                ;; match the keywords
+                ,@property-patterns
+                ;; compile the rest
+                ,(compile-destructuring-pattern rest))))
+      (mapcar (lambda (keypat)
+                (with-gensyms (supplied-p-default-sym)
+                  (destructuring-bind ((var subpattern)
+                                       &optional default
+                                       (supplied-p-pattern supplied-p-default-sym)) keypat
+                    `(property ,(make-keyword var)
+                               ,subpattern ,default ,supplied-p-pattern))))
+              subpatterns)))
+    ((list (list* :aux subpatterns))
+     `(guard1 ,(gensym) t ,@(mapcan #'(lambda (x)
+                                        (destructuring-bind (var &optional expr) (ensure-list x)
+                                          (assert (typep var 'variable-symbol) nil "invalid lambda list")
+                                          `(,expr ,var)))
+                                    subpatterns)))))
 
 ;(compile-destructuring-pattern (parse-lambda-list '(a . b)))
 
