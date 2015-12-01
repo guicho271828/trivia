@@ -1,6 +1,9 @@
 
 [[https://travis-ci.org/guicho271828/trivia][https://travis-ci.org/guicho271828/trivia.svg?branch=master]]
 
+news: new pattern: lambda-list pattern. Contributed by akssri
+news: new pattern: number-related patterns, e.g. >, <, =, <= ... 
+
 * Trivia : Trivial Pattern Matching Compiler
 
 Trivia is a pattern matching compiler that is *compatible with Optima*.
