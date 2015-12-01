@@ -41,7 +41,8 @@
 		    (cdr lst+) x)
 	      (values t (cdr lst+))))))))
 
-(defun parse-lambda-list (pattern &aux (ptn pattern) compiler accum)
+(defun parse-lambda-list (pattern)
+  (let ((ptn pattern) compiler accum)
   (if (recurse-maadi
        (:and
 	;;&whole
@@ -84,7 +85,7 @@
        (:match (x) `(eql (car ptn) ,x))
        (:λkey () `(member (car ptn) cl:lambda-list-keywords))
        (:pop (&optional (n 1)) `(progn ,@(loop :repeat n :collect `(pop ptn)))))
-      (reverse compiler)))
+        (reverse compiler))))
 
 ;; (parse-lambda-list '(a . b))         ((:ATOM A) (:REST B))
 ;; (parse-lambda-list '(a &optional b)) ((:ATOM A) (:OPTIONAL (B)))
