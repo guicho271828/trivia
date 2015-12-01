@@ -171,14 +171,14 @@
                          ,@(when key `(:key ,key))
                          ,@(when test `(:test ,test)))) ,pattern)))
 
-(defpattern property (key pattern &optional (default nil supplied-p))
-  (with-gensyms (it)
+(defpattern property (key pattern &optional (default nil) foundp)
+  (with-gensyms (it it2)
     `(guard1 (,it :type list)
              (listp ,it)
-             ,(if supplied-p
-                  `(getf ,it ,key ,default)
-                  `(getf ,it ,key))
-             ,pattern)))
+             (getf ,it ,key)
+             (guard1 ,it2 t
+                     (if ,it2 t nil) ,foundp
+                     (or ,it2 ,default) ,pattern))))
 
 (defpattern alist (&rest args)
   `(and ,@(mapcar (lambda-match0
