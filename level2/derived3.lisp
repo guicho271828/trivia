@@ -135,36 +135,42 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
     ((list* (list :rest pattern) rest)
      `(and ,pattern ,(compile-destructuring-pattern rest)))
     ((list* (list* (and mode (or :keyword :keyword-allow-other-keys)) subpatterns) rest)
-     ;; case 1,2 are already compiled into the 3rd pattern ; see parse-lambda-list
-     ((lambda (property-patterns)               ; lambda form (see CLHS lambda-form)
-        (with-gensyms (it)
-          `(and (type list)
-                ;; proper plist
-                (guard1 ,it (evenp (length ,it)))
-                ,@(when (eq mode :keyword)
-                    ;; match only when there are no invalid keywords.
-                    ;; In contrast, :keyword-allow-other-keys does not check the invalid keywords
-                    (let ((valid-keywords (mapcar (compose #'make-keyword #'caar) subpatterns)))
-                      (with-gensyms (lst key)
-                        `((guard1 ,lst (loop for ,key in ,lst by #'cddr always (member ,key ',valid-keywords)))))))
-                ;; match the keywords
-                ,@property-patterns
-                ;; compile the rest
-                ,(compile-destructuring-pattern rest))))
-      (mapcar (lambda (keypat)
-                (with-gensyms (supplied-p-default-sym)
-                  (destructuring-bind ((var subpattern)
-                                       &optional default
-                                       (supplied-p-pattern supplied-p-default-sym)) keypat
-                    `(property ,(make-keyword var)
-                               ,subpattern ,default ,supplied-p-pattern))))
-              subpatterns)))
+     ;; case 1,2 of the &key forms are already compiled into the 3rd form ; see parse-lambda-list
+     `(and (type list)
+           ;; proper plist
+           ,(with-gensyms (it)
+              `(guard1 ,it (evenp (length ,it))))
+           ,@(when (eq mode :keyword)
+               ;; match only when there are no invalid keywords.
+               ;; In contrast, :keyword-allow-other-keys does not check the invalid keywords
+               (let ((valid-keywords (mapcar (compose #'make-keyword #'caar) subpatterns)))
+                 (with-gensyms (lst key)
+                   `((guard1 ,lst (loop for ,key in ,lst by #'cddr always (member ,key ',valid-keywords)))))))
+           ;; match the keywords
+           ,@(compile-keyword-patterns subpatterns)
+           ;; compile the rest
+           ,(compile-destructuring-pattern rest)))
     ((list (list* :aux subpatterns))
      `(guard1 ,(gensym) t ,@(mapcan #'(lambda (x)
                                         (destructuring-bind (var &optional expr) (ensure-list x)
                                           (assert (typep var 'variable-symbol) nil "invalid lambda list")
                                           `(,expr ,var)))
                                     subpatterns)))))
+
+
+(defun compile-keyword-patterns (subpatterns)
+  ;; FIXME: possible optimization --- copy-list the input and modify the
+  ;; list removing the element, in order to make the worst-case complexity
+  ;; from O(n^2) to O(n)
+  (mapcar (lambda (keypat)
+            (with-gensyms (supplied-p-default-sym)
+              (destructuring-bind ((var subpattern)
+                                   &optional default
+                                   (supplied-p-pattern supplied-p-default-sym)) keypat
+                `(property ,(make-keyword var)
+                           ,subpattern ,default ,supplied-p-pattern))))
+          subpatterns))
+
 
 ;(compile-destructuring-pattern (parse-lambda-list '(a . b)))
 
@@ -173,21 +179,3 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
 
 (defpattern λlist (&rest pattern)
   (compile-destructuring-pattern (or (parse-lambda-list pattern) (error "invalid lambda list"))))
-
-#+nil
-(trivia:match '(1 (2 3) -1)
-  ((λlist a (λlist b c) &optional (x 2)) (list a b c x)))
-
-#+nil
-(pattern-expand-1 '(lambda-list a &key c))
-#+nil
-(trivia:match '(1 :c 2)
-  ((lambda-list a &key (c -1) &aux (xx (+ a c))) xx))
-
-#+nil
-(defpattern <> (pattern value &optional (var (gensym "BIND")))
-  "The current matching value is bound to `var'.
-The result of evaluating `value' using `var' is then matched against `pattern'.
-`var' can be omitted."
-  (assert (symbolp var))
-  `(guard1 ,var t ,value ,pattern))
