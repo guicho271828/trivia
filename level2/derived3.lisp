@@ -136,29 +136,27 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
      `(and ,pattern ,(compile-destructuring-pattern rest)))
     ((list* (list* (and mode (or :keyword :keyword-allow-other-keys)) subpatterns) rest)
      ;; case 1,2 of the &key forms are already compiled into the 3rd form ; see parse-lambda-list
-     ((lambda (property-patterns)               ; lambda form (see CLHS lambda-form)
-          `(and (type list)
-                ;; proper plist
+     `(and (type list)
+           ;; proper plist
            ,(with-gensyms (it)
               `(guard1 ,it (evenp (length ,it))))
-                ,@(when (eq mode :keyword)
-                    ;; match only when there are no invalid keywords.
-                    ;; In contrast, :keyword-allow-other-keys does not check the invalid keywords
-                    (let ((valid-keywords (mapcar (compose #'make-keyword #'caar) subpatterns)))
-                      (with-gensyms (lst key)
-                        `((guard1 ,lst (loop for ,key in ,lst by #'cddr always (member ,key ',valid-keywords)))))))
-                ;; match the keywords
-                ,@property-patterns
-                ;; compile the rest
-                ,(compile-destructuring-pattern rest)))
-      (mapcar (lambda (keypat)
-                (with-gensyms (supplied-p-default-sym)
-                  (destructuring-bind ((var subpattern)
-                                       &optional default
-                                       (supplied-p-pattern supplied-p-default-sym)) keypat
-                    `(property ,(make-keyword var)
-                               ,subpattern ,default ,supplied-p-pattern))))
-              subpatterns)))
+           ,@(when (eq mode :keyword)
+               ;; match only when there are no invalid keywords.
+               ;; In contrast, :keyword-allow-other-keys does not check the invalid keywords
+               (let ((valid-keywords (mapcar (compose #'make-keyword #'caar) subpatterns)))
+                 (with-gensyms (lst key)
+                   `((guard1 ,lst (loop for ,key in ,lst by #'cddr always (member ,key ',valid-keywords)))))))
+           ;; match the keywords
+           ,@(mapcar (lambda (keypat)
+                       (with-gensyms (supplied-p-default-sym)
+                         (destructuring-bind ((var subpattern)
+                                              &optional default
+                                              (supplied-p-pattern supplied-p-default-sym)) keypat
+                           `(property ,(make-keyword var)
+                                      ,subpattern ,default ,supplied-p-pattern))))
+                     subpatterns)
+           ;; compile the rest
+           ,(compile-destructuring-pattern rest)))
     ((list (list* :aux subpatterns))
      `(guard1 ,(gensym) t ,@(mapcan #'(lambda (x)
                                         (destructuring-bind (var &optional expr) (ensure-list x)
