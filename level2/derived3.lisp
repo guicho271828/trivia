@@ -173,21 +173,3 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
 
 (defpattern λlist (&rest pattern)
   (compile-destructuring-pattern (or (parse-lambda-list pattern) (error "invalid lambda list"))))
-
-#+nil
-(trivia:match '(1 (2 3) -1)
-  ((λlist a (λlist b c) &optional (x 2)) (list a b c x)))
-
-#+nil
-(pattern-expand-1 '(lambda-list a &key c))
-#+nil
-(trivia:match '(1 :c 2)
-  ((lambda-list a &key (c -1) &aux (xx (+ a c))) xx))
-
-#+nil
-(defpattern <> (pattern value &optional (var (gensym "BIND")))
-  "The current matching value is bound to `var'.
-The result of evaluating `value' using `var' is then matched against `pattern'.
-`var' can be omitted."
-  (assert (symbolp var))
-  `(guard1 ,var t ,value ,pattern))
