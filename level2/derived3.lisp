@@ -135,7 +135,7 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
     ((list* (list :rest pattern) rest)
      `(and ,pattern ,(compile-destructuring-pattern rest)))
     ((list* (list* (and mode (or :keyword :keyword-allow-other-keys)) subpatterns) rest)
-     ;; case 1,2 are already compiled into the 3rd pattern ; see parse-lambda-list
+     ;; case 1,2 of the &key forms are already compiled into the 3rd form ; see parse-lambda-list
      ((lambda (property-patterns)               ; lambda form (see CLHS lambda-form)
         (with-gensyms (it)
           `(and (type list)
