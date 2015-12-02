@@ -147,14 +147,7 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
                  (with-gensyms (lst key)
                    `((guard1 ,lst (loop for ,key in ,lst by #'cddr always (member ,key ',valid-keywords)))))))
            ;; match the keywords
-           ,@(mapcar (lambda (keypat)
-                       (with-gensyms (supplied-p-default-sym)
-                         (destructuring-bind ((var subpattern)
-                                              &optional default
-                                              (supplied-p-pattern supplied-p-default-sym)) keypat
-                           `(property ,(make-keyword var)
-                                      ,subpattern ,default ,supplied-p-pattern))))
-                     subpatterns)
+           ,@(compile-keyword-patterns subpatterns)
            ;; compile the rest
            ,(compile-destructuring-pattern rest)))
     ((list (list* :aux subpatterns))
@@ -163,6 +156,21 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
                                           (assert (typep var 'variable-symbol) nil "invalid lambda list")
                                           `(,expr ,var)))
                                     subpatterns)))))
+
+
+(defun compile-keyword-patterns (subpatterns)
+  ;; FIXME: possible optimization --- copy-list the input and modify the
+  ;; list removing the element, in order to make the worst-case complexity
+  ;; from O(n^2) to O(n)
+  (mapcar (lambda (keypat)
+            (with-gensyms (supplied-p-default-sym)
+              (destructuring-bind ((var subpattern)
+                                   &optional default
+                                   (supplied-p-pattern supplied-p-default-sym)) keypat
+                `(property ,(make-keyword var)
+                           ,subpattern ,default ,supplied-p-pattern))))
+          subpatterns))
+
 
 ;(compile-destructuring-pattern (parse-lambda-list '(a . b)))
 
