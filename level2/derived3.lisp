@@ -137,10 +137,10 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
     ((list* (list* (and mode (or :keyword :keyword-allow-other-keys)) subpatterns) rest)
      ;; case 1,2 of the &key forms are already compiled into the 3rd form ; see parse-lambda-list
      ((lambda (property-patterns)               ; lambda form (see CLHS lambda-form)
-        (with-gensyms (it)
           `(and (type list)
                 ;; proper plist
-                (guard1 ,it (evenp (length ,it)))
+           ,(with-gensyms (it)
+              `(guard1 ,it (evenp (length ,it))))
                 ,@(when (eq mode :keyword)
                     ;; match only when there are no invalid keywords.
                     ;; In contrast, :keyword-allow-other-keys does not check the invalid keywords
@@ -150,7 +150,7 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
                 ;; match the keywords
                 ,@property-patterns
                 ;; compile the rest
-                ,(compile-destructuring-pattern rest))))
+                ,(compile-destructuring-pattern rest)))
       (mapcar (lambda (keypat)
                 (with-gensyms (supplied-p-default-sym)
                   (destructuring-bind ((var subpattern)
