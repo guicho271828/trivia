@@ -69,15 +69,14 @@ just like macroexpand"
   (ematch0 (pattern-expand p)
     ((list* 'guard1 sym test more-patterns)
      (list* 'guard1 sym test
-            (alist-plist
-             (mappend
-              (lambda-ematch0
-                ((cons generator subpattern)
-                 (handler-case
-                     (list (cons generator (pattern-expand-all subpattern)))
-                   (wildcard () ;; remove unnecessary wildcard pattern
-                     nil))))
-              (plist-alist more-patterns)))))
+            (mappend
+             (lambda-ematch0
+              ((cons generator subpattern)
+               (handler-case
+                   (list generator (pattern-expand-all subpattern))
+                 (wildcard () ;; remove unnecessary wildcard pattern
+                   nil))))
+             (plist-alist more-patterns))))
     ((list* 'or1 subpatterns)
      (list* 'or1 (mapcar #'pattern-expand-all subpatterns)))))
 
