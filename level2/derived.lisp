@@ -7,6 +7,15 @@
     ((list) '_)
     ((list sp) sp)
     ((list* subpatterns)
+     ;; implementing and-pattern requires lifting or-patterns.
+     ;; For example:
+     ;; (and (or1 subpat1 subpat2)
+     ;;      subpat3)
+     ;; should be converted into
+     ;; (or1 (and subpat1 subpat3)
+     ;;      (and subpat2 subpat3))
+     ;; optimising the slight inefficiency of having the duplicated subpat3
+     ;; is a job of optimiser.
      (let* ((subpatterns (handler-bind ((wildcard (lambda (c) (continue c))))
                            (mapcar #'pattern-expand subpatterns)))
             (or1  (find 'or1 subpatterns :key #'car))
