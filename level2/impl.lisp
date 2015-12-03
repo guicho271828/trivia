@@ -106,6 +106,24 @@ The default value of &optional arguments are '_, instead of nil."
            #-sbcl
            (lambda ,(process-lambda-args args) ,@body))))
 
+
+(defun inline-pattern-expand (p)
+  "Given a pattern p, returns a list of patterns that should be inlined."
+  (if (atom p)
+      (list p)
+      (ematch0 p
+        ((list* head args)
+         ;; If the inline pattern exists, then call the expander function.
+         ;; Unlike in pattern-expand-1, it is depth-first
+         (let ((args (mappend #'inline-pattern-expand args)))
+           (handler-case
+               (apply (symbol-inline-pattern head) args)
+             (unbound-inline-pattern ()
+               ;; otherwise, unbound-pattern is signalled.
+               ;; (see the macroexpansion of (lispn:define-namespace pattern function).)
+               ;; Unlike in pattern-expand-1, it does nothing, and it recurses into arguments.
+               (list (list* head args)))))))))
+
 (defun process-lambda-args (args)
   (ematch0 args
     (nil nil)
