@@ -15,6 +15,7 @@
                (:file "derived")
                (:file "derived2")
 	       (:file "derived3")
-               (:file "derived-numbers"))
+               (:file "derived-numbers")
+               (:file "inline-pattern"))
   :in-order-to ((test-op (test-op :trivia.level2.test))))
 
