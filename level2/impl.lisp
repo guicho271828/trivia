@@ -71,19 +71,16 @@ just like macroexpand"
   ;; should start by guard1 or or1
   (ematch0 (pattern-expand p)
     ((list* 'guard1 sym test more-patterns)
-     (let ((alist (plist-alist more-patterns)))
-       (list* 'guard1 sym test
-              (mappend
-               (lambda (gen-pat #+nil i)
-                 (ematch0 gen-pat
-                   ((cons generator subpattern)
-                    (handler-case
-                        (list generator (pattern-expand-all subpattern))
-                      (wildcard () ;; remove unnecessary wildcard pattern
-                        nil)))))
-               alist
-               #+nil
-               (iota (length alist))))))
+     (list* 'guard1 sym test
+            (mappend
+             (lambda (gen-pat)
+               (ematch0 gen-pat
+                 ((cons generator subpattern)
+                  (handler-case
+                      (list generator (pattern-expand-all subpattern))
+                    (wildcard () ;; remove unnecessary wildcard pattern
+                      nil)))))
+             (plist-alist more-patterns))))
     ((list* 'or1 subpatterns)
      (list* 'or1 (mapcar #'pattern-expand-all subpatterns)))))
 
