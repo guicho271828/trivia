@@ -4,6 +4,7 @@
 ;;;; derived pattern database
 
 (lispn:define-namespace pattern function)
+(lispn:define-namespace inline-pattern function)
 
 (define-condition wildcard () ())
 
@@ -90,6 +91,16 @@ just like macroexpand"
 The default value of &optional arguments are '_, instead of nil."
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (setf (symbol-pattern ',name)
+           #+sbcl
+           (sb-int:named-lambda ',name ,(process-lambda-args args) ,@body)
+           #-sbcl
+           (lambda ,(process-lambda-args args) ,@body))))
+
+(defmacro defpattern-inline (name args &body body)
+  "Adds a new inlined derived pattern. These patterns are evaluated from the innermost ones.
+The default value of &optional arguments are '_, instead of nil."
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (setf (symbol-inline-pattern ',name)
            #+sbcl
            (sb-int:named-lambda ',name ,(process-lambda-args args) ,@body)
            #-sbcl
