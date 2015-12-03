@@ -115,9 +115,15 @@ The default value of &optional arguments are '_, instead of nil."
   (if (atom p)
       (list p)
       (ematch0 p
+        ((list* 'quote _)
+         (list p))
         ((list* head args)
          ;; If the inline pattern exists, then call the expander function.
          ;; Unlike in pattern-expand-1, it is depth-first
+         (when (or (and (atom args) (not (null args)))
+                   (cdr (last args)))
+           (warn "~a is not a proper list! Inline expansion fails" p)
+           (return-from inline-pattern-expand (list p)))
          (let ((args (mappend (lambda (arg)
                                 (labels ((rec (p)
                                            (multiple-value-bind (new expanded)
