@@ -56,12 +56,15 @@
 (defun pattern-expand (p)
   "expand the given pattern downto level1 pattern (i.e. until no expansion is available),
 just like macroexpand"
-  (let (expanded)
-    (do () (nil)
-      (multiple-value-bind (new expanded1) (pattern-expand-1 p)
-        (if expanded1
-            (setf p new expanded expanded1)
-            (return (values new expanded)))))))
+  (labels ((rec (p)
+             (multiple-value-bind (new expanded1) (pattern-expand-1 p)
+               (if expanded1
+                   (rec new)
+                   new))))
+    (multiple-value-bind (new expanded1) (pattern-expand-1 p)
+      (if expanded1
+          (values (rec new) t)
+          new))))
 
 (defun pattern-expand-all (p)
   "expand the given pattern recursively"
