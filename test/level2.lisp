@@ -30,3 +30,12 @@
              (testmatcher2 '(1 2 :c 3 :d 4)))))
 
 
+
+
+;; inline patterns
+
+(test vector-inline-patterns
+  (is (equal '((vector 1 _ _ _ _ _ _ _ _ _ _ 5))
+             (inline-pattern-expand '(vector 1 (@@ 10 _) 5))))
+  (is-match (vector 1 2 3 4 5 6 7 8 9 10)
+            (vector 1 (@@ 8 _) 10)))

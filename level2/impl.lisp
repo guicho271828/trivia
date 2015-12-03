@@ -4,6 +4,7 @@
 ;;;; derived pattern database
 
 (lispn:define-namespace pattern function)
+(lispn:define-namespace inline-pattern function)
 
 (define-condition wildcard () ())
 
@@ -56,30 +57,36 @@
 (defun pattern-expand (p)
   "expand the given pattern downto level1 pattern (i.e. until no expansion is available),
 just like macroexpand"
-  (let (expanded)
-    (do () (nil)
-      (multiple-value-bind (new expanded1) (pattern-expand-1 p)
-        (if expanded1
-            (setf p new expanded expanded1)
-            (return (values new expanded)))))))
+  (labels ((rec (p)
+             (multiple-value-bind (new expanded1) (pattern-expand-1 p)
+               (if expanded1
+                   (rec new)
+                   new))))
+    (multiple-value-bind (new expanded1) (pattern-expand-1 p)
+      (if expanded1
+          (values (rec new) t)
+          new))))
 
 (defun pattern-expand-all (p)
   "expand the given pattern recursively"
   ;; should start by guard1 or or1
-  (ematch0 (pattern-expand p)
-    ((list* 'guard1 sym test more-patterns)
-     (list* 'guard1 sym test
-            (alist-plist
-             (mappend
-              (lambda-ematch0
-                ((cons generator subpattern)
-                 (handler-case
-                     (list (cons generator (pattern-expand-all subpattern)))
-                   (wildcard () ;; remove unnecessary wildcard pattern
-                     nil))))
-              (plist-alist more-patterns)))))
-    ((list* 'or1 subpatterns)
-     (list* 'or1 (mapcar #'pattern-expand-all subpatterns)))))
+  (multiple-value-bind (p expanded) (inline-pattern-expand p)
+    (assert (null expanded) nil "Toplevel inline pattern is invalid: ~a" p)
+    (assert (= (length p) 1) nil "Toplevel inline pattern is invalid: ~a" p)
+    (ematch0 (pattern-expand (first p))
+      ((list* 'guard1 sym test more-patterns)
+       (list* 'guard1 sym test
+              (mappend
+               (lambda (gen-pat)
+                 (ematch0 gen-pat
+                   ((cons generator subpattern)
+                    (handler-case
+                        (list generator (pattern-expand-all subpattern))
+                      (wildcard () ;; remove unnecessary wildcard pattern
+                        nil)))))
+               (plist-alist more-patterns))))
+      ((list* 'or1 subpatterns)
+       (list* 'or1 (mapcar #'pattern-expand-all subpatterns))))))
 
 
 (defmacro defpattern (name args &body body)
@@ -91,6 +98,46 @@ The default value of &optional arguments are '_, instead of nil."
            (sb-int:named-lambda ',name ,(process-lambda-args args) ,@body)
            #-sbcl
            (lambda ,(process-lambda-args args) ,@body))))
+
+(defmacro defpattern-inline (name args &body body)
+  "Adds a new inlined derived pattern. These patterns are evaluated from the innermost ones.
+The default value of &optional arguments are '_, instead of nil."
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (setf (symbol-inline-pattern ',name)
+           #+sbcl
+           (sb-int:named-lambda ',name ,(process-lambda-args args) ,@body)
+           #-sbcl
+           (lambda ,(process-lambda-args args) ,@body))))
+
+
+(defun inline-pattern-expand (p)
+  "Given a pattern p, returns a list of patterns that should be inlined."
+  (if (atom p)
+      (list p)
+      (ematch0 p
+        ((list* 'quote _)
+         (list p))
+        ((list* head args)
+         ;; If the inline pattern exists, then call the expander function.
+         ;; Unlike in pattern-expand-1, it is depth-first
+         (when (or (and (atom args) (not (null args)))
+                   (cdr (last args)))
+           (warn "~a is not a proper list! Inline expansion fails" p)
+           (return-from inline-pattern-expand (list p)))
+         (let ((args (mappend (lambda (arg)
+                                (labels ((rec (p)
+                                           (multiple-value-bind (new expanded)
+                                               (inline-pattern-expand p)
+                                             (if expanded (mappend #'rec new) new))))
+                                  (rec arg)))
+                              args)))
+           (handler-case
+               (values (apply (symbol-inline-pattern head) args) t)
+             (unbound-inline-pattern ()
+               ;; otherwise, unbound-pattern is signalled.
+               ;; (see the macroexpansion of (lispn:define-namespace pattern function).)
+               ;; Unlike in pattern-expand-1, it does nothing, and it recurses into arguments.
+               (list (list* head args)))))))))
 
 (defun process-lambda-args (args)
   (ematch0 args
