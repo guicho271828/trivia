@@ -3,6 +3,7 @@
 
 + news! new pattern: lambda-list pattern. Contributed by akssri
 + news! new pattern: number-related patterns, e.g. >, <, =, <= ... 
++ news! Inline pattern implemented ! : @, @@ ...
 
 * Trivia : Trivial Pattern Matching Compiler
 
