@@ -39,6 +39,7 @@
            :$guard1
            :$or1
            :<>
+           :@
            :place
 	   :lambda-list
 	   :λlist

@@ -70,20 +70,23 @@ just like macroexpand"
 (defun pattern-expand-all (p)
   "expand the given pattern recursively"
   ;; should start by guard1 or or1
-  (ematch0 (pattern-expand p)
-    ((list* 'guard1 sym test more-patterns)
-     (list* 'guard1 sym test
-            (mappend
-             (lambda (gen-pat)
-               (ematch0 gen-pat
-                 ((cons generator subpattern)
-                  (handler-case
-                      (list generator (pattern-expand-all subpattern))
-                    (wildcard () ;; remove unnecessary wildcard pattern
-                      nil)))))
-             (plist-alist more-patterns))))
-    ((list* 'or1 subpatterns)
-     (list* 'or1 (mapcar #'pattern-expand-all subpatterns)))))
+  (multiple-value-bind (p expanded) (inline-pattern-expand p)
+    (assert (null expanded) nil "Toplevel inline pattern is invalid: ~a" p)
+    (assert (= (length p) 1) nil "Toplevel inline pattern is invalid: ~a" p)
+    (ematch0 (pattern-expand (first p))
+      ((list* 'guard1 sym test more-patterns)
+       (list* 'guard1 sym test
+              (mappend
+               (lambda (gen-pat)
+                 (ematch0 gen-pat
+                   ((cons generator subpattern)
+                    (handler-case
+                        (list generator (pattern-expand-all subpattern))
+                      (wildcard () ;; remove unnecessary wildcard pattern
+                        nil)))))
+               (plist-alist more-patterns))))
+      ((list* 'or1 subpatterns)
+       (list* 'or1 (mapcar #'pattern-expand-all subpatterns))))))
 
 
 (defmacro defpattern (name args &body body)
