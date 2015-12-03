@@ -115,9 +115,15 @@ The default value of &optional arguments are '_, instead of nil."
         ((list* head args)
          ;; If the inline pattern exists, then call the expander function.
          ;; Unlike in pattern-expand-1, it is depth-first
-         (let ((args (mappend #'inline-pattern-expand args)))
+         (let ((args (mappend (lambda (arg)
+                                (labels ((rec (p)
+                                           (multiple-value-bind (new expanded)
+                                               (inline-pattern-expand p)
+                                             (if expanded (mappend #'rec new) new))))
+                                  (rec arg)))
+                              args)))
            (handler-case
-               (apply (symbol-inline-pattern head) args)
+               (values (apply (symbol-inline-pattern head) args) t)
              (unbound-inline-pattern ()
                ;; otherwise, unbound-pattern is signalled.
                ;; (see the macroexpansion of (lispn:define-namespace pattern function).)
