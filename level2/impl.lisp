@@ -70,8 +70,7 @@ just like macroexpand"
 (defun pattern-expand-all (p)
   "expand the given pattern recursively"
   ;; should start by guard1 or or1
-  (multiple-value-bind (p expanded) (inline-pattern-expand p)
-    (assert (null expanded) nil "Toplevel inline pattern is invalid: ~a" p)
+  (let ((p (inline-pattern-expand p)))
     (assert (= (length p) 1) nil "Toplevel inline pattern is invalid: ~a" p)
     (ematch0 (pattern-expand (first p))
       ((list* 'guard1 sym test more-patterns)
@@ -115,29 +114,32 @@ The default value of &optional arguments are '_, instead of nil."
   (if (atom p)
       (list p)
       (ematch0 p
-        ((list* 'quote _)
-         (list p))
         ((list* head args)
-         ;; If the inline pattern exists, then call the expander function.
-         ;; Unlike in pattern-expand-1, it is depth-first
-         (when (or (and (atom args) (not (null args)))
-                   (cdr (last args)))
-           (warn "~a is not a proper list! Inline expansion fails" p)
-           (return-from inline-pattern-expand (list p)))
-         (let ((args (mappend (lambda (arg)
-                                (labels ((rec (p)
-                                           (multiple-value-bind (new expanded)
-                                               (inline-pattern-expand p)
-                                             (if expanded (mappend #'rec new) new))))
-                                  (rec arg)))
-                              args)))
-           (handler-case
-               (values (apply (symbol-inline-pattern head) args) t)
-             (unbound-inline-pattern ()
-               ;; otherwise, unbound-pattern is signalled.
-               ;; (see the macroexpansion of (lispn:define-namespace pattern function).)
-               ;; Unlike in pattern-expand-1, it does nothing, and it recurses into arguments.
-               (list (list* head args)))))))))
+         (cond
+           ((not (and (symbolp head)
+                      (or (pattern-boundp head)
+                          (inline-pattern-boundp head))))
+            ;; this is not a pattern, stop recursion
+            (list p))
+           ((and (atom args) (not (null args)))
+            ;; p is a bare cons like (a . b)
+            (warn "~a is not a proper list! Inline expansion fails" p)
+            (list p))
+           ((cdr (last args))
+            (warn "~a is not a proper list! Inline expansion occurs only to the children and the last cdr" p)
+            (let ((args (copy-tree args)))
+              (setf (cdr (last args)) nil)
+              (let ((pairs (mapcar (lambda (arg) (multiple-value-list (inline-pattern-expand arg))) args)))
+                (values `((,head ,@(mappend #'car pairs) . ,(cdr (last args))))
+                        (every #'cdr pairs)))))
+           (t
+            (let ((pairs (mapcar (lambda (arg) (multiple-value-list (inline-pattern-expand arg))) args)))
+              (if (inline-pattern-boundp head)
+                  (values (mappend #'inline-pattern-expand
+                                   (apply (symbol-inline-pattern head) (mappend #'car pairs)))
+                          t)
+                  (values `((,head ,@(mappend #'car pairs)))
+                          (every #'cdr pairs))))))))))
 
 (defun process-lambda-args (args)
   (ematch0 args
