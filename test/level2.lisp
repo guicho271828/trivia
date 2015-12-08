@@ -39,3 +39,8 @@
              (inline-pattern-expand '(vector 1 (@@ 10 _) 5))))
   (is-match (vector 1 2 3 4 5 6 7 8 9 10)
             (vector 1 (@@ 8 _) 10)))
+
+(test issue-21
+  ;; inline-pattern-expand is confused when the pattern contains non-pattern forms
+  (finishes
+    (inline-pattern-expand '(guard x (let ((y 1)) (= x y))))))
