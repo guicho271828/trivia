@@ -23,3 +23,12 @@
              (copy-list patterns))
            (iota n)))
 
+
+;; (match* (array LU)
+;;   (((array (element   k     k     ckk-a)  (displaced k     (k N) ck*-a)
+;;            (displaced (k N) k     c*k-a)  (displaced (k N) (k N) c**-a))
+;;     (array (element   k     k     ckk-lu) (displaced k     (k N) ck*-lu)
+;;            (displaced (k N) k     c*k-lu) (displaced (k N) (k N) c**-lu)))
+;;    (array-setf c*k-lu (map 'vector (lambda (cjk) (/ cjk ckk)) c*k-a))
+;;    (array-setf c**-lu (matrix-sub c**-a (elementwise-prod ck*-a c*k-lu)))))
+
