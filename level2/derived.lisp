@@ -19,29 +19,30 @@
      (let* ((subpatterns (handler-bind ((wildcard (lambda (c) (continue c))))
                            (mapcar #'pattern-expand subpatterns)))
             (or1  (find 'or1 subpatterns :key #'car))
-            (rest (remove or1 subpatterns)))
+            (guard1-patterns (remove or1 subpatterns)))
        (if or1
            (ematch0 or1
              ((list* 'or1 or-subpatterns)
               (list* 'or1
                      (mapcar (lambda (or-sp)
-                               `(and ,or-sp ,@rest))
+                               `(and ,or-sp ,@guard1-patterns))
                              or-subpatterns))))
            ;; no or pattern; perform lifting
            (with-gensyms (intersection)
-             (labels ((wrap-test (syms tests body)
+             (labels ((wrap-test (syms tests more-patterns)
                         (ematch0 tests
                           ((list test)
-                           `(guard1 ,(first syms) ,test ,@body))
+                           `(guard1 ,(first syms) ,test ,@more-patterns))
                           ((list* test t-rest)
                            `(guard1 ,(first syms) ,test
-                                    ,intersection ,(wrap-test (rest syms) t-rest body))))))
+                                    ,intersection ,(wrap-test (rest syms) t-rest more-patterns))))))
                ;; now that all subpatterns are guard1, we can safely assume this;
-               (let* ((symopts (mapcar #'second rest))
-                      (tests  (mapcar #'third rest)))
+               (let* ((symopts (mapcar #'second guard1-patterns))
+                      (tests  (mapcar #'third guard1-patterns))
+                      (more-patterns (mappend #'cdddr guard1-patterns)))
                  `(guard1 ,intersection t
                           ,intersection
-                          ,(wrap-test symopts tests (mappend #'cdddr rest)))))))))))
+                          ,(wrap-test symopts tests more-patterns))))))))))
 
 (defpattern guard (subpattern test-form &rest more-patterns)
   (with-gensyms (guard)
