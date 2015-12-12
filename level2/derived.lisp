@@ -53,12 +53,30 @@
     `(and ,subpattern
           (guard1 (,guard :deferred ,test-form) t ,@more-patterns))))
 
+
 (defun subst-notsym (pattern symopt?)
+  "substitute a symbol with an anonymous symbol, in order to avoid capturing the variables inside NOT pattern.
+For example,
+
+  (let ((it 1))
+    (match 2
+      ((not (guard it (eql it 3))) it)
+      (_ :fail)))
+
+This should return 1, however without proper renaming of variable `it', `it' will be bound to NIL."
   (let ((sym (car (preprocess-symopts symopt? pattern))))
      (with-gensyms (notsym)
        (subst notsym sym pattern))))
 
+(defun deferred-p (symopt?)
+  "returns if the symopt has :deferred flag"
+  (let ((sym (preprocess-symopts symopt? nil)))
+    (destructuring-bind (oldsym &key (deferred nil supplied-p) &allow-other-keys) sym
+      (declare (ignore oldsym deferred))
+      supplied-p)))
+
 (defun negate-deferred (symopt?)
+  "make a new symopt whose :deferred test is negated if set"
   (let ((sym (copy-list (preprocess-symopts symopt? nil))))
     (with-gensyms (negsym)
       (destructuring-bind (oldsym &key (deferred nil supplied-p) &allow-other-keys) sym
@@ -67,23 +85,32 @@
       (setf (car sym) negsym))
     sym))
 
+(defun make-negated-case (sym test)
+  "Creates a negated pattern. If the pattern is deferred, the deferred test
+should be negated, but the test itself should remain T
+ (Otherwise the matching fails at this point because the test (not t) always fails.)"
+  (let ((negsym (negate-deferred sym)))
+    (if (deferred-p sym)
+        `(guard1 ,negsym t)
+        `(guard1 ,sym (not ,test)))))
 
 (defpattern not (subpattern)
   (ematch0 (pattern-expand subpattern)
     ((list* 'guard1 sym test guard1-subpatterns)
          ;; no symbols are visible from the body
-     (subst-notsym
-      (if guard1-subpatterns
-          `(or1 (guard1 ,sym (not ,test))
-                (guard1 ,sym ,test
-                        ,@(alist-plist
-                           (mapcar
-                            (lambda-ematch0
-                              ((cons generator test-form)
-                               (cons generator `(not ,test-form)))) 
-                            (plist-alist guard1-subpatterns)))))
-          `(guard1 ,sym (not ,test)))
-      sym))
+     (let ((negated-case (make-negated-case sym test)))
+       (subst-notsym
+        (if guard1-subpatterns
+            `(or1 ,negated-case
+                  (guard1 ,sym ,test
+                          ,@(alist-plist
+                             (mapcar
+                              (lambda-ematch0
+                                ((cons generator test-form)
+                                 (cons generator `(not ,test-form)))) 
+                              (plist-alist guard1-subpatterns)))))
+            negated-case)
+        sym)))
     ((list* 'or1 or-subpatterns)
      `(and ,@(mapcar (lambda (or-sp)
                        `(not ,or-sp))
