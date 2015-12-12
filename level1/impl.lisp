@@ -297,8 +297,8 @@
       ;; place: T supersedes NIL
       ;; ignorable: never appears here since ignorable variables are excluded
       (merge-variables seq1 seq2)
-      (error "~a and ~a differs! this should have been fixed by correct-pattern, why!!??"
-             seq1 seq2)))
+      (error "~<~s and ~s differs! this should have been fixed by correct-pattern, why!!??~:@>"
+             (list seq1 seq2))))
 
 (defun merge-variables (seq1 seq2)
   (match0 seq1
