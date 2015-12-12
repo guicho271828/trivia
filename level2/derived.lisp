@@ -39,11 +39,12 @@
                  (nil more-patterns)
                  ((list* test t-rest)
                   `(,intersection (guard1 ,(first syms) ,test
-                                          ,@(wrap-test (rest syms) t-rest more-patterns)))))))
+                                          ,@(first more-patterns)
+                                          ,@(wrap-test (rest syms) t-rest (rest more-patterns))))))))
       ;; now that all subpatterns are guard1, we can safely assume this;
       (let* ((symopts (mapcar #'second guard1-patterns))
              (tests  (mapcar #'third guard1-patterns))
-             (more-patterns (mappend #'cdddr guard1-patterns)))
+             (more-patterns (mapcar #'cdddr guard1-patterns)))
         `(guard1 ,intersection t
                  ,@(wrap-test symopts tests more-patterns))))))
 
