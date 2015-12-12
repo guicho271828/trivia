@@ -52,23 +52,27 @@
     `(and ,subpattern
           (guard1 (,guard :deferred t) ,test-form ,@more-patterns))))
 
+(defun subst-notsym (pattern symopt?)
+  (let ((sym (car (preprocess-symopts symopt? pattern))))
+     (with-gensyms (notsym)
+       (subst notsym sym pattern))))
+
 (defpattern not (subpattern)
   (ematch0 (pattern-expand subpattern)
     ((list* 'guard1 sym test guard1-subpatterns)
-     (with-gensyms (notsym)
-       (let ((sym (car (preprocess-symopts sym subpattern))))
          ;; no symbols are visible from the body
-         (subst notsym sym
-                (if guard1-subpatterns
-                    `(or1 (guard1 ,sym (not ,test))
-                          (guard1 ,sym ,test
-                                  ,@(alist-plist
-                                     (mapcar
-                                      (lambda-ematch0
-                                        ((cons generator test-form)
-                                         (cons generator `(not ,test-form)))) 
-                                      (plist-alist guard1-subpatterns)))))
-                    `(guard1 ,sym (not ,test)))))))
+     (subst-notsym
+      (if guard1-subpatterns
+          `(or1 (guard1 ,sym (not ,test))
+                (guard1 ,sym ,test
+                        ,@(alist-plist
+                           (mapcar
+                            (lambda-ematch0
+                              ((cons generator test-form)
+                               (cons generator `(not ,test-form)))) 
+                            (plist-alist guard1-subpatterns)))))
+          `(guard1 ,sym (not ,test)))
+      sym))
     ((list* 'or1 or-subpatterns)
      `(and ,@(mapcar (lambda (or-sp)
                        `(not ,or-sp))
