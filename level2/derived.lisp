@@ -60,9 +60,11 @@
 
 (defun negate-deferred (symopt?)
   (let ((sym (copy-list (preprocess-symopts symopt? nil))))
-    (destructuring-bind (&key (deferred nil supplied-p) &allow-other-keys) (cdr sym)
-      (when supplied-p
-        (setf (getf (cdr sym) :deferred) `(not ,deferred))))
+    (with-gensyms (negsym)
+      (destructuring-bind (oldsym &key (deferred nil supplied-p) &allow-other-keys) sym
+        (when supplied-p
+          (setf (getf (cdr sym) :deferred) `(not ,(subst negsym oldsym deferred)))))
+      (setf (car sym) negsym))
     sym))
 
 
