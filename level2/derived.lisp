@@ -50,7 +50,7 @@
 (defpattern guard (subpattern test-form &rest more-patterns)
   (with-gensyms (guard)
     `(and ,subpattern
-          (guard1 ,guard ,test-form ,@more-patterns))))
+          (guard1 (,guard :deferred t) ,test-form ,@more-patterns))))
 
 (defpattern not (subpattern)
   (ematch0 (pattern-expand subpattern)
