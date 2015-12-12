@@ -58,6 +58,14 @@
      (with-gensyms (notsym)
        (subst notsym sym pattern))))
 
+(defun negate-deferred (symopt?)
+  (let ((sym (copy-list (preprocess-symopts symopt? nil))))
+    (destructuring-bind (&key (deferred nil supplied-p) &allow-other-keys) (cdr sym)
+      (when supplied-p
+        (setf (getf (cdr sym) :deferred) `(not ,deferred))))
+    sym))
+
+
 (defpattern not (subpattern)
   (ematch0 (pattern-expand subpattern)
     ((list* 'guard1 sym test guard1-subpatterns)
