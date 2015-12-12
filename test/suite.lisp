@@ -218,7 +218,7 @@
   (is-match 1 (guard x (eql x 1))))
 (test lift
   (is-match 1 (and x (guard y (eql x y))))
-  (is-match 1 (and (guard x (eql x y)) y))
+  (is-match 1 (and (guard x (eql x y)) y)) ;; forward-referencing guard
   (is-not-match 1 (and x (guard 2 (eql x 1))))
   (is-not-match 1 (and x (guard y (not (eql x y)))))
   (is-match '(1 1) (list x (guard y (eql x y))))
