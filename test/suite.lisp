@@ -264,7 +264,9 @@
   ;; variables in not pattern should not be bound
   (is (equal 1
              (let ((it 1))
-               (match 2 ((not (guard it (eql it 3))) it))))))
+               (match 2
+                 ((not (guard it (eql it 3))) it)
+                 (_ :fail))))))
 
 (test or-pattern
   (is-not-match 1 (or))
