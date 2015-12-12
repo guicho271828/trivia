@@ -9,18 +9,18 @@
 (test pad
   (is (= 1 (match* nil (() 1) (() 1)))))
 
-(defun testmatcher (list)
-  (match list ((λlist a b &key (c -1)) (list a b c))))
+(defmacro testmatcher (list)
+  `(match ,list ((λlist a b &key (c -1)) (list a b c))))
 
 (test destructuring-key
   (is (equal '(1 2 3)   (testmatcher '(1 2 :c 3))))
   (is (equal '(1 2 -1)  (testmatcher '(1 2))))
   (is (equal nil        (testmatcher '(1 2 :c)))))
 
-(defun testmatcher2 (list)
-  (match list
-    ((λlist a b &optional c &rest rr &key (d -1) &allow-other-keys)
-     (list a b c rr d))))
+(defmacro testmatcher2 (list)
+  `(match ,list
+     ((λlist a b &optional c &rest rr &key (d -1) &allow-other-keys)
+      (list a b c rr d))))
 
 (test destructuring-opt-key
   (is (equal '(1 2 3 (:c 4 :d 5) 5)
