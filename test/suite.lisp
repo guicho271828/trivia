@@ -23,11 +23,11 @@
 
 (defmacro is-match (arg pattern)
   `(is-true (match ,arg (,pattern t))
-            ,(format nil "pattern ~a did not match against arg ~a" pattern arg)))
+            ,(format nil "~<pattern ~a did not match against arg ~s~:@>" (list pattern arg))))
 
 (defmacro is-not-match (arg pattern)
   `(is-false (match ,arg (,pattern t))
-             ,(format nil "pattern ~a matched against arg ~a" pattern arg)))
+             ,(format nil "~<pattern ~a matched against arg ~s~:@>" (list pattern arg))))
 
 (test constant-pattern
   ;; integer
