@@ -28,21 +28,24 @@
                                `(and ,or-sp ,@guard1-patterns))
                              or-subpatterns))))
            ;; no or pattern; perform lifting
-           (with-gensyms (intersection)
-             (labels ((wrap-test (syms tests more-patterns)
-                        (ematch0 tests
-                          ((list test)
-                           `(guard1 ,(first syms) ,test ,@more-patterns))
-                          ((list* test t-rest)
-                           `(guard1 ,(first syms) ,test
-                                    ,intersection ,(wrap-test (rest syms) t-rest more-patterns))))))
-               ;; now that all subpatterns are guard1, we can safely assume this;
-               (let* ((symopts (mapcar #'second guard1-patterns))
-                      (tests  (mapcar #'third guard1-patterns))
-                      (more-patterns (mappend #'cdddr guard1-patterns)))
-                 `(guard1 ,intersection t
-                          ,intersection
-                          ,(wrap-test symopts tests more-patterns))))))))))
+           (combine-guard1-subpatterns guard1-patterns))))))
+
+(defun combine-guard1-subpatterns (guard1-patterns)
+  (with-gensyms (intersection)
+    (labels ((wrap-test (syms tests more-patterns)
+               (ematch0 tests
+                 ((list test)
+                  `(guard1 ,(first syms) ,test ,@more-patterns))
+                 ((list* test t-rest)
+                  `(guard1 ,(first syms) ,test
+                           ,intersection ,(wrap-test (rest syms) t-rest more-patterns))))))
+      ;; now that all subpatterns are guard1, we can safely assume this;
+      (let* ((symopts (mapcar #'second guard1-patterns))
+             (tests  (mapcar #'third guard1-patterns))
+             (more-patterns (mappend #'cdddr guard1-patterns)))
+        `(guard1 ,intersection t
+                 ,intersection
+                 ,(wrap-test symopts tests more-patterns))))))
 
 (defpattern guard (subpattern test-form &rest more-patterns)
   (with-gensyms (guard)
