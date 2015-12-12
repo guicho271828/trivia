@@ -215,6 +215,8 @@
                           (ignorable (if (symbol-package sym) nil t))
                           &allow-other-keys)
          options
+       ;; the implementer of level2 patterns can append arbitrary
+       ;; meta-infomation as a keyword.
        (ensure-getf options :type type)
        (ensure-getf options :place place)
        (ensure-getf options :ignorable ignorable)
