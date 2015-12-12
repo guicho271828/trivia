@@ -189,6 +189,10 @@
                             (repair-pattern (sp) sp)))))
                   subpatterns)))))))
 
+(defmacro ensure-getf (place key &optional default)
+  (once-only (key default)
+    `(setf (getf ,place ,key) (getf ,place ,key ,default))))
+
 (defun preprocess-symopts (symopt? pattern)
   "Ensure the symopts being a list, plus sets some default values."
   (match0 (ensure-list symopt?)
@@ -211,9 +215,9 @@
                           (ignorable (if (symbol-package sym) nil t))
                           &allow-other-keys)
          options
-       (setf (getf options :type) type)
-       (when place (setf (getf options :place) t))
-       (when ignorable (setf (getf options :ignorable) t))
+       (ensure-getf options :type type)
+       (ensure-getf options :place place)
+       (ensure-getf options :ignorable ignorable)
        (list* sym options)))))
 
 (defun bind-missing-vars-with-nil (pattern missing)
