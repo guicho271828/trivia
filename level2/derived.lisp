@@ -51,7 +51,7 @@
 (defpattern guard (subpattern test-form &rest more-patterns)
   (with-gensyms (guard)
     `(and ,subpattern
-          (guard1 (,guard :deferred t) ,test-form ,@more-patterns))))
+          (guard1 (,guard :deferred ,test-form) t ,@more-patterns))))
 
 (defun subst-notsym (pattern symopt?)
   (let ((sym (car (preprocess-symopts symopt? pattern))))
