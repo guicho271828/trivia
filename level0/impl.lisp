@@ -10,7 +10,7 @@
 (defmacro ematch0 (what &body clauses)
   `(match0 ,what
      ,@clauses
-     (_ (error "match error!"))))
+     (_ (error "level0 match error!"))))
 
 (defmacro lambda-match0 (&body clauses)
   (alexandria:with-gensyms (arg)

@@ -160,6 +160,7 @@
 (defun union* (&optional x y) (union x y))
 
 (defun correct-pattern (pattern)
+  "Recursively check and try to correct the mismatch in the set of variables in or1 patterns"
   (ematch0 pattern
     ((list* 'guard1 symbol? test more-patterns)
      (restart-case
@@ -189,6 +190,10 @@
                             (repair-pattern (sp) sp)))))
                   subpatterns)))))))
 
+(defmacro ensure-getf (place key &optional default)
+  (once-only (key default)
+    `(setf (getf ,place ,key) (getf ,place ,key ,default))))
+
 (defun preprocess-symopts (symopt? pattern)
   "Ensure the symopts being a list, plus sets some default values."
   (match0 (ensure-list symopt?)
@@ -211,9 +216,11 @@
                           (ignorable (if (symbol-package sym) nil t))
                           &allow-other-keys)
          options
-       (setf (getf options :type) type)
-       (when place (setf (getf options :place) t))
-       (when ignorable (setf (getf options :ignorable) t))
+       ;; the implementer of level2 patterns can append arbitrary
+       ;; meta-infomation as a keyword.
+       (ensure-getf options :type type)
+       (ensure-getf options :place place)
+       (ensure-getf options :ignorable ignorable)
        (list* sym options)))))
 
 (defun bind-missing-vars-with-nil (pattern missing)
@@ -297,8 +304,8 @@
       ;; place: T supersedes NIL
       ;; ignorable: never appears here since ignorable variables are excluded
       (merge-variables seq1 seq2)
-      (error "~a and ~a differs! this should have been fixed by correct-pattern, why!!??"
-             seq1 seq2)))
+      (error "~<~s and ~s differs! this should have been fixed by correct-pattern, why!!??~:@>"
+             (list seq1 seq2))))
 
 (defun merge-variables (seq1 seq2)
   (match0 seq1

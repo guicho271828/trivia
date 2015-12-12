@@ -23,11 +23,11 @@
 
 (defmacro is-match (arg pattern)
   `(is-true (match ,arg (,pattern t))
-            ,(format nil "pattern ~a did not match against arg ~a" pattern arg)))
+            ,(format nil "~<pattern ~a did not match against arg ~s~:@>" (list pattern arg))))
 
 (defmacro is-not-match (arg pattern)
   `(is-false (match ,arg (,pattern t))
-             ,(format nil "pattern ~a matched against arg ~a" pattern arg)))
+             ,(format nil "~<pattern ~a matched against arg ~s~:@>" (list pattern arg))))
 
 (test constant-pattern
   ;; integer
@@ -218,7 +218,7 @@
   (is-match 1 (guard x (eql x 1))))
 (test lift
   (is-match 1 (and x (guard y (eql x y))))
-  (is-match 1 (and (guard x (eql x y)) y))
+  (is-match 1 (and (guard x (eql x y)) y)) ;; forward-referencing guard
   (is-not-match 1 (and x (guard 2 (eql x 1))))
   (is-not-match 1 (and x (guard y (not (eql x y)))))
   (is-match '(1 1) (list x (guard y (eql x y))))
@@ -261,9 +261,12 @@
   (is-match 1 (not (not (not (not 1)))))
   ;; complex
   (is-match 1 (not (guard it (consp it))))
+  ;; variables in not pattern should not be bound
   (is (equal 1
              (let ((it 1))
-               (match 2 ((not (guard it (eql it 3))) it))))))
+               (match 2
+                 ((not (guard it (eql it 3))) it)
+                 (_ :fail))))))
 
 (test or-pattern
   (is-not-match 1 (or))
@@ -545,3 +548,8 @@
    (match 3
      ((guard1 it t it (and (type number) a _))
       (eq a 3)))))
+
+(test issue-23
+  (is-match '(shader foo :fragment "")
+            (guard (list shader name type value)
+                   (string-equal (symbol-name shader) "shader"))))

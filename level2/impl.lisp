@@ -232,8 +232,8 @@ or results in a compilation error when this is the outermost matching construct.
   "Variant of match2* : can specify the inferred types of each argument"
   ;; Actually, this is the main expander
   (let* ((args (make-gensyms whats "ARG"))
-         (bindings (mapcar #'list args whats)) 
-         (clauses (mapcar (curry #'pad (length whats)) clauses))
+         (bindings (mapcar #'list args whats))
+         (clauses (mapcar (curry #'pad (length whats)) clauses)) ; adjust the length of the clauses
          (clauses (mapcar #'expand-clause clauses))
          (clauses* (if args
                        (funcall (symbol-optimizer *optimizer*)
@@ -251,7 +251,7 @@ or results in a compilation error when this is the outermost matching construct.
 (defun expand-clause (clause)
   (ematch0 clause
     ((list* patterns body)
-     (list* (expand-multipatterns patterns)
+     (list* (postprocess-deferred (expand-multipatterns patterns))
             body))))
 (defun expand-multipatterns (patterns)
   (ematch0 patterns
@@ -261,6 +261,79 @@ or results in a compilation error when this is the outermost matching construct.
        (cons first*
              (let ((*lexvars* (variables first*)))
                (expand-multipatterns rest)))))))
+
+(define-condition deferred ()
+  ((test :initarg :test :accessor deferred-test)))
+
+(defun postprocess-deferred (patterns)
+  "equivalent to optima's lift 1/2:
+
+   lift1:
+       (list (guard x (consp x)) (guard y (eq y (car x))))
+    => (guard (list x (guard y (eq y (car x)))) (consp x))
+    => (guard (guard (list x y) (eq y (car x))) (consp x))
+    => (guard (list x y) (and (consp x) (eq y (car x))))
+
+   lift2:
+       (list 3 (or 1 (guard x (evenp x))))
+    => (or (list 3 1) (list 3 (guard x (evenp x))))
+    => (or (list 3 1) (guard (list 3 x) (evenp x)))"
+  ;; search for any deferred tests in patterns, then append them to the last pattern.
+  (let (tests)
+    (let ((patterns
+           (handler-bind ((deferred (lambda (c)
+                                      (push (deferred-test c) tests)
+                                      (continue c))))
+             (mapcar #'postprocess-deferred-1 patterns))))
+      (if tests
+          (with-gensyms (it)
+            `(,@(butlast patterns) (guard1 ,it t
+                                           ,it ,(lastcar patterns)
+                                           ,@(mappend (lambda (test)
+                                                        (with-gensyms (dummy)
+                                                          `(t (guard1 ,dummy ,test))))
+                                                      tests))))
+          patterns))))
+
+(defun postprocess-deferred-1 (pattern)
+  (ematch0 pattern
+    ((list* 'guard1 (list* sym fields) test more-patterns)
+     (destructuring-bind (&key (deferred nil supplied-p) &allow-other-keys) fields
+       (when supplied-p
+         (restart-case
+             (signal 'deferred :test deferred)
+           (continue ()))))
+     (list* 'guard1 (list* sym fields) test
+            (alist-plist
+             (mapcar (lambda-ematch0
+                       ((cons gen pat)
+                        (cons gen (postprocess-deferred-1 pat))))
+                     (plist-alist more-patterns)))))
+    ((list* 'or1 patterns)
+     ;; deferred patterns do not go beyond or1 boundary.
+     (list* 'or1 (mappend #'postprocess-deferred (mapcar #'list patterns))))))
+
+;; (postprocess-deferred
+;;  '((or1
+;;     (guard1
+;;      (a :type cons) (consp a)
+;;      (car a) (guard1 (b :type t) t)
+;;      (cdr a) (guard1 (c :type t) t))
+;;     (guard1
+;;      (a :type cons) (consp a)
+;;      (car a) (guard1 (b :type t) t)
+;;      (cdr a) (guard1 (c :type t :deferred (evenp c)) t)))))
+;; 
+;; (postprocess-deferred
+;;  '((or1
+;;     (guard1
+;;      (a :type cons) (consp a)
+;;      (car a) (guard1 (b :type t) t)
+;;      (cdr a) (guard1 (c :type t :deferred (evenp c)) t))
+;;     (guard1
+;;      (a :type cons) (consp a)
+;;      (car a) (guard1 (b :type t) t)
+;;      (cdr a) (guard1 (c :type t) t)))))
 
 (defun generate-multi-matcher (args *lexvars* clauses &optional in-clause-block)
   ;; take 3 : switch to the genuine BDD-based matcher
