@@ -545,3 +545,8 @@
    (match 3
      ((guard1 it t it (and (type number) a _))
       (eq a 3)))))
+
+(test issue-23
+  (is-match '(shader foo :fragment "")
+            (guard (list shader name type value)
+                   (string-equal (symbol-name shader) "shader"))))
