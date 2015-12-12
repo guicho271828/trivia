@@ -160,6 +160,7 @@
 (defun union* (&optional x y) (union x y))
 
 (defun correct-pattern (pattern)
+  "Recursively check and try to correct the mismatch in the set of variables in or1 patterns"
   (ematch0 pattern
     ((list* 'guard1 symbol? test more-patterns)
      (restart-case
