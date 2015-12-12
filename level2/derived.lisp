@@ -31,6 +31,8 @@
            (combine-guard1-subpatterns guard1-patterns))))))
 
 (defun combine-guard1-subpatterns (guard1-patterns)
+  (assert (every (lambda-match0 ((list* 'guard1 _) t)) guard1-patterns)
+          nil "In EXPAND-AND: Found or1 pattern after or-lifting!")
   (with-gensyms (intersection)
     (labels ((wrap-test (syms tests more-patterns)
                (ematch0 tests
