@@ -8,7 +8,7 @@
 ;;; INCOMPATIBILITY NOTE: `match' no longer expanded in 1-pass through
 ;;; `macroexpand': some tests are now replaced with eval
 (defpackage :trivia.test
-  (:use :cl :fiveam
+  (:use :closer-common-lisp :fiveam
         :trivia.level2
         :trivia.level1
         :trivia.next
@@ -553,3 +553,22 @@
   (is-match '(shader foo :fragment "")
             (guard (list shader name type value)
                    (string-equal (symbol-name shader) "shader"))))
+
+(defgeneric plus (a b))
+(defmethod plus ((a fixnum) (b fixnum))
+  (+ a b))
+
+(test issue-24
+  (is-match #'plus
+            (generic-function))
+  (match #'plus
+     ((generic-function
+       methods
+       method-combination
+       lambda-list
+       argument-precedence-order)
+      (is (= 1 (length methods)))
+      (is-true method-combination)
+      (is (= 2 (length lambda-list)))
+      (is (equal '(a b) argument-precedence-order)))))
+
