@@ -370,6 +370,43 @@ should be negated, but the test itself should remain T
       (mappend (curry #'accessor-form it type) parsed)
       (mappend (curry #'accessor-form-using-function it type) parsed)))
 
+;; We then discuss the slot specification in the pattern. A slot
+;; specification is a list (slot-name subpattern) where slot-name might be
+;; a symbol (possibly keywords). A slot specification is an element of the
+;; results returned from parse-slots.
+;; 
+;; Overall, in any case where it is not possible to reduce the
+;; equally-preferable ways to access the slot to a single method, it should
+;; signal an error. This principle also holds for the other cases.
+
+;; In the following, we discuss the case when the slot specification is
+;; applied to a class.  When the slot-name is a keyword, we should consider
+;; the following cases:
+;; 
+;; 1. the keyword is one of the initargs of the slot. However there might
+;; be multiple slots with the same initarg.  In this case, it signals an
+;; error and suggest that the user should use another means of specifying
+;; the slot.
+;; 
+;; 2. the keyword is not one of the initargs of the slot.  one of the the
+;; slot name is string= to the keyword and the slot name is visible from
+;; the current package. Since there is only one symbol with the same name
+;; in the current package, this effectively limits the possible number of
+;; candidates to one.
+;; 
+;; 3. the keyword is not one of the initargs of the class.  There are
+;; several slots whose names are string= to the keyword but none of them
+;; are visible from the current package. In this case, signal an error
+;; suggesting that the slot name be imported.
+;;
+;; 4. the keyword is not one of the initargs of the class.  There are no
+;; slots whose names are string= to the keyword either.  However there is a
+;; reader whose names are string= to <class>-<slot> or <class><slot> or
+;; <slot>.  similarly to the case 2. and case 3., they may or may not be
+;; visible from the current package. Also multiple cases
+;; (e.g. <class>-<slot> and <slot>) may match.
+
+
 (defun accessor-form (it type parsed1)
   "used when the type is a class, structure etc."
   (let ((c (find-class type)))
