@@ -176,6 +176,8 @@
     (typecase c
       (structure-class
        (accessor-form-on-structure it type parsed1))
+      (built-in-class
+       (accessor-form-on-built-in-class it type parsed1))
       (t
        ;; other metaclasses including standard-class
        (accessor-form-on-class it type parsed1)))))
@@ -243,6 +245,7 @@
        (cond
          ((setf reader (find-reader slot type))
           `((,reader ,it) ,pattern))
+         #+sbcl
          ((setf effslot (find-effective-slot slot type))
           `((slot-value ,it ',(c2mop:slot-definition-name effslot)) ,pattern))
          (t
