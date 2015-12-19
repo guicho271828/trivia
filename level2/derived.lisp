@@ -272,6 +272,8 @@ should be negated, but the test itself should remain T
       ,@(map-accessors (parse-slots slots)
                        it name))))
 
+;;; checking the class type predicate
+
 (defun easy-infer-type (fn-sym)
   "same thing as in type-i:unary-function. copied here in order to remove dependency"
   (let* ((name (symbol-name fn-sym))
@@ -296,10 +298,12 @@ should be negated, but the test itself should remain T
     (find-symbol (format nil "~a-P" name)
                  (symbol-package type))))
 
-;; should be rewritten with c2mop:class-slots and
-;; slot-definition-readers 
+;;; checking the slots
+;; KLUDGE: both optima and trivia have a very naive specification of which
+;; slot is actually used from the specified keyword, slot name and so on.
 
 (defun parse-slots (slots)
+  "canonicalize the slot into (symbol pattern) form"
   (ematch0 slots
     ((list) nil)
     ((list* (list name pattern) rest)
@@ -326,12 +330,12 @@ should be negated, but the test itself should remain T
                (parse-slots (list* next rest))))))))
 
 (defun map-accessors (parsed it type)
-  (let ((package (symbol-package type)))
-    (if (find-class type nil)
-        (mappend (curry #'map-accessors-class it package type) parsed)
-        (mappend (curry #'map-accessors-function it package type) parsed))))
+  (if (find-class type nil)
+      (mappend (curry #'map-accessors-class it type) parsed)
+      (mappend (curry #'map-accessors-function it type) parsed)))
 
-(defun map-accessors-class (it package type parsed1)
+(defun map-accessors-class (it type parsed1)
+  "used when the type is a class, structure etc."
   (let ((c (find-class type)))
     (ignore-errors
       (c2mop:finalize-inheritance c))
@@ -341,7 +345,7 @@ should be negated, but the test itself should remain T
              (if-let ((reader (first (c2mop:slot-definition-readers dslot))))
                `((,reader ,it) ,pattern)
                ;; structures
-               (if-let ((reader (hyphened type slot package)))
+               (if-let ((reader (hyphened type slot)))
                  `((,reader ,it) ,pattern)
                  (progn
                    (simple-style-warning
@@ -353,24 +357,7 @@ Maybe using conc-name for the structure-object?"
            ;; (simple-style-warning
            ;;  "Failed to find slot ~a in class ~a: Forced to infer function-based accessor"
            ;;  slot type)
-           (map-accessors-function it package type parsed1))))))
-
-(defun map-accessors-function (it package type parsed1)
-  (ematch0 parsed1
-    ((list slot pattern)
-     (let* ((h (hyphened type slot package))
-            (c (concname type slot package))
-            (n (nameonly type slot package))
-            (reader (cond ((fboundp h) h)
-                          ((fboundp c) c)
-                          ((fboundp n) n))))
-       (if reader
-           `((,reader ,it) ,pattern)
-           (progn
-             (simple-style-warning
-              "failed to find the accessor for slot ~a! Using ~a"
-              slot h)
-             `((,h ,it) ,pattern)))))))
+           (map-accessors-function it type parsed1))))))
 
 (defun find-direct-slot (slot/keyword c)
   (or (find slot/keyword (c2mop:class-direct-slots c)
@@ -382,27 +369,45 @@ Maybe using conc-name for the structure-object?"
               (find-direct-slot slot/keyword c))
             (c2mop:class-direct-superclasses c))))
 
-(defun hyphened (type slot package)
+(defun map-accessors-function (it type parsed1)
+  "Used when there are no such type. Certain naming conventions are
+recognized. The predicate should exist in the current package or it will
+not be recognized."
+  (ematch0 parsed1
+    ((list slot pattern)
+     (let* ((h (hyphened type slot))
+            (c (concname type slot))
+            (n (nameonly type slot))
+            (reader (cond ((fboundp h) h)
+                          ((fboundp c) c)
+                          ((fboundp n) n))))
+       (if reader
+           `((,reader ,it) ,pattern)
+           (progn
+             (simple-style-warning
+              "failed to find the accessor for slot ~a! Using ~a"
+              slot h)
+             `((,h ,it) ,pattern)))))))
+
+(defun hyphened (type slot)
   (when-let ((sym (find-symbol
                    (concatenate 'string
                                 (symbol-name type)
                                 "-"
-                                (symbol-name slot))
-                   package)))
-    sym))
+                                (symbol-name slot)))))
+    (when (fboundp sym) sym)))
 
-(defun concname (type slot package)
+(defun concname (type slot)
   (when-let ((sym (find-symbol
                    (concatenate 'string
                                 (symbol-name type)
-                                (symbol-name slot))
-                   package)))
-    sym))
+                                (symbol-name slot)))))
+    (when (fboundp sym) sym)))
 
-(defun nameonly (type slot package)
+(defun nameonly (type slot)
   (declare (ignorable type slot))
-  (when-let ((sym (find-symbol (symbol-name slot) package))) ; slot may be a keyword!
-    sym))
+  (when-let ((sym (find-symbol (symbol-name slot)))) ; slot may be a keyword!
+    (when (fboundp sym) sym)))
 
 
 (defpattern constant (x)
