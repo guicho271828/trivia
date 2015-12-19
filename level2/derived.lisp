@@ -369,25 +369,19 @@ Maybe using conc-name for the structure-object?"
               (find-direct-slot slot/keyword c))
             (c2mop:class-direct-superclasses c))))
 
+;;; searching accessor functions
+
 (defun map-accessors-function (it type parsed1)
   "Used when there are no such type. Certain naming conventions are
 recognized. The predicate should exist in the current package or it will
 not be recognized."
   (ematch0 parsed1
     ((list slot pattern)
-     (let* ((h (hyphened type slot))
-            (c (concname type slot))
-            (n (nameonly type slot))
-            (reader (cond ((fboundp h) h)
-                          ((fboundp c) c)
-                          ((fboundp n) n))))
-       (if reader
-           `((,reader ,it) ,pattern)
-           (progn
-             (simple-style-warning
-              "failed to find the accessor for slot ~a! Using ~a"
-              slot h)
-             `((,h ,it) ,pattern)))))))
+     (if-let ((reader (or (hyphened type slot)
+                          (concname type slot)
+                          (nameonly type slot))))
+       `((,reader ,it) ,pattern)
+       (error "Failed to find the accessor of slot ~a of type ~a!" slot type)))))
 
 (defun hyphened (type slot)
   (when-let ((sym (find-symbol
