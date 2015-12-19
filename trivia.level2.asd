@@ -13,6 +13,7 @@
   :components ((:file "package")
                (:file "impl")
                (:file "derived")
+               (:file "derived-class")
                (:file "derived2")
 	       (:file "derived3")
                (:file "derived-numbers")
