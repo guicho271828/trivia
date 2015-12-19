@@ -272,6 +272,7 @@ should be negated, but the test itself should remain T
       ,@(map-accessors (parse-slots slots)
                        it name))))
 
+
 ;;; checking the class type predicate
 
 (defun easy-infer-type (fn-sym)
@@ -301,6 +302,7 @@ should be negated, but the test itself should remain T
 ;;; checking the slots
 ;; KLUDGE: both optima and trivia have a very naive specification of which
 ;; slot is actually used from the specified keyword, slot name and so on.
+;; First, lets parse the slot specification patterns:
 
 (defun parse-slots (slots)
   "canonicalize the slot into (symbol pattern) form"
@@ -328,6 +330,40 @@ should be negated, but the test itself should remain T
        (symbol
         (list* (list something something)
                (parse-slots (list* next rest))))))))
+
+;; Next, lets review what is the most preferable method amoung several
+;; means of accessing the slot value of an object. SBCL manual states that
+;; (as of 2015/12/19):
+;;
+;; ----------quote starts here---------------
+;; 6.1 Slot access
+;; 6.1.1 Structure object slot access
+;; 
+;; Structure slot accessors are efficient only if the compiler
+;; is able to open code them: compiling a call to a structure
+;; slot accessor before the structure is defined, declaring one
+;; notinline, or passing it as a functional argument to another
+;; function causes severe performance degradation.
+;; 
+;; 6.1.2 Standard object slot access
+;; 
+;; The most efficient way to access a slot of a standard-object
+;; is by using slot-value with a constant slot name argument
+;; inside a defmethod body, where the variable holding the
+;; instance is a specializer parameter of the method and is
+;; never assigned to. The cost is roughly 1.6 times that of an
+;; open coded structure slot accessor.
+;; 
+;; Second most efficient way is to use a CLOS slot accessor, or
+;; slot-value with a constant slot name argument, but in
+;; circumstances other than specified above. This may be up to 3
+;; times as slow as the method described above.
+;; 
+;; ----------quote ends here---------------
+;;
+;; We consider the other implementation has the similar situation.
+
+;; We anyway distinguish the cases where there are any class naming type...
 
 (defun map-accessors (parsed it type)
   (if (find-class type nil)
