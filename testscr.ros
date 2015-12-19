@@ -10,9 +10,7 @@ exec ros -Q -- $0 "$@"
   (handler-case
       (progn
         (ql:quickload tsys)
-        (let ((results (fiveam:run sys)))
-          (5am:explain! results)
-          results))
+        (fiveam:run sys))
     (serious-condition (c)
       (describe c)
       (uiop:quit 2))))
@@ -20,8 +18,11 @@ exec ros -Q -- $0 "$@"
 (defun main (&rest argv)
   (declare (ignorable argv))
   (uiop:quit (if (every #'fiveam::TEST-PASSED-P
-                       (append (test :trivia.level0 :trivia.level0.test)
-                               (test :trivia.level1 :trivia.level1.test)
-                               (test :trivia :trivia.level2.test)
-                               (test :trivia.ppcre :trivia.ppcre.test)))
+                        (let ((results
+                               (append (test :trivia.level0 :trivia.level0.test)
+                                       (test :trivia.level1 :trivia.level1.test)
+                                       (test :trivia :trivia.level2.test)
+                                       (test :trivia.ppcre :trivia.ppcre.test))))
+                          (5am:explain! results)
+                          results))
                0 1)))
