@@ -159,7 +159,7 @@
               ((list)
                (when slots
                  (simple-style-warning "Found slots ~{~s~^, ~} but they are not EQ to ~s."
-                                       (mapcar #'c2mop:slot-definition-name slots) symbol))
+                                       (mapcar #'c2mop:slot-definition-name slots) symbol)))
               ((list slot) (return slot))))))))
 
 ;; Next, lets review what is the most preferable method amoung several
