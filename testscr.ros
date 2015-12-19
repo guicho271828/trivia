@@ -10,7 +10,9 @@ exec ros -Q -- $0 "$@"
   (handler-case
       (progn
         (ql:quickload tsys)
-        (fiveam:run sys))
+        (let ((results (fiveam:run sys)))
+          (5am:explain! results)
+          results))
     (serious-condition (c)
       (describe c)
       (uiop:quit 2))))
