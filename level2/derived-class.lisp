@@ -150,14 +150,16 @@
                                     :key (compose #'symbol-name
                                                   #'c2mop:slot-definition-name))
               ((list)
-               (simple-style-warning
-                "Found slots ~{~s~^, ~} but they are not accessible in the current package."
-                (mapcar #'c2mop:slot-definition-name slots)))
+               (when slots
+                 (simple-style-warning
+                  "Found slots ~{~s~^, ~} but they are not accessible in the current package."
+                  (mapcar #'c2mop:slot-definition-name slots))))
               ((list slot) (return slot)))
             (ematch0 (remove-if-not (curry #'eq symbol) slots :key #'c2mop:slot-definition-name)
               ((list)
-               (simple-style-warning "Found slots ~{~s~^, ~} but they are not EQ to ~s."
-                                     (mapcar #'c2mop:slot-definition-name slots) symbol))
+               (when slots
+                 (simple-style-warning "Found slots ~{~s~^, ~} but they are not EQ to ~s."
+                                       (mapcar #'c2mop:slot-definition-name slots) symbol)))
               ((list slot) (return slot))))))))
 
 ;; Next, lets review what is the most preferable method amoung several
