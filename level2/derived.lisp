@@ -367,10 +367,10 @@ should be negated, but the test itself should remain T
 
 (defun map-accessors (parsed it type)
   (if (find-class type nil)
-      (mappend (curry #'map-accessors-class it type) parsed)
-      (mappend (curry #'map-accessors-function it type) parsed)))
+      (mappend (curry #'accessor-form it type) parsed)
+      (mappend (curry #'accessor-form-using-function it type) parsed)))
 
-(defun map-accessors-class (it type parsed1)
+(defun accessor-form (it type parsed1)
   "used when the type is a class, structure etc."
   (let ((c (find-class type)))
     (ignore-errors
@@ -407,7 +407,7 @@ Maybe using conc-name for the structure-object?"
 
 ;;; searching accessor functions
 
-(defun map-accessors-function (it type parsed1)
+(defun accessor-form-using-function (it type parsed1)
   "Used when there are no such type. Certain naming conventions are
 recognized. The predicate should exist in the current package or it will
 not be recognized."
