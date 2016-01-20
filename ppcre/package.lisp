@@ -14,12 +14,16 @@
 
 (defpattern ppcre (regexp-and-options &rest subpatterns)
   (destructuring-bind (regexp &key start end sharedp) (ensure-list regexp-and-options)
-    (when (stringp regexp)
-      (let ((register-num (count :register (flatten (parse-string regexp)))))
-        (unless (= (length subpatterns) register-num)
-          (simple-style-warning
-           "The number of registers ~a in ~a is different than the # of subpatterns ~a in ~a!"
-           register-num regexp (length subpatterns) subpatterns))))
+    (typecase regexp
+      (string
+       (let ((register-num (count :register (flatten (parse-string regexp)))))
+         (unless (= (length subpatterns) register-num)
+           (simple-style-warning
+            "The number of registers ~a in ~a is different than the # of subpatterns ~a in ~a!"
+            register-num regexp (length subpatterns) subpatterns))))
+      (t
+       (simple-style-warning
+        "The given regexp is not a literal, and it prevents compile-time optimization")))
     (with-gensyms (it)
       `(guard1 ,it (stringp ,it)
                (nth-value 1 (scan-to-strings
