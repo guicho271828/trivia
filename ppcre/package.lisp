@@ -31,6 +31,10 @@
                (simple-vector* ,@subpatterns)))))
 
 (defmacro ppcre ((regexp &key start end sharedp) &rest subpatterns)
+  "Accepts both a short form and a long form.
+Long  form: ppcre (regexp &key start end sharedp) &rest subpatterns
+Short form: ppcre regexp &rest subpatterns
+"
   (declare (ignorable regexp start end sharedp subpatterns))
   (warn "stub!"))
 
