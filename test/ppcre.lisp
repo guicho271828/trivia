@@ -31,6 +31,10 @@
   (is (equal '("2012" "11" "04")
              (match "2012-11-04"
                ((ppcre "^(\\d+)-(\\d+)-(\\d+)$" year month day)
-                (list year month day))))))
+                (list year month day)))))
+  (is (equal "1"
+             (let ((url-regexp "^/user/(\\w+)/$"))
+               (match "/user/1/"
+                 ((ppcre url-regexp user-id) user-id))))))
 
 
