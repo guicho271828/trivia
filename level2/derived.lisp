@@ -224,13 +224,13 @@ should be negated, but the test itself should remain T
                          ,@(when test `(:test ,test)))) ,pattern)))
 
 (defpattern property (key pattern &optional (default nil) foundp)
-  (with-gensyms (it it2)
+  (with-gensyms (it it2 indicator)
     `(guard1 (,it :type list)
              (listp ,it)
-             (getf ,it ,key)
+             (getf ,it ,key ',indicator)
              (guard1 ,it2 t
-                     (if ,it2 t nil) ,foundp
-                     (or ,it2 ,default) ,pattern))))
+                     (if (eql ,it2 ',indicator) nil t) ,foundp
+                     (if (eql ,it2 ',indicator) ,default ,it2) ,pattern))))
 
 (defpattern alist (&rest args)
   `(and ,@(mapcar (lambda-match0
