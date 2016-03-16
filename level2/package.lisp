@@ -2,9 +2,8 @@
 (defpackage :trivia.level2
   (:use :trivia.level1)
   ;; level1
-  #.(let (acc)
-      (do-external-symbols (s :trivia.level1 `(:export ,@acc))
-        (push s acc)))
+  (:export :*or-pattern-allow-unshared-variables*
+           :match1 :guard1 :or1)
   (:export :match2 :match2* ; primitives
            :match2+ :match2*+
            :generate-multi-matcher
