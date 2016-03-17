@@ -183,6 +183,9 @@ The default value of &optional arguments are '_, instead of nil."
            (lambda ,args ,@body))))
 
 (defoptimizer :trivial (clauses &key &allow-other-keys)
+  "Trivial pattern-match optimizer which does not do any optimization.
+The number of checks increases linear to the number of clauses, and same checks could be run multiple times.
+However, it is less likely to contain bugs."
   clauses)
 
 ;;;; primitive apis
