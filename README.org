@@ -4,6 +4,7 @@
 + news! new pattern: lambda-list pattern. Contributed by akssri
 + news! new pattern: number-related patterns, e.g. >, <, =, <= ... 
 + news! Inline pattern implemented ! : @, @@ ...
++ *news!(04/02/2016)* Support for fare-quasiquote is now available. See =test/quasiquote= for the usage
 
 * Trivia : Trivial Pattern Matching Compiler
 
