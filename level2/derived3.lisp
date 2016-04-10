@@ -145,7 +145,7 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
            ;; match the keywords
            ,@(compile-keyword-patterns subpatterns)
            ;; compile the rest
-           ,(compile-destructuring-pattern rest)))
+           ,(compile-destructuring-pattern rest '_)))
     ((list (list* :aux subpatterns))
      `(guard1 ,(gensym) t ,@(mapcan #'(lambda (x)
                                         (destructuring-bind (var &optional expr) (ensure-list x)
