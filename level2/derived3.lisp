@@ -37,7 +37,7 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
   (let (results)
     (labels ((!lambda-list-keyword-p (thing) (not (member thing lambda-list-keywords)))
              (parse-whole (argv)
-               (match argv
+               (ematch argv
                  ((list* '&whole var rest)
                   (push (list :whole var) results)
                   (parse-required rest))
@@ -51,7 +51,7 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
                    ((type atom) (push (list :rest rest) results))
                    ((type cons) (parse-optional rest)))))
              (parse-optional (argv)
-               (match argv
+               (ematch argv
                  ((list* '&optional argv)
                   (multiple-value-bind (argv rest) (take-while argv #'!lambda-list-keyword-p)
                     (when argv (push `(:optional ,@(mapcar #'ensure-list argv)) results))
@@ -62,7 +62,7 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
                  (_
                   (parse-rest argv))))
              (parse-rest (argv)
-               (match argv
+               (ematch argv
                  ((list* (or '&rest '&body) var rest)
                   (push `(:rest ,var) results)
                   (parse-key rest))
@@ -78,7 +78,7 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
                         (list (and var (type variable-symbol)) subpattern)) ; ((var subpattern) nil supplied-p)
                     `((,var ,subpattern) ,@rest)))))
              (parse-key (argv)
-               (match argv
+               (ematch argv
                  ((list* '&key argv)
                   (multiple-value-bind (argv rest) (take-while argv #'!lambda-list-keyword-p)
                     (when argv
@@ -91,20 +91,16 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
                          (push `(:keyword ,@(mapcar #'compile-keyword-pattern argv)) results))))
                     (ematch rest
                       (nil)                ;do nothing
-                      ((type atom) (push (list :rest rest) results))
                       ((type cons) (parse-aux rest)))))
                  (_
                   (parse-aux argv))))
              (parse-aux (argv)
-               (match argv
+               (ematch argv
                  ((list* '&aux argv)
                   (multiple-value-bind (argv rest) (take-while argv #'!lambda-list-keyword-p)
                     (when argv (push `(:aux ,@(mapcar #'ensure-list argv)) results))
-                    (ematch rest
-                      (nil)                ; do nothing
-                      ((type atom) (push (list :rest rest) results))
-                      ((type cons)))))  ; do nothing
-                 (_))))                   ; do nothing
+                    (ematch rest (nil))))
+                 (nil))))
       (parse-whole argv)
       (nreverse results))))
 
@@ -115,7 +111,7 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
 ;; (parse-lambda-list '(a &optional (b 1 supplied) x)) ((:ATOM A) (:OPTIONAL (B 1 SUPPLIED) (X)))
 ;; (parse-lambda-list '(&whole whole a &optional (b 1 supplied) x)) ((:WHOLE WHOLE) (:ATOM A) (:OPTIONAL (B 1 SUPPLIED) (X)))
 
-(defun compile-destructuring-pattern (ops &optional (default '_))
+(defun compile-destructuring-pattern (ops &optional default)
   (match ops
     (nil default)
     ((list* (list :whole subpattern) rest)
@@ -133,7 +129,7 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
                       `((if ,lst t nil) ,supplied-p-pattern))
                   (cdr ,lst) ,(compile-destructuring-pattern `((:optional ,@more-subpatterns) ,@rest))))))
     ((list* (list :rest pattern) rest)
-     `(and ,pattern ,(compile-destructuring-pattern rest)))
+     `(and ,pattern ,(compile-destructuring-pattern rest '_)))
     ((list* (list* (and mode (or :keyword :keyword-allow-other-keys)) subpatterns) rest)
      ;; case 1,2 of the &key forms are already compiled into the 3rd form ; see parse-lambda-list
      `(and (type list)
@@ -149,14 +145,13 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
            ;; match the keywords
            ,@(compile-keyword-patterns subpatterns)
            ;; compile the rest
-           ,(compile-destructuring-pattern rest)))
+           ,(compile-destructuring-pattern rest '_)))
     ((list (list* :aux subpatterns))
      `(guard1 ,(gensym) t ,@(mapcan #'(lambda (x)
                                         (destructuring-bind (var &optional expr) (ensure-list x)
                                           (assert (typep var 'variable-symbol) nil "invalid lambda list")
                                           `(,expr ,var)))
                                     subpatterns)))))
-
 
 (defun compile-keyword-patterns (subpatterns)
   ;; FIXME: possible optimization --- copy-list the input and modify the
@@ -175,7 +170,7 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
 ;(compile-destructuring-pattern (parse-lambda-list '(a . b)))
 
 (defpattern lambda-list (&rest pattern)
-  (compile-destructuring-pattern (or (parse-lambda-list pattern) (error "invalid lambda list"))))
+  (compile-destructuring-pattern (parse-lambda-list pattern)))
 
 (defpattern λlist (&rest pattern)
-  (compile-destructuring-pattern (or (parse-lambda-list pattern) (error "invalid lambda list"))))
+  (compile-destructuring-pattern (parse-lambda-list pattern)))
