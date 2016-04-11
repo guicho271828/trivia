@@ -44,3 +44,14 @@
   ;; inline-pattern-expand is confused when the pattern contains non-pattern forms
   (finishes
     (inline-pattern-expand '(guard x (let ((y 1)) (= x y))))))
+
+(test issue-32
+  (match (list 1 2 3)
+    ((lambda-list 1 2)
+     (fail "should not match"))
+    (_
+     (pass)))
+  (signals error
+    (pattern-expand-1 `(lambda-list a &rest b &optional c)))
+  (signals error
+    (pattern-expand-1 `(lambda-list a &aux (c 2) &rest d))))
