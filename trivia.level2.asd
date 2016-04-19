@@ -14,6 +14,7 @@
   :components ((:file "package")
                (:file "docparser-interface")
                (:file "impl")
+               (:file "sugars")
                (:file "derived")
                (:file "derived-class")
                (:file "derived2")
