@@ -29,6 +29,12 @@
            :defun-match*
            :defun-ematch*
            :defun-cmatch*
+           :if-match
+           :when-match
+           :unless-match
+           :let-match
+           :let-match*
+           :let-match1
            ;; 
            :guard
            :alist
