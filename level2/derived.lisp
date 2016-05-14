@@ -215,30 +215,39 @@ should be negated, but the test itself should remain T
     (with-gensyms (it)
       `(guard1 ,it t (,accessor ,it) ,pattern))))
 
-(defpattern assoc (item pattern &key key test)
+(defpattern assoc (item subpattern &key key test)
+  "It matches when the object X is a list, and then further matches the contents
+returned by (cdr (assoc item X...)) against SUBPATTERN.
+If :KEY and :TEST is specified, they are passed to ASSOC."
   (with-gensyms (it)
     `(guard1 (,it :type list)
              (listp ,it)
              (cdr (assoc ,item ,it
                          ,@(when key `(:key ,key))
-                         ,@(when test `(:test ,test)))) ,pattern)))
+                         ,@(when test `(:test ,test)))) ,subpattern)))
 
-(defpattern property (key pattern &optional (default nil) foundp)
+(defpattern property (key subpattern &optional (default nil) foundp)
+  "It matches when the object X is a list, and then further matches the contents
+returned by (getf KEY X DEFAULT) against SUBPATTERN."
   (with-gensyms (it it2 indicator)
     `(guard1 (,it :type list)
              (listp ,it)
-             (getf ,it ,key ',indicator)
+             (getf ,it ,key ',indicator) ;; indicator is treated as a compile-time constant
              (guard1 ,it2 t
                      (if (eql ,it2 ',indicator) nil t) ,foundp
-                     (if (eql ,it2 ',indicator) ,default ,it2) ,pattern))))
+                     (if (eql ,it2 ',indicator) ,default ,it2) ,subpattern))))
 
 (defpattern alist (&rest args)
+  "alist and plist patterns expand into a collection of assoc and property patterns, respectively, connected
+by an and pattern."
   `(and ,@(mapcar (lambda-match0
                     ((cons key pattern)
                      `(assoc ,key ,pattern)))
                   args)))
 
 (defpattern plist (&rest args)
+  "alist and plist patterns expand into a collection of assoc and property patterns, respectively, connected
+by an and pattern."
   `(and ,@(mapcar (lambda-match0
                     ((cons key pattern)
                      `(property ,key ,pattern)))
@@ -247,6 +256,8 @@ should be negated, but the test itself should remain T
 ;;; special patterns
 
 (defpattern constant (x)
+  "The argument should be a load/read-time constant such as 5, '(2), #(1 2 3), #S(foo :a 1).
+   They are decomposed element-wise in the compile time, possibly merged by the optimizer in trivia."
   (typecase x
     (simple-base-string `(simple-base-string ,@(coerce x 'list)))
     (base-string `(base-string ,@(coerce x 'list)))
@@ -265,5 +276,9 @@ should be negated, but the test itself should remain T
 
 
 (defpattern place (place &optional eager)
+  "Declares the variable PLACE is setf-able.
+   Since this is implemented as a symbol-macrolet, if the object is accessed by some accessor function each
+   time, referencing PLACE would cause the invokation of the function each time. For this purpose, we also allow EAGER variable.
+   The value of EAGER will be invalidated when PLACE is modified."
   ;; optional arguments in defpattern is defaulted to _, not nil
   `(guard1 (,place :place t) t ,place ,eager))

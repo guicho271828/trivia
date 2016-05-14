@@ -169,8 +169,15 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
 
 ;(compile-destructuring-pattern (parse-lambda-list '(a . b)))
 
-(defpattern lambda-list (&rest pattern)
-  (compile-destructuring-pattern (parse-lambda-list pattern)))
+(defpattern lambda-list (&rest patterns)
+  "Matches to a list conforming to the lambda-list specified by PATTERN. In other words, it supports the same
+   arguments as DESTRUCTURING-BIND. For example,
 
-(defpattern λlist (&rest pattern)
-  (compile-destructuring-pattern (parse-lambda-list pattern)))
+  (1 2 3)   matches against        (lambda-list a b &optional c)
+  (1 2 3 4) does not match against (lambda-list a b &optional c)
+  (1 2 3 4 5) matches against      (lambda-list a b &rest rest), where rest is bound to '(3 4 5) "
+  (compile-destructuring-pattern (parse-lambda-list patterns)))
+
+(defpattern λlist (&rest patterns)
+  "Alias to lambda-list"
+  (compile-destructuring-pattern (parse-lambda-list patterns)))

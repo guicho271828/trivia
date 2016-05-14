@@ -2,8 +2,8 @@
 
 ;; patterns defined using level2 matchers and patterns
 
-;; matches against guard1 pattern (form) itself
 (defpattern $guard1 (sym options test more-patterns)
+  "matches against guard1 pattern (form) itself"
   (with-gensyms (symopts)
     `(list* 'guard1
             (guard1 ,symopts t
@@ -12,6 +12,7 @@
             ,test ,more-patterns)))
 
 (defpattern $or1 (sym options test more-patterns)
+  "matches against or1 pattern (form) itself"
   (with-gensyms (symopts)
     `(list* 'or1
             (guard ,symopts t
