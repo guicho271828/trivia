@@ -99,10 +99,11 @@ The default value of &optional arguments are '_, instead of nil."
      ,@(when (stringp (first body))
          ;; lisp-namespace
          `((setf (documentation ',name 'pattern)
-                 ,(format nil "~<Lambda-List: ~s~
-                                 ~@:_~<  ~@;~a~:>~
+                 ,(let ((*print-pretty* t))
+                    (format nil "~<Lambda-List: ~s~
+                                 ~:@_~<  ~@;~a~:>~
                                ~:>"
-                          (list args (list (first body)))))))))
+                            (list args (list (first body))))))))))
 
 
 (defmacro defpattern-inline (name args &body body)
