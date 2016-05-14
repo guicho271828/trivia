@@ -7,12 +7,10 @@
   :depends-on (:trivia.level1
                :lisp-namespace
                :closer-mop
-               :docparser
                )
   :pathname "level2/"
   :serial t
   :components ((:file "package")
-               (:file "docparser-interface")
                (:file "impl")
                (:file "sugars")
                (:file "derived")
