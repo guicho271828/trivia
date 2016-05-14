@@ -114,7 +114,15 @@ The default value of &optional arguments are '_, instead of nil."
            #+sbcl
            (sb-int:named-lambda ',name ,(process-lambda-args args) ,@body)
            #-sbcl
-           (lambda ,(process-lambda-args args) ,@body))))
+           (lambda ,(process-lambda-args args) ,@body))
+     ,@(when (stringp (first body))
+         ;; lisp-namespace
+         `((setf (documentation ',name 'inline-pattern)
+                 ,(let ((*print-pretty* t))
+                    (format nil "~<Lambda-List: ~s~
+                                 ~:@_~<  ~@;~a~:>~
+                               ~:>"
+                            (list args (list (first body))))))))))
 
 
 (defun inline-pattern-expand (p)
@@ -174,7 +182,7 @@ The default value of &optional arguments are '_, instead of nil."
      (list* (list name default pred) (process-optional-args rest)))
     ((list* name rest)
      (list* (list name ''_) (process-optional-args rest)))))
-      
+
 ;;;; optimizer database
 (lispn:define-namespace optimizer (function (list &key &allow-other-keys) list))
 (defvar *optimizer* :trivial)
@@ -188,7 +196,15 @@ The default value of &optional arguments are '_, instead of nil."
            #+sbcl
            (sb-int:named-lambda ',name ,args ,@body)
            #-sbcl
-           (lambda ,args ,@body))))
+           (lambda ,args ,@body))
+     ,@(when (stringp (first body))
+         ;; lisp-namespace
+         `((setf (documentation ',name 'optimizer)
+                 ,(let ((*print-pretty* t))
+                    (format nil "~<Lambda-List: ~s~
+                                 ~:@_~<  ~@;~a~:>~
+                               ~:>"
+                            (list args (list (first body))))))))))
 
 (defoptimizer :trivial (clauses &key &allow-other-keys)
   "Trivial pattern-match optimizer which does not do any optimization.

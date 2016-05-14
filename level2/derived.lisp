@@ -256,6 +256,8 @@ by an and pattern."
 ;;; special patterns
 
 (defpattern constant (x)
+  "The argument should be a load/read-time constant such as 5, '(2), #(1 2 3), #S(foo :a 1).
+   They are decomposed element-wise in the compile time, possibly merged by the optimizer in trivia."
   (typecase x
     (simple-base-string `(simple-base-string ,@(coerce x 'list)))
     (base-string `(base-string ,@(coerce x 'list)))
@@ -274,5 +276,9 @@ by an and pattern."
 
 
 (defpattern place (place &optional eager)
+  "Declares the variable PLACE is setf-able.
+   Since this is implemented as a symbol-macrolet, if the object is accessed by some accessor function each
+   time, referencing PLACE would cause the invokation of the function each time. For this purpose, we also allow EAGER variable.
+   The value of EAGER will be invalidated when PLACE is modified."
   ;; optional arguments in defpattern is defaulted to _, not nil
   `(guard1 (,place :place t) t ,place ,eager))
