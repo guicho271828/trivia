@@ -87,7 +87,6 @@ just like macroexpand"
       ((list* 'or1 subpatterns)
        (list* 'or1 (mapcar #'pattern-expand-all subpatterns))))))
 
-
 (defmacro defpattern (name args &body body)
   "Adds a new derived pattern.
 The default value of &optional arguments are '_, instead of nil."
@@ -96,7 +95,15 @@ The default value of &optional arguments are '_, instead of nil."
            #+sbcl
            (sb-int:named-lambda ',name ,(process-lambda-args args) ,@body)
            #-sbcl
-           (lambda ,(process-lambda-args args) ,@body))))
+           (lambda ,(process-lambda-args args) ,@body))
+     ,@(when (stringp (first body))
+         ;; lisp-namespace
+         `((setf (documentation ',name 'pattern)
+                 ,(format nil "~<Lambda-List: ~s~
+                                 ~@:_~<  ~@;~a~:>~
+                               ~:>"
+                          (list args (list (first body)))))))))
+
 
 (defmacro defpattern-inline (name args &body body)
   "Adds a new inlined derived pattern. These patterns are evaluated from the innermost ones.
