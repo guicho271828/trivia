@@ -215,30 +215,39 @@ should be negated, but the test itself should remain T
     (with-gensyms (it)
       `(guard1 ,it t (,accessor ,it) ,pattern))))
 
-(defpattern assoc (item pattern &key key test)
+(defpattern assoc (item subpattern &key key test)
+  "It matches when the object X is a list, and then further matches the contents
+returned by (cdr (assoc item X...)) against SUBPATTERN.
+If :KEY and :TEST is specified, they are passed to ASSOC."
   (with-gensyms (it)
     `(guard1 (,it :type list)
              (listp ,it)
              (cdr (assoc ,item ,it
                          ,@(when key `(:key ,key))
-                         ,@(when test `(:test ,test)))) ,pattern)))
+                         ,@(when test `(:test ,test)))) ,subpattern)))
 
-(defpattern property (key pattern &optional (default nil) foundp)
+(defpattern property (key subpattern &optional (default nil) foundp)
+  "It matches when the object X is a list, and then further matches the contents
+returned by (getf KEY X DEFAULT) against SUBPATTERN."
   (with-gensyms (it it2 indicator)
     `(guard1 (,it :type list)
              (listp ,it)
-             (getf ,it ,key ',indicator)
+             (getf ,it ,key ',indicator) ;; indicator is treated as a compile-time constant
              (guard1 ,it2 t
                      (if (eql ,it2 ',indicator) nil t) ,foundp
-                     (if (eql ,it2 ',indicator) ,default ,it2) ,pattern))))
+                     (if (eql ,it2 ',indicator) ,default ,it2) ,subpattern))))
 
 (defpattern alist (&rest args)
+  "alist and plist patterns expand into a collection of assoc and property patterns, respectively, connected
+by an and pattern."
   `(and ,@(mapcar (lambda-match0
                     ((cons key pattern)
                      `(assoc ,key ,pattern)))
                   args)))
 
 (defpattern plist (&rest args)
+  "alist and plist patterns expand into a collection of assoc and property patterns, respectively, connected
+by an and pattern."
   `(and ,@(mapcar (lambda-match0
                     ((cons key pattern)
                      `(property ,key ,pattern)))
