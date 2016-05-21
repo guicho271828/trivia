@@ -554,6 +554,9 @@
             (guard (list shader name type value)
                    (string-equal (symbol-name shader) "shader"))))
 
+;; on clisp, fixnum is not recognized as an instance of built-in-class
+#-clisp
+(progn
 (defgeneric plus (a b))
 (defmethod plus ((a fixnum) (b fixnum))
   (+ a b))
@@ -571,4 +574,4 @@
       (is-true method-combination)
       (is (= 2 (length lambda-list)))
       (is (equal '(a b) argument-precedence-order)))))
-
+)
