@@ -13,12 +13,12 @@ env:
     - PATH=~/.roswell/bin:$PATH
     - ROSWELL_INSTALL_DIR=$HOME/.roswell
   matrix:
+    - LISP=ecl
+    - LISP=cmucl
     - LISP=sbcl-bin
     - LISP=ccl-bin
     - LISP=abcl
     - LISP=clisp
-    - LISP=ecl
-    - LISP=cmucl
     - LISP=alisp
 
 matrix:
