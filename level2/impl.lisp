@@ -103,10 +103,14 @@ The default value of &optional arguments are '_, instead of nil."
          ;; lisp-namespace
          `((setf (documentation ',name 'pattern)
                  ,(let ((*print-pretty* t))
+                    #-clisp
                     (format nil "~<Lambda-List: ~s~
                                  ~:@_~<  ~@;~a~:>~
                                ~:>"
-                            (list args (list (first body))))))))))
+                            (list args (list (first body))))
+                    #+clisp
+                    (format nil "Lambda-List: ~s~%~a"
+                            args (first body))))))))
 
 
 (defmacro defpattern-inline (name args &body body)
@@ -122,10 +126,14 @@ The default value of &optional arguments are '_, instead of nil."
          ;; lisp-namespace
          `((setf (documentation ',name 'inline-pattern)
                  ,(let ((*print-pretty* t))
+                    #-clisp
                     (format nil "~<Lambda-List: ~s~
                                  ~:@_~<  ~@;~a~:>~
                                ~:>"
-                            (list args (list (first body))))))))))
+                            (list args (list (first body))))
+                    #+clisp
+                    (format nil "Lambda-List: ~s~%~a"
+                            args (first body))))))))
 
 
 (defun inline-pattern-expand (p)
@@ -204,10 +212,14 @@ The default value of &optional arguments are '_, instead of nil."
          ;; lisp-namespace
          `((setf (documentation ',name 'optimizer)
                  ,(let ((*print-pretty* t))
+                    #-clisp
                     (format nil "~<Lambda-List: ~s~
                                  ~:@_~<  ~@;~a~:>~
                                ~:>"
-                            (list args (list (first body))))))))))
+                            (list args (list (first body))))
+                    #+clisp
+                    (format nil "Lambda-List: ~s~%~a"
+                            args (first body))))))))
 
 (defoptimizer :trivial (clauses &key &allow-other-keys)
   "Trivial pattern-match optimizer which does not do any optimization.
