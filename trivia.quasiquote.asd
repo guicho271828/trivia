@@ -4,7 +4,7 @@
   :version "0.1"
   :license "LLGPL"
   :author "Masataro Asai"
-  :mailto "guicho2.71828@gmail.com"
+  #+asdf3 :mailto #+asdf3 "guicho2.71828@gmail.com"
   :depends-on (:fare-quasiquote-readtable :trivia)
   :pathname "quasiquote/"
   :components ((:file "quasiquote"))
