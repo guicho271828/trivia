@@ -4,6 +4,14 @@
 exec ros -Q -- $0 "$@"
 |#
 
+(print (lisp-implementation-type))
+(print (lisp-implementation-version))
+(print (software-type))
+(print (software-version))
+(print (machine-instance))
+(print (machine-type))
+(print (machine-version))
+(print (long-site-name))
 (ql:register-local-projects)
 (ql:quickload :uiop)
 (ql:quickload :fiveam)
