@@ -25,7 +25,7 @@
        (simple-style-warning
         "The given regexp is not a literal, and it prevents compile-time optimization")))
     (with-gensyms (it)
-      `(guard1 ,it (stringp ,it)
+      `(guard1 (,it :type string) (stringp ,it)
                (nth-value 1 (scan-to-strings
                              ,regexp ,it
                              ,@(when start `(:start ,start))
