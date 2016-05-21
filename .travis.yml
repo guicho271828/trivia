@@ -27,6 +27,7 @@ matrix:
 
 install:
   - curl -L https://raw.githubusercontent.com/snmsts/roswell/release/scripts/install-for-ci.sh | sh
+  - cd ~/lisp/ ; git clone https://github.com/guicho271828/lisp-namespace.git
 
 cache:
   directories:
