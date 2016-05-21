@@ -1,4 +1,4 @@
-(asdf:defsystem :trivia.level2.docparser
+(defsystem :trivia.level2.docparser
   :description "docparser interface to trivia patterns"
   :version "0.1"
   :author "Masataro Asai"

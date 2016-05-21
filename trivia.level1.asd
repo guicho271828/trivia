@@ -1,4 +1,4 @@
-(asdf:defsystem :trivia.level1
+(defsystem :trivia.level1
   :description "Core patterns of Trivia"
   :version "0.1"
   :author "Masataro Asai"

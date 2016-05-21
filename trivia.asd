@@ -1,4 +1,4 @@
-(asdf:defsystem :trivia
+(defsystem :trivia
   :description "NON-optimized pattern matcher compatible with OPTIMA, with extensible optimizer interface and clean codebase"
   :long-description #.(with-open-file (stream (merge-pathnames
                                                #p"README.org"

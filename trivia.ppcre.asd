@@ -1,4 +1,4 @@
-(asdf:defsystem :trivia.ppcre
+(defsystem :trivia.ppcre
   :description "PPCRE extention of trivia"
   :version "0.1"
   :author "Masataro Asai"

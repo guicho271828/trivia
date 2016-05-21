@@ -1,4 +1,4 @@
-(asdf:defsystem :trivia.level0.test
+(defsystem :trivia.level0.test
     :author "Masataro Asai"
     :mailto "guicho2.71828@gmail.com"
     :description "Test system of trivia.level0"
