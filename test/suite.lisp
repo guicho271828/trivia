@@ -436,6 +436,8 @@
   (is (eql 0
            (match '(0) ((list (and x (guard it (numberp it)))) x)))))
 
+;; This is from https://github.com/m2ym/optima/issues/38 , but no description is given and it's not clear why
+;; this should not be allowed.
 #+nil
 (test issue38
   (signals error
