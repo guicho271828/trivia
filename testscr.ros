@@ -5,6 +5,7 @@ exec ros -Q -- $0 "$@"
 |#
 
 (ql:register-local-projects)
+(ql:quickload :uiop)
 (ql:quickload :fiveam)
 
 (defun test (sys tsys)
