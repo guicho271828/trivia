@@ -5,6 +5,7 @@ machine:
 dependencies:
   pre:
     - curl -L https://raw.githubusercontent.com/snmsts/roswell/master/scripts/install-for-ci.sh | sh
+    - cd ~/lisp/ ; git clone https://github.com/guicho271828/lisp-namespace.git
     - ros install ccl-bin
     - ros install clisp
     - ros install abcl-bin
