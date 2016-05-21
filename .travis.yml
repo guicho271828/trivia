@@ -23,10 +23,6 @@ env:
 
 matrix:
   allow_failures:
-    - env: LISP=clisp
-    - env: LISP=abcl
-    - env: LISP=ecl
-    - env: LISP=cmucl
     - env: LISP=alisp
 
 install:
