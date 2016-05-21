@@ -25,6 +25,7 @@ exec ros -Q -- $0 "$@"
                                        (test :trivia.level1 :trivia.level1.test)
                                        (test :trivia :trivia.level2.test)
                                        (test :trivia.ppcre :trivia.ppcre.test)
+                                       #+(and asdf3 (not cmu))
                                        (test :trivia.quasiquote :trivia.quasiquote.test))))
                           (5am:explain! results)
                           results))
