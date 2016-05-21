@@ -4,6 +4,7 @@
     :description "Test system of trivia.level2"
     :depends-on (:fiveam :trivia.level2)
     :pathname "test/"
+    :serial t
     :components ((:file "suite")
                  (:file "level2"))
     :perform (test-op :after (op c)
