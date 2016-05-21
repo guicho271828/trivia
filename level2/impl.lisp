@@ -26,7 +26,10 @@
                 ((constantp p) `(constant ,p)) ;; see derived
                 ((wildcardp p)
                  (restart-case
-                     (signal 'wildcard) ;; upper pattern-expand would handle this
+                     ;; upper pattern-expand would handle this.
+                     ;; below is a workaround for ECL's bug in with-condition-restart
+                     #+ecl (progn (signal 'wildcard))
+                     #-ecl (signal 'wildcard)
                    (continue ()))
                  (with-gensyms (it) `(guard1 ,it t)))
                 ((variablep p)
@@ -328,8 +331,10 @@ or results in a compilation error when this is the outermost matching construct.
      (destructuring-bind (&key (deferred nil supplied-p) &allow-other-keys) fields
        (when supplied-p
          (restart-case
-             (signal 'deferred :test deferred)
-           (continue ()))))
+             ;; workaround for ECL bug;
+             #-ecl (signal 'deferred :test deferred)
+             #+ecl (signal (make-condition 'deferred :test deferred))
+             (continue ()))))
      (list* 'guard1 (list* sym fields) test
             (alist-plist
              (mapcar (lambda-ematch0
