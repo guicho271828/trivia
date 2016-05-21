@@ -493,8 +493,8 @@
 
 
 (test next
-  ;; optima:fail --> trivia:next : it causes synbol conflict with fiveam
-  ;; and not convenient but note that it you :use optima.fail package, it
+  ;; optima:fail --> trivia:next : it causes symbol conflict with fiveam
+  ;; and not convenient but note that it you :use trivia.fail package, it
   ;; exports 'trivia:fail, same functionality as in optima
   (is-false (match 1 (1 (next))))
   (is-true (match 1
@@ -538,7 +538,7 @@
        (next))))
 
   (let ((x `(match2 1 (1 (next)))))
-    (signals PROGRAM-ERROR
+    (signals ERROR ;; not necessarily PROGRAM-ERROR
       ;; using `next' in the last clause of match2
       (eval x))))
 
