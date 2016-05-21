@@ -25,11 +25,15 @@
 ;;; Pattern matching
 
 (defmacro is-match (arg pattern)
-  `(is-true (match ,arg (,pattern t))
+  `(is-true (locally
+                (declare (optimize (safety 3) (debug 3) (speed 0)))
+              (match ,arg (,pattern t)))
             ,(format nil "~<pattern ~a did not match against arg ~s~:@>" (list pattern arg))))
 
 (defmacro is-not-match (arg pattern)
-  `(is-false (match ,arg (,pattern t))
+  `(is-false (locally
+                 (declare (optimize (safety 3) (debug 3) (speed 0)))
+               (match ,arg (,pattern t)))
              ,(format nil "~<pattern ~a matched against arg ~s~:@>" (list pattern arg))))
 
 (test constant-pattern
