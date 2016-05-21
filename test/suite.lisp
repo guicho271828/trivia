@@ -117,7 +117,8 @@
 (test property
   (is-match '(:a 1) (property :a 1))
   (is-match '(:a 1 :b 2) (property :a 1))
-  (is-match '(:a 1 2) (property :a 1))
+  ;; NOTE: depends on SAFETY setting, it may signal type-error
+  ;; (is-match '(:a 1 2) (property :a 1))
   (is-match '(1 2 :b 3) (property :b 3))
   ;; NOTE: incompatibility --- first argument to property should be quoted or constant
   ;; (is-match '(a 1) (property a 1))
