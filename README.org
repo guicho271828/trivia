@@ -6,6 +6,7 @@
 + news! Inline pattern implemented ! : @, @@ ...
 + *news!(04/02/2016)* Support for fare-quasiquote is now available. See =test/quasiquote= for the usage
 + *news!(04/22/2016)* Added metabang-bind like macros =if-match=, =when-match=, =unless-match=, =let-match=, =let*-match=, =let-match1=
++ *news!(05/21/2016)* Added support for minor implementations: CMU, ECL, CLISP, ABCL.
 
 * Trivia : Trivial Pattern Matching Compiler
 
