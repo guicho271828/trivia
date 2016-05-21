@@ -6,6 +6,10 @@ dependencies:
   pre:
     - curl -L https://raw.githubusercontent.com/snmsts/roswell/master/scripts/install-for-ci.sh | sh
     - ros install ccl-bin
+    - ros install clisp
+    - ros install abcl-bin
+    - ros install ecl
+    - ros install cmu-bin
   cache_directories:
     - ~/.roswell/
 
@@ -13,3 +17,7 @@ test:
   override:
     - ros -L sbcl-bin testscr.ros
     - ros -L ccl-bin testscr.ros
+    - ros -L clisp testscr.ros
+    - ros -L ecl testscr.ros
+    - ros -L abcl-bin testscr.ros
+    - ros -L cmu-bin testscr.ros
