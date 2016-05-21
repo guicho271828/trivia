@@ -6,4 +6,4 @@
     :pathname "test/"
     :serial t
     :components ((:file "ppcre"))
-    :perform (test-op :after (op c) (eval (read-from-string "(every #'fiveam::TEST-PASSED-P (5am:run! :trivia.ppcre))"))))
+    :perform (test-op :after (op c) (eval (read-from-string "(5am:run! :trivia.ppcre)"))))

@@ -11,5 +11,4 @@
   :perform (test-op :after (op c)
                     (eval
                      (read-from-string
-                      "(every #'fiveam::TEST-PASSED-P
-                         (5am:run! :trivia.quasiquote))"))))
+                      "(5am:run! :trivia.quasiquote)"))))
