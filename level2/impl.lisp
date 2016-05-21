@@ -26,7 +26,10 @@
                 ((constantp p) `(constant ,p)) ;; see derived
                 ((wildcardp p)
                  (restart-case
-                     (signal 'wildcard) ;; upper pattern-expand would handle this
+                     ;; upper pattern-expand would handle this.
+                     ;; below is a workaround for ECL's bug in with-condition-restart
+                     #+ecl (progn (signal 'wildcard))
+                     #-ecl (signal 'wildcard)
                    (continue ()))
                  (with-gensyms (it) `(guard1 ,it t)))
                 ((variablep p)
@@ -100,10 +103,14 @@ The default value of &optional arguments are '_, instead of nil."
          ;; lisp-namespace
          `((setf (documentation ',name 'pattern)
                  ,(let ((*print-pretty* t))
+                    #-clisp
                     (format nil "~<Lambda-List: ~s~
                                  ~:@_~<  ~@;~a~:>~
                                ~:>"
-                            (list args (list (first body))))))))))
+                            (list args (list (first body))))
+                    #+clisp
+                    (format nil "Lambda-List: ~s~%~a"
+                            args (first body))))))))
 
 
 (defmacro defpattern-inline (name args &body body)
@@ -119,10 +126,14 @@ The default value of &optional arguments are '_, instead of nil."
          ;; lisp-namespace
          `((setf (documentation ',name 'inline-pattern)
                  ,(let ((*print-pretty* t))
+                    #-clisp
                     (format nil "~<Lambda-List: ~s~
                                  ~:@_~<  ~@;~a~:>~
                                ~:>"
-                            (list args (list (first body))))))))))
+                            (list args (list (first body))))
+                    #+clisp
+                    (format nil "Lambda-List: ~s~%~a"
+                            args (first body))))))))
 
 
 (defun inline-pattern-expand (p)
@@ -201,10 +212,14 @@ The default value of &optional arguments are '_, instead of nil."
          ;; lisp-namespace
          `((setf (documentation ',name 'optimizer)
                  ,(let ((*print-pretty* t))
+                    #-clisp
                     (format nil "~<Lambda-List: ~s~
                                  ~:@_~<  ~@;~a~:>~
                                ~:>"
-                            (list args (list (first body))))))))))
+                            (list args (list (first body))))
+                    #+clisp
+                    (format nil "Lambda-List: ~s~%~a"
+                            args (first body))))))))
 
 (defoptimizer :trivial (clauses &key &allow-other-keys)
   "Trivial pattern-match optimizer which does not do any optimization.
@@ -328,8 +343,10 @@ or results in a compilation error when this is the outermost matching construct.
      (destructuring-bind (&key (deferred nil supplied-p) &allow-other-keys) fields
        (when supplied-p
          (restart-case
-             (signal 'deferred :test deferred)
-           (continue ()))))
+             ;; workaround for ECL bug;
+             #-ecl (signal 'deferred :test deferred)
+             #+ecl (signal (make-condition 'deferred :test deferred))
+             (continue ()))))
      (list* 'guard1 (list* sym fields) test
             (alist-plist
              (mapcar (lambda-ematch0

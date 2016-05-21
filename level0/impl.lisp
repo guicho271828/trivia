@@ -74,6 +74,8 @@
                       `(cons ,car nil))))
                `(null ,*what*)))
           (list*
+           (assert (not (null args)) nil "invalid list* pattern: needs at least 1 arg")
+           ;; FIXME most lisps allow destructuring-bind on NIL ; ABCL does not. bug?
            (destructuring-bind (car . cdr) args
              (make-pattern-predicate
               (if cdr

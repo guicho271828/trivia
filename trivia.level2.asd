@@ -1,8 +1,8 @@
-(asdf:defsystem :trivia.level2
+(defsystem :trivia.level2
   :description "NON-optimized pattern matcher compatible with OPTIMA, with extensible optimizer interface and clean codebase"
   :version "0.1"
   :author "Masataro Asai"
-  :mailto "guicho2.71828@gmail.com"
+  #+asdf3 :mailto #+asdf3 "guicho2.71828@gmail.com"
   :license "LLGPL"
   :depends-on (:trivia.level1
                :lisp-namespace
