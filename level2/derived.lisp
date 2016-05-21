@@ -1,6 +1,7 @@
 (in-package :trivia.level2.impl)
 
 (defpattern and (&rest subpatterns)
+  "Match when all subpatterns match."
   (expand-and subpatterns))
 (defun expand-and (subpatterns)
   (ematch0 subpatterns
@@ -49,6 +50,8 @@
                  ,@(wrap-test symopts tests more-patterns))))))
 
 (defpattern guard (subpattern test-form &rest more-patterns)
+  "If SUBPATTERN matches, TEST-FORM is evaluated under the lexical binding of variables in SUBPATTERN.
+If TEST-FORM returns true, matching to MORE-PATTERNS are performed."
   (with-gensyms (guard)
     `(and ,subpattern
           (guard1 (,guard :deferred ,test-form) t ,@more-patterns))))
@@ -95,6 +98,8 @@ should be negated, but the test itself should remain T
         `(guard1 ,sym (not ,test)))))
 
 (defpattern not (subpattern)
+  "Matches when the SUBPATTERN does not match.
+Variables in the subpattern are treated as dummy variables, and will not be visible from the clause body."
   (ematch0 (pattern-expand subpattern)
     ((list* 'guard1 sym test guard1-subpatterns)
          ;; no symbols are visible from the body
@@ -117,25 +122,32 @@ should be negated, but the test itself should remain T
                      or-subpatterns)))))
 
 (defpattern or (&rest subpatterns)
+  "Match when some subpattern match."
   `(or1 ,@subpatterns))
 
 (defpattern quote (x)
+  "Wrapper to the constant pattern."
   `(constant ',x))
 
-(defpattern cons (a b)
+(defpattern cons (car cdr)
+  "Match against a cons cell."
   (with-gensyms (it)
-    `(guard1 (,it :type cons) (consp ,it) (car ,it) ,a (cdr ,it) ,b)))
+    `(guard1 (,it :type cons) (consp ,it) (car ,it) ,car (cdr ,it) ,cdr)))
 
 (defpattern null ()
+  "Match against a constant NIL."
   (with-gensyms (it)
     `(guard1 (,it :type null) (null ,it))))
 
 (defpattern list (&rest args)
+  "Match against a list with a specified length."
   (if args
       `(cons ,(car args) (list ,@(cdr args)))
       `(null)))
 
 (defpattern list* (&rest args)
+  "Match against a list with an unspecified length.
+The last argument is matched against the rest of the list."
   (if (cdr args)
       `(cons ,(car args) (list* ,@(cdr args)))
       (car args)))
@@ -175,6 +187,7 @@ should be negated, but the test itself should remain T
 (set-vector-matcher 'simple-vector 'svref nil t)
 
 (defpattern sequence (&rest args)
+  "Match against any sequence."
   (with-gensyms (it)
     `(guard1 (,it :type sequence)
              (typep ,it 'sequence)
@@ -184,6 +197,7 @@ should be negated, but the test itself should remain T
                         (iota (length args))))))
 
 (defpattern satisfies (predicate-name)
+  "Match when (PREDICATE-NAME OBJ) returns true."
   (with-gensyms (it)
     `(guard1 ,it (,predicate-name ,it))))
 
@@ -203,11 +217,13 @@ should be negated, but the test itself should remain T
 
 
 (defpattern type (type-specifier)
+  "Match when (typep OBJ type-specifier) returns true."
   (with-gensyms (it)
     `(guard1 (,it :type ,type-specifier)
              (typep ,it ',type-specifier))))
 
 (defpattern access (accessor pattern)
+  "Matches PATTERN against the result of calling ACCESSOR."
   (let ((accessor (ematch0 accessor
                     ((list 'function name) name)
                     ((list 'quote name) name)

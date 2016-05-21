@@ -3,10 +3,62 @@
 ;;;; class pattern etc.
 
 (defpattern class (name &rest slots)
+  "Synonym to STRUCTURE pattern."
   ;; in v2, class pattern is just a sugar
   `(structure ,name ,@slots))
 
 (defpattern structure (name &rest slots)
+  "Complex pattern. Matches against a structure or a class named NAME.
+Match the slots against the subpatterns described in SLOTS.
+In order to maintain compatibility to OPTIMA, these slot specifications are very complex.
+
+Long description:
+
+NAME
+
+A symbol which satisfies one of the following:
+    (find-class '<NAME>) returns a class.
+    Symbol <NAME>-p in the same package is fbound. It should be a unary function, or the consequence is undefined.
+    Symbol <NAME>p in the same package is fbound. It should be a unary function, or the consequence is undefined.
+
+    Note that since the existence of the actual class <NAME> is not required, it is permissible to assume a
+    normal function like STRINGP or PATHNAMEP (including user-defined function like MYPRED-P) in the second
+    and the third case.
+
+SLOTS
+
+one of the following:
+
+make-instance style plist:  :keyword subpattern
+    Example:  (structure myclass :slot-a (list a b))
+with-slots style:           (slot-name subpattern)
+    Example:  (structure myclass (slot-a (list a b)))
+with-accessors style: (accessor-name subpattern)
+
+    accessor-name is a symbol, where the corresponding accessor function should be fbound to one of the
+    following symbols:
+
+        Symbol accessor-name itself. (common style for generic functions)
+        Symbol <class-name>-<accessor-name> in the same package. (common style for structure accessor functions)
+        Symbol <class-name><accessor-name> in the same package. (compatibility to Optima)
+
+        Example: (structure mystructure (a (list a b))) tries to find an accessor named either A ,
+        MYSTRUCTURE-A or MYSTRUCTUREA .
+
+slot-name :
+
+     The value returned by (slot-value <obj> '<slot-name>) is bound to the variable of the same name. Consider
+     it as an abbreviation of (slot-name slot-name).
+
+     Example : (structure myclass slot-a)
+
+accessor-name :
+
+     The value returned by the accessor is bound to the variable of the same name.  Consider it as an
+     abbreviation of (accessor-name accessor-name).
+
+     Example : (structure mystructure a)
+"
   (with-gensyms (it)
     `(guard1
       ,@(cond
