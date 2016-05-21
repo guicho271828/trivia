@@ -238,6 +238,22 @@
 
 (define-condition place-pattern (warning) ())
 
+(defvar *trace-dispatching* nil
+  "Used only for debugging. When non-nil, test-form for pattern matching is printed on the stream.")
+
+(defmacro trace-when (condition &rest body)
+  "Evaluate and print the result of the form when *trace-dispatching* is non-nil."
+  (with-gensyms (result trace-block)
+    (if *trace-dispatching*
+        `(block ,trace-block
+           (let ((,result ,condition))
+             (pprint-logical-block (*trace-output* nil :per-line-prefix "| ")
+               (pprint-indent :block 2 *trace-output*)
+               (format *trace-output* "dispatch result: ~s -> ~s~:@_" ',condition ,result)
+               (return-from ,trace-block
+                 (when ,result ,@body)))))
+        `(when ,condition ,@body))))
+
 (defun match-clause (arg pattern body)
   ;; All patterns are corrected by correct-pattern. The first argument of
   ;; guard1 patterns are converted into a list (symbol &key
@@ -258,7 +274,7 @@
                  (if (eq t test-form)
                      ;; remove redundunt IF. x contains a return to NIL==toplevel.
                      x
-                     `(when ,test-form ,x)))
+                     `(trace-when ,test-form ,x)))
                (let ((type (getf options :type)))
                  ((lambda (x)
                     (if (eq t type) x ;; remove redundunt DECLARE

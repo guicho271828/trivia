@@ -16,6 +16,9 @@
 
 (in-package :trivia.test)
 
+;; for debugging purpose
+;; (setf *trace-dispatching* t)
+
 (def-suite :trivia)
 (in-suite :trivia)
 

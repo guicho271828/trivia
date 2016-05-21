@@ -8,7 +8,9 @@
            :guard1-pattern-nonlinear
            :conflicts :pattern :repair-pattern
            :correct-pattern
-           :preprocess-symopts))
+           :preprocess-symopts
+           :*trace-dispatching*
+           :trace-when))
 
 (defpackage :trivia.fail (:export :fail))
 (defpackage :trivia.skip (:export :skip))
