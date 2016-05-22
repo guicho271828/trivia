@@ -127,8 +127,8 @@ Variables in the subpattern are treated as dummy variables, and will not be visi
 
 (defpattern cons (car cdr)
   "Match against a cons cell."
-  (with-gensyms (it)
-    `(guard1 (,it :type cons) (consp ,it) (car ,it) ,car (cdr ,it) ,cdr)))
+  (with-gensyms (cons)
+    `(guard1 (,cons :type cons) (consp ,cons) (car ,cons) ,car (cdr ,cons) ,cdr)))
 
 (defpattern null ()
   "Match against a constant NIL."
