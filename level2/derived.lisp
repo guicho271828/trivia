@@ -148,40 +148,6 @@ The last argument is matched against the rest of the list."
       `(cons ,(car args) (list* ,@(cdr args)))
       (car args)))
 
-(defun set-vector-matcher (name &optional (ref 'aref) need-type soft)
-  (let* ((level2p (find-package :trivia.level2))
-         (name* (intern (format nil "~a*" name) level2p)))
-    (export name* level2p)
-    (setf (symbol-pattern (if soft name* name))
-          (lambda (&rest patterns)
-            (with-gensyms (it)
-              (let* ((len (length patterns))
-                     (type `(,name
-                             ,@(when need-type '(*))
-                             ,(if soft '* len))))
-                `(guard1 (,it :type ,type)
-                         (typep ,it ',type)
-                         ,@(mappend (lambda (pattern i)
-                                      `(,(if soft
-                                             `(when (< ,i (array-total-size ,it))
-                                                (,ref ,it ,i))
-                                             `(,ref ,it ,i)) ,pattern))
-                                    patterns (iota len)))))))))
-
-(dolist (s '(string bit-vector base-string))
-  ;; strict vector matching
-  (set-vector-matcher s)
-  ;; soft vector matching where the insufficient elements are given NIL
-  (set-vector-matcher s 'aref nil t))
-(dolist (s '(simple-string simple-bit-vector simple-base-string))
-  (set-vector-matcher s 'aref nil)
-  (set-vector-matcher s 'aref nil t))
-
-(set-vector-matcher 'vector 'aref t)
-(set-vector-matcher 'vector 'aref t t)
-(set-vector-matcher 'simple-vector 'svref nil)
-(set-vector-matcher 'simple-vector 'svref nil t)
-
 (defpattern sequence (&rest args)
   "Match against any sequence."
   (with-gensyms (it)

@@ -44,6 +44,8 @@
            :$guard1
            :$or1
            :<>
+           :row-major-array
+           :row-major-array*
            :@
            :@@
            :defpattern-inline

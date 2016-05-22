@@ -55,3 +55,57 @@
     (pattern-expand-1 `(lambda-list a &rest b &optional c)))
   (signals error
     (pattern-expand-1 `(lambda-list a &aux (c 2) &rest d))))
+
+(test array
+  (match #2A((0 1) (2 3))
+    ((array :adjustable nil
+            :has-fill-pointer nil
+            :displaced-to nil
+            :displaced-index-offset 0
+            :dimensions '(2 2)
+            :rank 2
+            :total-size 4
+            :contents ((a b) (c d)))
+     (is (= a 0))
+     (is (= b 1))
+     (is (= c 2))
+     (is (= d 3)))
+    (_
+     (fail "failed to match against array")))
+  (match #2A((0 1) (2 3))
+    ((simple-array :rank 2 :contents ((a b) (c d)))
+     (is (= a 0))
+     (is (= b 1))
+     (is (= c 2))
+     (is (= d 3)))
+    (_
+     (fail "failed to match against simple-array")))
+  (signals error
+    ;; rank is not determined
+    (match #2A((0 1) (2 3))
+      ((simple-array :contents ((a b) (c d))))))
+  (is-match #2A((0 1) (2 3))
+    (simple-array :dimensions '(2 2) :contents ((a b) (c d))))
+  (is-match #2A((0 1) (2 3))
+    (simple-array :dimensions 2 :contents ((a b) (c d))))
+  (is-match #2A((0 1) (2 3))
+    (simple-array :dimensions '2 :contents ((a b) (c d))))
+  (is-match #2A((0 1) (2 3))
+    (simple-array :dimensions '(_ _) :contents ((a b) (c d))))
+  (is-match #2A((0 1) (2 3))
+    (simple-array :dimensions (list _ _) :contents ((a b) (c d))))
+  (match #2A((0 1) (2 3))
+    ((row-major-array :contents (a b c d))
+     (is (= a 0))
+     (is (= b 1))
+     (is (= c 2))
+     (is (= d 3)))
+    (_
+     (fail "failed to match against row-major-array")))
+  (match #2A((0 1) (2 3))
+    ((row-major-array* :contents (a b c))
+     (is (= a 0))
+     (is (= b 1))
+     (is (= c 2)))
+    (_
+     (fail "failed to match against row-major-array*"))))
