@@ -241,6 +241,7 @@ If :KEY and :TEST is specified, they are passed to ASSOC."
 (defpattern property (key subpattern &optional (default nil) foundp)
   "It matches when the object X is a list, and then further matches the contents
 returned by (getf KEY X DEFAULT) against SUBPATTERN.
+FOUNDP is bound to T in order to indicate the reason that NIL is matched.
 It is implementation-dependent whether it matches against a list of odd number of elements or it signals an error.
 Also, the result may be affected by the safety setting of the optimization option.
 "
