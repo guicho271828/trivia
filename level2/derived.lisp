@@ -227,7 +227,7 @@ The last argument is matched against the rest of the list."
     (with-gensyms (it)
       `(guard1 ,it t (,accessor ,it) ,pattern))))
 
-(defpattern assoc (item subpattern &key key test)
+(defpattern assoc (item subpattern &key (key nil) (test nil))
   "It matches when the object X is a list, and then further matches the contents
 returned by (cdr (assoc item X...)) against SUBPATTERN.
 If :KEY and :TEST is specified, they are passed to ASSOC."

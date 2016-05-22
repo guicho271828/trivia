@@ -173,8 +173,8 @@ The default value of &optional arguments are '_, instead of nil."
     (nil nil)
     ((list* '&optional rest)
      (list* '&optional (process-optional-args rest)))
-    ((list* '&key rest) args)
-    ((list* '&rest rest) args)
+    ((list* '&key rest) (list* '&key (process-keyword-args rest)))
+    ((list* '&rest rest) (list* '&rest (process-rest-args rest)))
     ((list* '&aux rest) args)
     ((list* thing rest)
      (list* thing (process-lambda-args rest)))))
@@ -182,8 +182,8 @@ The default value of &optional arguments are '_, instead of nil."
 (defun process-optional-args (args)
   (ematch0 args
     (nil nil)
-    ((list* '&key rest) args)
-    ((list* '&rest rest) args)
+    ((list* '&key rest) (list* '&key (process-keyword-args rest)))
+    ((list* '&rest rest) (list* '&rest (process-rest-args rest)))
     ((list* '&aux rest) args)
     ((list* (list name) rest)
      (list* (list name ''_) (process-optional-args rest)))
@@ -193,6 +193,27 @@ The default value of &optional arguments are '_, instead of nil."
      (list* (list name default pred) (process-optional-args rest)))
     ((list* name rest)
      (list* (list name ''_) (process-optional-args rest)))))
+
+(defun process-rest-args (args)
+  (ematch0 args
+    (nil nil)
+    ((list* '&key rest) (list* '&key (process-keyword-args rest)))
+    ((list* '&aux rest) args)
+    ((list* name rest)
+     (list* name (process-rest-args rest)))))
+
+(defun process-keyword-args (args)
+  (ematch0 args
+    (nil nil)
+    ((list* '&aux rest) args)
+    ((list* (list name) rest)
+     (list* (list name ''_) (process-keyword-args rest)))
+    ((list* (list name default) rest)
+     (list* (list name default) (process-keyword-args rest)))
+    ((list* (list name default pred) rest)
+     (list* (list name default pred) (process-keyword-args rest)))
+    ((list* name rest)
+     (list* (list name ''_) (process-keyword-args rest)))))
 
 ;;;; optimizer database
 (lispn:define-namespace optimizer (function (list &key &allow-other-keys) list))
