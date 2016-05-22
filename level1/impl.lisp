@@ -61,7 +61,6 @@
    (lambda (clause last?)
      (ematch0 clause
        ((list* pattern body)
-        
         ((lambda (x) (if last? x `(block clause ,x)))
          ;; << (return-from clause) = go to next clause
          ;; the last pattern does not have this block, allowing a direct jump to the upper block
@@ -247,9 +246,12 @@
     (if *trace-dispatching*
         `(block ,trace-block
            (let ((,result ,condition))
-             (pprint-logical-block (*trace-output* nil :per-line-prefix "| ")
-               (pprint-indent :block 2 *trace-output*)
-               (format *trace-output* "dispatch result: ~s -> ~s~:@_" ',condition ,result)
+             (pprint-logical-block (*trace-output* nil :per-line-prefix "|")
+               ,(if (consp condition)
+                    `(format *trace-output* "  ~s~:_~1,16@T= ~s~:_~1,16@T= ~s~:@_"
+                             ',condition (list ',(car condition) ,@(cdr condition)) ,result)
+                    `(format *trace-output* "  ~s~:_~1,16@T= ~s~:@_"
+                             ',condition ,result))
                (return-from ,trace-block
                  (when ,result ,@body)))))
         `(when ,condition ,@body))))
