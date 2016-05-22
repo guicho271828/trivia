@@ -82,8 +82,9 @@
      (fail "failed to match against simple-array")))
   (signals error
     ;; rank is not determined
-    (match #2A((0 1) (2 3))
-      ((simple-array :contents ((a b) (c d))))))
+    (eval
+     '(match #2A((0 1) (2 3))
+       ((simple-array :contents ((a b) (c d)))))))
   (is-match #2A((0 1) (2 3))
     (simple-array :dimensions '(2 2) :contents ((a b) (c d))))
   (is-match #2A((0 1) (2 3))
