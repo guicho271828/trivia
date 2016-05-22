@@ -125,14 +125,10 @@ Variables in the subpattern are treated as dummy variables, and will not be visi
   "Match when some subpattern match."
   `(or1 ,@subpatterns))
 
-(defpattern quote (x)
-  "Wrapper to the constant pattern."
-  `(constant ',x))
-
 (defpattern cons (car cdr)
   "Match against a cons cell."
-  (with-gensyms (it)
-    `(guard1 (,it :type cons) (consp ,it) (car ,it) ,car (cdr ,it) ,cdr)))
+  (with-gensyms (cons)
+    `(guard1 (,cons :type cons) (consp ,cons) (car ,cons) ,car (cdr ,cons) ,cdr)))
 
 (defpattern null ()
   "Match against a constant NIL."
@@ -151,40 +147,6 @@ The last argument is matched against the rest of the list."
   (if (cdr args)
       `(cons ,(car args) (list* ,@(cdr args)))
       (car args)))
-
-(defun set-vector-matcher (name &optional (ref 'aref) need-type soft)
-  (let* ((level2p (find-package :trivia.level2))
-         (name* (intern (format nil "~a*" name) level2p)))
-    (export name* level2p)
-    (setf (symbol-pattern (if soft name* name))
-          (lambda (&rest patterns)
-            (with-gensyms (it)
-              (let* ((len (length patterns))
-                     (type `(,name
-                             ,@(when need-type '(*))
-                             ,(if soft '* len))))
-                `(guard1 (,it :type ,type)
-                         (typep ,it ',type)
-                         ,@(mappend (lambda (pattern i)
-                                      `(,(if soft
-                                             `(when (< ,i (array-total-size ,it))
-                                                (,ref ,it ,i))
-                                             `(,ref ,it ,i)) ,pattern))
-                                    patterns (iota len)))))))))
-
-(dolist (s '(string bit-vector base-string))
-  ;; strict vector matching
-  (set-vector-matcher s)
-  ;; soft vector matching where the insufficient elements are given NIL
-  (set-vector-matcher s 'aref nil t))
-(dolist (s '(simple-string simple-bit-vector simple-base-string))
-  (set-vector-matcher s 'aref nil)
-  (set-vector-matcher s 'aref nil t))
-
-(set-vector-matcher 'vector 'aref t)
-(set-vector-matcher 'vector 'aref t t)
-(set-vector-matcher 'simple-vector 'svref nil)
-(set-vector-matcher 'simple-vector 'svref nil t)
 
 (defpattern sequence (&rest args)
   "Match against any sequence."
@@ -231,7 +193,7 @@ The last argument is matched against the rest of the list."
     (with-gensyms (it)
       `(guard1 ,it t (,accessor ,it) ,pattern))))
 
-(defpattern assoc (item subpattern &key key test)
+(defpattern assoc (item subpattern &key (key nil) (test nil))
   "It matches when the object X is a list, and then further matches the contents
 returned by (cdr (assoc item X...)) against SUBPATTERN.
 If :KEY and :TEST is specified, they are passed to ASSOC."
@@ -245,6 +207,7 @@ If :KEY and :TEST is specified, they are passed to ASSOC."
 (defpattern property (key subpattern &optional (default nil) foundp)
   "It matches when the object X is a list, and then further matches the contents
 returned by (getf KEY X DEFAULT) against SUBPATTERN.
+FOUNDP is bound to T in order to indicate the reason that NIL is matched.
 It is implementation-dependent whether it matches against a list of odd number of elements or it signals an error.
 Also, the result may be affected by the safety setting of the optimization option.
 "
@@ -274,8 +237,17 @@ by an and pattern."
 
 ;;; special patterns
 
+;; 'a -> (quote a) -> (constant a) -> (eq 'a)
+;; '(a) -> (quote (a)) -> (constant (a)) -> (list a)
+;; #(a) -> (constant #(a)) -> (vector a)
+
+(defpattern quote (x)
+  "Synonym to the constant pattern."
+  `(constant ,x))
+
 (defpattern constant (x)
-  "The argument should be a load/read-time constant such as 5, '(2), #(1 2 3), #S(foo :a 1).
+  "Constant-folds the argument.
+   The argument should be a load/read-time constant such as 5, '(2), #(1 2 3), #S(foo :a 1).
    They are decomposed element-wise in the compile time, possibly merged by the optimizer in trivia."
   (typecase x
     (simple-base-string `(simple-base-string ,@(coerce x 'list)))
@@ -288,11 +260,10 @@ by an and pattern."
     (vector `(vector ,@(coerce x 'list)))
     ((or structure-object hash-table) `(equalp ,x))
     ((or array pathname) `(equal ,x))
-    (cons `(equal ,x)) ;; (quote ...)
+    (symbol `(eq ',x))
+    (cons `(list ,@x))
     ((or number character) `(eql ,x))
     (t `(eq ,x))))
-
-
 
 (defpattern place (place &optional eager)
   "Declares the variable PLACE is setf-able.

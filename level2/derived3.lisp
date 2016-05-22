@@ -14,11 +14,11 @@ then similarly returns the collected elements and the atom, which might be nil i
 or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) returns (values '(a) 'b)).
 "
   (let (acc)
-    (loop for sub on list
-          do (unless (funcall predicate (car sub))
+    (loop :for sub :on list
+          :do (unless (funcall predicate (car sub))
                (return (values (nreverse acc) sub)))
              (push (car sub) acc)
-          finally (return (values (nreverse acc) sub)))))
+          :finally (return (values (nreverse acc) sub)))))
 
 ;; (take-while '(1 3 5 7 8 3) #'evenp)
 ;; NIL
@@ -141,7 +141,7 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
                ;; In contrast, :keyword-allow-other-keys does not check the invalid keywords
                (let ((valid-keywords (mapcar (compose #'make-keyword #'caar) subpatterns)))
                  (with-gensyms (lst key)
-                   `((guard1 ,lst (loop for ,key in ,lst by #'cddr always (member ,key ',valid-keywords)))))))
+                   `((guard1 ,lst (loop :for ,key :in ,lst :by #'cddr :always (member ,key ',valid-keywords)))))))
            ;; match the keywords
            ,@(compile-keyword-patterns subpatterns)
            ;; compile the rest

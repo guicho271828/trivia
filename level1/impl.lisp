@@ -61,7 +61,6 @@
    (lambda (clause last?)
      (ematch0 clause
        ((list* pattern body)
-        
         ((lambda (x) (if last? x `(block clause ,x)))
          ;; << (return-from clause) = go to next clause
          ;; the last pattern does not have this block, allowing a direct jump to the upper block
@@ -236,7 +235,7 @@
 
 ;;; matching form generation
 
-(define-condition place-pattern (warning) ())
+(define-condition place-pattern () ())
 
 (defvar *trace-dispatching* nil
   "Used only for debugging. When non-nil, test-form for pattern matching is printed on the stream.")
@@ -247,9 +246,12 @@
     (if *trace-dispatching*
         `(block ,trace-block
            (let ((,result ,condition))
-             (pprint-logical-block (*trace-output* nil :per-line-prefix "| ")
-               (pprint-indent :block 2 *trace-output*)
-               (format *trace-output* "dispatch result: ~s -> ~s~:@_" ',condition ,result)
+             (pprint-logical-block (*trace-output* nil :per-line-prefix "|")
+               ,(if (consp condition)
+                    `(format *trace-output* "  ~s~:_~1,16@T= ~s~:_~1,16@T= ~s~:@_"
+                             ',condition (list ',(car condition) ,@(cdr condition)) ,result)
+                    `(format *trace-output* "  ~s~:_~1,16@T= ~s~:@_"
+                             ',condition ,result))
                (return-from ,trace-block
                  (when ,result ,@body)))))
         `(when ,condition ,@body))))
@@ -264,7 +266,7 @@
        (ematch0 symopts
          ((list* symbol options)
           `(,(if (getf options :place)
-                 (progn (warn 'place-pattern)
+                 (progn (signal 'place-pattern)
                         'symbol-macrolet)
                  'let)
              ((,symbol ,arg))
@@ -279,8 +281,7 @@
                  ((lambda (x)
                     (if (eq t type) x ;; remove redundunt DECLARE
                         `(locally (declare (type ,type ,symbol)) ,x)))
-                  (handler-bind ((place-pattern #'muffle-warning))
-                    (destructure-guard1-subpatterns more-patterns body))))))))))
+                  (destructure-guard1-subpatterns more-patterns body)))))))))
     ((list* 'or1 subpatterns)
      (let* ((vars (variables pattern)))
        (with-gensyms (fn)
