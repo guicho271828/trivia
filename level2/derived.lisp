@@ -125,10 +125,6 @@ Variables in the subpattern are treated as dummy variables, and will not be visi
   "Match when some subpattern match."
   `(or1 ,@subpatterns))
 
-(defpattern quote (x)
-  "Wrapper to the constant pattern."
-  `(constant ',x))
-
 (defpattern cons (car cdr)
   "Match against a cons cell."
   (with-gensyms (it)
@@ -274,8 +270,17 @@ by an and pattern."
 
 ;;; special patterns
 
+;; 'a -> (quote a) -> (constant a) -> (eq 'a)
+;; '(a) -> (quote (a)) -> (constant (a)) -> (list a)
+;; #(a) -> (constant #(a)) -> (vector a)
+
+(defpattern quote (x)
+  "Synonym to the constant pattern."
+  `(constant ,x))
+
 (defpattern constant (x)
-  "The argument should be a load/read-time constant such as 5, '(2), #(1 2 3), #S(foo :a 1).
+  "Constant-folds the argument.
+   The argument should be a load/read-time constant such as 5, '(2), #(1 2 3), #S(foo :a 1).
    They are decomposed element-wise in the compile time, possibly merged by the optimizer in trivia."
   (typecase x
     (simple-base-string `(simple-base-string ,@(coerce x 'list)))
@@ -288,11 +293,10 @@ by an and pattern."
     (vector `(vector ,@(coerce x 'list)))
     ((or structure-object hash-table) `(equalp ,x))
     ((or array pathname) `(equal ,x))
-    (cons `(equal ,x)) ;; (quote ...)
+    (symbol `(eq ',x))
+    (cons `(list ,@x))
     ((or number character) `(eql ,x))
     (t `(eq ,x))))
-
-
 
 (defpattern place (place &optional eager)
   "Declares the variable PLACE is setf-able.
