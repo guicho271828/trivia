@@ -236,7 +236,7 @@
 
 ;;; matching form generation
 
-(define-condition place-pattern (warning) ())
+(define-condition place-pattern () ())
 
 (defvar *trace-dispatching* nil
   "Used only for debugging. When non-nil, test-form for pattern matching is printed on the stream.")
@@ -264,7 +264,7 @@
        (ematch0 symopts
          ((list* symbol options)
           `(,(if (getf options :place)
-                 (progn (warn 'place-pattern)
+                 (progn (signal 'place-pattern)
                         'symbol-macrolet)
                  'let)
              ((,symbol ,arg))
@@ -279,8 +279,7 @@
                  ((lambda (x)
                     (if (eq t type) x ;; remove redundunt DECLARE
                         `(locally (declare (type ,type ,symbol)) ,x)))
-                  (handler-bind ((place-pattern #'muffle-warning))
-                    (destructure-guard1-subpatterns more-patterns body))))))))))
+                  (destructure-guard1-subpatterns more-patterns body)))))))))
     ((list* 'or1 subpatterns)
      (let* ((vars (variables pattern)))
        (with-gensyms (fn)
