@@ -56,6 +56,15 @@
   (signals error
     (pattern-expand-1 `(lambda-list a &aux (c 2) &rest d))))
 
+(test issue-41
+  (match (list :x 1 :y 1)
+    ((lambda-list &key &allow-other-keys)
+     (pass))
+    (_
+     (fail "should not match")))
+  (signals error
+    (pattern-expand-1 `(lambda-list &allow-other-keys))))
+
 (test array
   (match #2A((0 1) (2 3))
     ((array :adjustable nil

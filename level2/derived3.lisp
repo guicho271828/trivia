@@ -77,21 +77,19 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
                    ((or (and (type variable-symbol) var subpattern) ; var == subpattern, both are the same symbol
                         (list (and var (type variable-symbol)) subpattern)) ; ((var subpattern) nil supplied-p)
                     `((,var ,subpattern) ,@rest)))))
-             (parse-key (argv)
-               (ematch argv
-                 ((list* '&key argv)
-                  (multiple-value-bind (argv rest) (take-while argv #'!lambda-list-keyword-p)
-                    (when argv
-                      (match rest
-                        ((list* '&allow-other-keys rest2)
-                         (push `(:keyword-allow-other-keys
-                                 ,@(mapcar #'compile-keyword-pattern argv)) results)
-                         (setf rest rest2))
-                        (_
-                         (push `(:keyword ,@(mapcar #'compile-keyword-pattern argv)) results))))
-                    (ematch rest
-                      (nil)                ;do nothing
-                      ((type cons) (parse-aux rest)))))
+	     (parse-key (argv)
+	       (ematch argv
+		 ((list* '&key argv)
+		  (multiple-value-bind (argv rest) (take-while argv #'!lambda-list-keyword-p)
+		    (match rest
+		      ((list* '&allow-other-keys rest2)
+		       (push `(:keyword-allow-other-keys
+			       ,@(mapcar #'compile-keyword-pattern argv)) results)
+		       (setf rest rest2))
+		      (_ (when argv (push `(:keyword ,@(mapcar #'compile-keyword-pattern argv)) results))))
+		    (ematch rest
+		      (nil)                ;do nothing
+		      ((type cons) (parse-aux rest)))))
                  (_
                   (parse-aux argv))))
              (parse-aux (argv)
