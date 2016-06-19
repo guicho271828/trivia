@@ -272,3 +272,8 @@ by an and pattern."
    The value of EAGER will be invalidated when PLACE is modified."
   ;; optional arguments in defpattern is defaulted to _, not nil
   `(guard1 (,place :place t) t ,place ,eager))
+
+(defpattern cl:complex (r i)
+  "Destructure a complex number."
+  (with-gensyms (it)
+    `(guard1 ,it (numberp ,it) (realpart ,it) ,r (imagpart ,it) ,i)))
