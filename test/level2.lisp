@@ -29,8 +29,9 @@
              ;; because &optional c consumes one value, it becomes an invalid plist
              (testmatcher2 '(1 2 :c 3 :d 4)))))
 
-
-
+;;complex
+(test complex
+  (is (= 0 (match #c(0 1) ((cl:complex r 1) r)))))
 
 ;; inline patterns
 
