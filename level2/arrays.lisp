@@ -10,9 +10,12 @@
   (_ '*))
 
 (defun common-specs (dimensions rank total-size &optional rank-error)
+  "Deduce the rank from array DIMENSIONS, then normalize and check the consistency of the specification.
+For example, DIMENSION = '(1 2 3) and RANK = 2 is inconsistent, the RANK should be 3."
   (let* ((rank2
           (match dimensions
-            ;; supports only a limited kind of forms
+            ;; Parses the form in DIMENSIONS.
+            ;; Supports only a limited kind of forms
             ((or (list 'quote (and (type list) dimensions)) (list* 'list dimensions))
              (when (integerp rank) (assert (= (length dimensions) rank)))
              (length dimensions))
@@ -23,7 +26,7 @@
              (if (integerp rank)
                  rank
                  (if rank-error
-                     (error "Rank cannot be determined --- required to parse the contents")
+                     (error "Failed to deduce a rank --- this is required to parse the pattern")
                      '_)))))
          (dimensions-spec
           (match dimensions
@@ -65,6 +68,25 @@
                    rank
                    total-size
                    (contents nil))
+  "Matches against an array, its contents, and its meta-level information such as size, element-type.
+
+* CONTENTS is a matrix notation of patterns, i.e., a tree of patterns.
+  For example, :contents ((A _ _) (_ B _) (_ _ C)) matches against (AREF X 0 0), (AREF X 1 1) (AREF X 2 2)
+  of an array X and binds them to A, B, C respectively.
+* DIMENSIONS should be
+  * a quoted list of integers (e.g. '(5 4 4)),
+  * an integer specifying a 1-dimensional array (e.g. 256),
+  * or a list pattern (e.g. (list 5 A _)).
+* RANK should be an integer (e.g. 3) or a variable pattern (e.g. A, _).
+* The rank of the array should be deduced from DIMENSIONS or RANK itself,
+  and the deduced rank and the specified RANK should be consistent when both are present.
+  Otherwise, the compilation fails. Rank information is used to parse the subpatterns.
+* TOTAL-SIZE should be consistent with DIMENSIONS when all dimensions are fully specified
+  (e.g. when DIMENSIONS = '(5 4 4) and TOTAL-SIZE is a variable pattern, then it is bound to 80.
+  When TOTAL-SIZE is an integer, it should be 80 or it signals an error.)
+* ELEMENT-TYPE is * unless specified.
+* If ADJUSTABLE, HAS-FILL-POINTER, DISPLACED-TO are all NIL, then it is a SIMPLE-ARRAY. Otherwise it's an ARRAY.
+"
   ;; deduce the array type
   (check-type displaced-index-offset (and fixnum (integer 0)))
   (let ((array-type-spec (array-type-spec adjustable has-fill-pointer displaced-to displaced-index-offset))
@@ -95,6 +117,9 @@
                      (parse-array-body rank2 contents nil)))))))
 
 (defpattern simple-array (&rest args &key element-type dimensions rank total-size contents)
+  "Matches against a simple-array, its contents, and its meta-level information such as size, element-type.
+This is an alias to the base ARRAY pattern.
+"
   (declare (ignorable element-type dimensions rank total-size contents))
   `(array :adjustable nil  :has-fill-pointer nil :displaced-to nil :displaced-index-offset 0 ,@args))
 
@@ -107,6 +132,8 @@
                                    rank
                                    total-size
                                    contents)
+  "This is a soft-match variant of ROW-MAJOR-ARRAY pattern
+i.e. the total length of CONTENTS (subpatterns) can be less than the actual size of the pattern."
   (let ((array-type-spec (array-type-spec adjustable has-fill-pointer displaced-to displaced-index-offset))
         (element-type-spec (element-type-spec element-type)))
     (multiple-value-bind (dimensions-spec total-size) (common-specs dimensions rank total-size)
@@ -139,6 +166,9 @@
                                    rank
                                    total-size
                                    contents)
+  "Same as ARRAY pattern, but it uses row-major-array to access the elements.
+ CONTENTS is a list of patterns (just like in VECTOR pattern),
+ rather than a matrix notation of the patterns in ARRAY pattern."
   (declare (ignorable element-type adjustable has-fill-pointer displaced-to displaced-index-offset dimensions
                       rank total-size contents))
   (remf args :total-size)
