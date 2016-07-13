@@ -106,8 +106,9 @@ The default value of &optional arguments are '_, instead of nil."
                     #-clisp
                     (format nil "~<Lambda-List: ~s~
                                  ~:@_~<  ~@;~a~:>~
+                                 ~:@_Defined in ~a~
                                ~:>"
-                            (list args (list (first body))))
+                            (list args (list (first body)) *compile-file-pathname*))
                     #+clisp
                     (format nil "Lambda-List: ~s~%~a"
                             args (first body))))))))
@@ -129,8 +130,9 @@ The default value of &optional arguments are '_, instead of nil."
                     #-clisp
                     (format nil "~<Lambda-List: ~s~
                                  ~:@_~<  ~@;~a~:>~
+                                 ~:@_Defined in ~a~
                                ~:>"
-                            (list args (list (first body))))
+                            (list args (list (first body)) *compile-file-pathname*))
                     #+clisp
                     (format nil "Lambda-List: ~s~%~a"
                             args (first body))))))))
