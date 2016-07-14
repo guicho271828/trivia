@@ -91,7 +91,7 @@ For example, DIMENSION = '(1 2 3) and RANK = 2 is inconsistent, the RANK should 
   (check-type displaced-index-offset (and fixnum (integer 0)))
   (let ((array-type-spec (array-type-spec adjustable has-fill-pointer displaced-to displaced-index-offset))
         (element-type-spec (element-type-spec element-type)))
-    (multiple-value-bind (dimensions-spec total-size rank2) (common-specs dimensions rank total-size t)
+    (multiple-value-bind (dimensions-spec total-size rank2) (common-specs dimensions rank total-size contents)
       (with-gensyms (a)
         `(guard1 (,a :type (,array-type-spec ,element-type-spec ,dimensions-spec))
                  (typep ,a '(,array-type-spec ,element-type-spec ,dimensions-spec))
@@ -114,7 +114,8 @@ For example, DIMENSION = '(1 2 3) and RANK = 2 is inconsistent, the RANK should 
                                              (parse-array-body (1- rank) content (cons index r-subscripts)))
                                            contents
                                            (iota (length contents))))))
-                     (parse-array-body rank2 contents nil)))))))
+                     (when contents
+                       (parse-array-body rank2 contents nil))))))))
 
 (defpattern simple-array (&rest args &key element-type dimensions rank total-size contents)
   "Matches against a simple-array, its contents, and its meta-level information such as size, element-type.
