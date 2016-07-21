@@ -42,4 +42,18 @@ Short form: ppcre regexp &rest subpatterns
   (declare (ignorable regexp start end sharedp subpatterns))
   (warn "stub!"))
 
+(defpattern split (regex &rest subpatterns)
+  "Treat the string as a list of strings, split by the strings matching to REGEX.
+The list which is a result of applying PPCRE:SPLIT to the string is matched against list pattern."
+  (with-gensyms (it)
+    `(guard1 (,it :type string) (stringp ,it)
+             (ppcre:split ,regex ,it)
+             (list ,@subpatterns))))
 
+(defpattern split* (regex &rest subpatterns)
+  "Soft-match variants of SPLIT: the number of elements do not have to match the number of subpatterns.
+The list which is a result of applying PPCRE:SPLIT to the string is matched against list* pattern."
+  (with-gensyms (it)
+    `(guard1 (,it :type string) (stringp ,it)
+             (ppcre:split ,regex ,it)
+             (list* ,@subpatterns))))
