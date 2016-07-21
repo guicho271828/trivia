@@ -43,6 +43,10 @@ Subpattern is matched against NIL."
                (end-of-file ())
                (parse-error ())) ,pattern)))
 
-
-
-
+(defpattern last (n &rest subpatterns)
+  (check-type n integer)
+  (assert (= n (length subpatterns)))
+  (with-gensyms (it)
+    `(guard1 (,it :type list) (listp ,it)
+             (last ,it ,n)
+             (list ,@subpatterns))))
