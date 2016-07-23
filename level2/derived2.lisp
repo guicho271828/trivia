@@ -26,3 +26,27 @@ The result of evaluating `value' using `var' is then matched against `pattern'.
 `var' can be omitted."
   (assert (symbolp var))
   `(guard1 ,var t ,value ,pattern))
+
+
+
+(defpattern read (pattern)
+  "The current matching object should be a symbol.
+The result of reading the string by read-from-string is bound to the subpattern.
+Useful for simple parsing.
+
+END-OF-FILE and PARSE-ERROR are ignored and the matching will be successfull.
+Subpattern is matched against NIL."
+  #+nil `(access #'read-from-string ,pattern) ;; slow, untyped
+  (with-gensyms (it)
+    `(guard1 (,it :type string) (stringp ,it)
+             (handler-case (read-from-string ,it)
+               (end-of-file ())
+               (parse-error ())) ,pattern)))
+
+(defpattern last (n &rest subpatterns)
+  (check-type n integer)
+  (assert (= n (length subpatterns)))
+  (with-gensyms (it)
+    `(guard1 (,it :type list) (listp ,it)
+             (last ,it ,n)
+             (list ,@subpatterns))))
