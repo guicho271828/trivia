@@ -262,7 +262,17 @@ by an and pattern."
      (let ((c (class-of x)))
        `(structure ,(class-name c)
                    ,@(mapcar (lambda (slotdef)
-                               (let ((name (c2mop:slot-definition-name slotdef)))
+                               (let ((name
+                                      (handler-case
+                                          (c2mop:slot-definition-name slotdef)
+                                        #+abcl
+                                        (type-error ()
+                                          ;; ABCL (as of 1.3.3) retuns a vector that looks like
+                                          ;; #(SYSTEM::DEFSTRUCT-SLOT-DESCRIPTION X 0 POINT3-X COMMON-LISP:NIL COMMON-LISP:T COMMON-LISP:NIL)
+                                          ;; This may be fixed when there is an update to ABCL or when
+                                          ;; CLOSER-MOP provides a fix 
+                                          (check-type slotdef vector)
+                                          (aref slotdef 1)))))
                                  (list name (slot-value x name))))
                              (c2mop:class-slots c)))))
     (hash-table
