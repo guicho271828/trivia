@@ -36,7 +36,25 @@
                (match ,arg (,@pattern t)))
              ,(format nil "~<pattern ~a matched against arg ~s~:@>" (list pattern arg))))
 
-(test constant-pattern
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defclass person ()
+       ((name :initarg :name :reader name)
+        (age :initarg :age)))
+
+  (defstruct (point (:predicate point-p))
+    x y)
+  (defmethod make-load-form ((o point) &optional environment)
+    (make-load-form-saving-slots o
+                                 :slot-names '(x y)
+                                 :environment environment))
+  (defstruct (point3 (:include point))
+    z)
+  (defmethod make-load-form ((o point3) &optional environment)
+    (make-load-form-saving-slots o
+                                 :slot-names '(x y z)
+                                 :environment environment)))
+
+(test (constant-pattern :compile-at :definition-time)
   ;; integer
   (is-match 1 1)
   ;; t
@@ -53,7 +71,19 @@
   ;; complex
   (is-match '(1 t 3.14 :foo "foo") '(1 t 3.14 :foo "foo"))
   (is (= 3 (match '(1 2 3) ('(1 _ a) a))))
-  (is (= 3 (match #(1 2 3) (#(1 _ a) a)))))
+  (is (= 3 (match #(1 2 3) (#(1 _ a) a))))
+  ;; ensure these are compared by char-wise eql
+  (is-match "aaa" "aaa")
+  (is-not-match "aaa" "AAA")
+  (is-match #S(POINT :x "A" :y "B")
+            #S(POINT :x "A" :y "B"))
+  (is-not-match #S(POINT :x "A" :y "B")
+                #S(POINT :x "a" :y "b"))
+  ;; check if INCLUDEd slots are direct slots
+  (is-match #S(POINT3 :x "A" :y "B" :z "C")
+            #S(POINT3 :x "A" :y "B" :z "C"))
+  (is-not-match #S(POINT3 :x "A" :y "B" :z "C")
+                #S(POINT3 :x "a" :y "b" :z "c")))
 
 (test variable-pattern
   ;; simple bind
@@ -83,14 +113,6 @@
       ((list (vector (place x)))
        (incf x)))
     (is (equalp (list (vector 2)) z))))
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defclass person ()
-       ((name :initarg :name :reader name)
-        (age :initarg :age)))
-
-  (defstruct (point (:predicate point-p))
-    x y))
 
 (test predicatep
   (is (null (predicatep 'point)))
