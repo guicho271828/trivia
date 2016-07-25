@@ -46,6 +46,12 @@
   (defmethod make-load-form ((o point) &optional environment)
     (make-load-form-saving-slots o
                                  :slot-names '(x y)
+                                 :environment environment))
+  (defstruct (point3 (:include point))
+    z)
+  (defmethod make-load-form ((o point3) &optional environment)
+    (make-load-form-saving-slots o
+                                 :slot-names '(x y z)
                                  :environment environment)))
 
 (test (constant-pattern :compile-at :definition-time)
@@ -72,7 +78,12 @@
   (is-match #S(POINT :x "A" :y "B")
             #S(POINT :x "A" :y "B"))
   (is-not-match #S(POINT :x "A" :y "B")
-                #S(POINT :x "a" :y "b")))
+                #S(POINT :x "a" :y "b"))
+  ;; check if INCLUDEd slots are direct slots
+  (is-match #S(POINT3 :x "A" :y "B" :z "C")
+            #S(POINT3 :x "A" :y "B" :z "C"))
+  (is-not-match #S(POINT3 :x "A" :y "B" :z "C")
+                #S(POINT3 :x "a" :y "b" :z "c")))
 
 (test variable-pattern
   ;; simple bind
