@@ -250,16 +250,29 @@ by an and pattern."
    The argument should be a load/read-time constant such as 5, '(2), #(1 2 3), #S(foo :a 1).
    They are decomposed element-wise in the compile time, possibly merged by the optimizer in trivia."
   (typecase x
-    (simple-base-string `(simple-base-string ,@(coerce x 'list)))
-    (base-string `(base-string ,@(coerce x 'list)))
-    (simple-string `(simple-string ,@(coerce x 'list)))
-    (string `(string ,@(coerce x 'list)))
-    (simple-bit-vector `(simple-bit-vector ,@(coerce x 'list)))
-    (bit-vector `(bit-vector ,@(coerce x 'list)))
-    (simple-vector `(simple-vector ,@(coerce x 'list)))
-    (vector `(vector ,@(coerce x 'list)))
-    ((or structure-object hash-table) `(equalp ,x))
-    ((or array pathname) `(equal ,x))
+    (simple-base-string          `(simple-base-string ,@(coerce x 'list)))
+    (base-string                 `(base-string ,@(coerce x 'list)))
+    (simple-string               `(simple-string ,@(coerce x 'list)))
+    (string                      `(string ,@(coerce x 'list)))
+    (simple-bit-vector           `(simple-bit-vector ,@(coerce x 'list)))
+    (bit-vector                  `(bit-vector ,@(coerce x 'list)))
+    (simple-vector               `(simple-vector ,@(coerce x 'list)))
+    (vector                      `(vector ,@(coerce x 'list)))
+    (structure-object
+     (let ((c (class-of x)))
+       `(structure ,(class-name c)
+                   ,@(mapcar (lambda (slotdef)
+                               (let ((name (c2mop:slot-definition-name slotdef)))
+                                 (list name (slot-value x name))))
+                             (c2mop:class-direct-slots c)))))
+    (hash-table
+     (warn "You seem to include a raw hash-table object in a pattern, perhaps~
+            using a read-time evaluation ( #. ) form. This is not a wise act.
+            The given hash table is compared against the input by equalp.")
+     `(equalp ,x))
+    ;; TODO
+    (array                            `(equalp ,x))
+    (pathname                         `(equal ,x))
     (symbol `(eq ',x))
     (cons `(list ,@x))
     ((or number character) `(eql ,x))
