@@ -264,7 +264,7 @@ by an and pattern."
                    ,@(mapcar (lambda (slotdef)
                                (let ((name (c2mop:slot-definition-name slotdef)))
                                  (list name (slot-value x name))))
-                             (c2mop:class-direct-slots c)))))
+                             (c2mop:class-slots c)))))
     (hash-table
      (warn "You seem to include a raw hash-table object in a pattern, perhaps~
             using a read-time evaluation ( #. ) form. This is not a wise act.
