@@ -137,6 +137,11 @@
   (is-not-match 1 (assoc 1 2))
   (is-not-match '((1 . 2)) (assoc 3 4))
   (is-not-match '((1 . 2) (3 . 4)) (assoc 3 5))
+  ;; issue #52
+  (is-match     '((:foo . 1))  (assoc :foo val))
+  (is-not-match '((foo . 2))   (assoc :foo val))
+  (is-not-match '(("foo" . 3)) (assoc :foo val))
+  (is-not-match '((0 . 4))     (assoc :foo val))
   ;; NOTE: incompatibility --- keyword arguments to assoc is evaluated
   ;; (is-match '(("a" . 1)) (assoc "A" 1 :test string-equal))
   (is-match '(("a" . 1)) (assoc "A" 1 :test #'string-equal)))
