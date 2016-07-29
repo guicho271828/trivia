@@ -200,9 +200,11 @@ If :KEY and :TEST is specified, they are passed to ASSOC."
   (with-gensyms (it)
     `(guard1 (,it :type list)
              (listp ,it)
-             (assoc ,item ,it
-                    ,@(when key `(:key ,key))
-                    ,@(when test `(:test ,test)))
+             (handler-case
+                 (assoc ,item ,it
+                        ,@(when key `(:key ,key))
+                        ,@(when test `(:test ,test)))
+               (type-error () nil))
              (cons _ ,subpattern))))
 
 (defpattern property (key subpattern &optional (default nil) foundp)

@@ -142,9 +142,12 @@
   (is-not-match '((foo . 2))   (assoc :foo val))
   (is-not-match '(("foo" . 3)) (assoc :foo val))
   (is-not-match '((0 . 4))     (assoc :foo val))
+  (is-not-match '(1)           (assoc :foo val))
+  (is-not-match '((1 . 2) 2)   (assoc :foo val))
   ;; NOTE: incompatibility --- keyword arguments to assoc is evaluated
   ;; (is-match '(("a" . 1)) (assoc "A" 1 :test string-equal))
   (is-match '(("a" . 1)) (assoc "A" 1 :test #'string-equal)))
+
 (test property
   (is-match '(:a 1) (property :a 1))
   (is-match '(:a 1 :b 2) (property :a 1))
