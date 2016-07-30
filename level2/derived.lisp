@@ -201,6 +201,7 @@ If :KEY and :TEST is specified, they are passed to ASSOC."
     `(guard1 (,it :type list)
              (listp ,it)
              (let (,flag)
+               (declare (special ,flag))
                (block ,blk
                  (handler-bind ((type-error
                                  (lambda (c)
@@ -212,11 +213,17 @@ If :KEY and :TEST is specified, they are passed to ASSOC."
                    (assoc ,item ,it
                           ,@(when key
                               `(:key (lambda (,x)
-                                       (handler-bind ((type-error (lambda (c) (setf ,flag t))))
+                                       (handler-bind ((type-error (lambda (c)
+                                                                    (let ((,flag t))
+                                                                      (declare (special ,flag))
+                                                                      (signal c)))))
                                          (funcall ,key ,x)))))
                           ,@(when test
                               `(:test (lambda (,x ,y)
-                                        (handler-bind ((type-error (lambda (c) (setf ,flag t))))
+                                        (handler-bind ((type-error (lambda (c)
+                                                                     (let ((,flag t))
+                                                                       (declare (special ,flag))
+                                                                       (signal c)))))
                                           (funcall ,test ,x ,y)))))))))
              (cons _ ,subpattern))))
 
