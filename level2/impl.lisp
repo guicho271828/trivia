@@ -10,12 +10,14 @@
 
 (defun wildcardp (pattern)
   (and (symbolp pattern)
-       (string= "_" (symbol-name pattern))))
+       (or (string= "_" (symbol-name pattern))
+           (string= "OTHERWISE" (symbol-name pattern)))))
 
 
 (defun variablep (pattern)
   (and (symbolp pattern)
-       (not (string= "_" (symbol-name pattern)))))
+       (string/= "_" (symbol-name pattern))
+       (string/= "OTHERWISE" (symbol-name pattern))))
 
 
 (defun pattern-expand-1 (p)
