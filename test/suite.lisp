@@ -137,6 +137,27 @@
   (is-not-match '(1 (2 . 3)) (assoc 2 3))
   ;; issue #54
   (is-not-match '(1) (assoc :foo val)) ; should not signal error
+  (signals type-error
+    (match '((:foo 1))
+      ((assoc :foo val :test (lambda (x y) (declare (ignorable x y)) (error 'type-error)))
+       val)))
+  (signals type-error
+    (match '((:foo 1))
+      ((assoc :foo val :key (lambda (x) (declare (ignorable x)) (error 'type-error)))
+       val)))
+  (let ((counter 0))
+    (is-false
+     (handler-bind ((type-error #'continue))
+       (match '((:foo 1) (:bar 1))
+         ((assoc :baz val :key (lambda (x)
+                                 (declare (ignorable x))
+                                 (restart-case (error 'type-error)
+                                   (continue ()
+                                     (incf counter)
+                                     (print :continue!)))
+                                 x))
+          val))))
+    (is (= 2 counter)))
 
   ;; NOTE: incompatibility --- first argument to assoc should be quoted or constant
   ;; (is-match '((a . 1)) (assoc a 1))
