@@ -129,8 +129,15 @@
   (is-match '((1 . 2) (3 . 4)) (assoc 3 4))
   ;; NOTE: incompatibility --- this is not an association list, according to CLHS
   ;; (is-match '(1 (2 . 3)) (assoc 2 3))
+  ;; NOTE: old incompatibility --- superceded by the following
+  #+old
   (signals type-error
     (match '(1 (2 . 3)) ((assoc 2 3) t)))
+  ;; NOTE: new incompatibility --- when it is not an assoc list, do not match.
+  (is-not-match '(1 (2 . 3)) (assoc 2 3))
+  ;; issue #54
+  (is-not-match '(1) (assoc :foo val)) ; should not signal error
+
   ;; NOTE: incompatibility --- first argument to assoc should be quoted or constant
   ;; (is-match '((a . 1)) (assoc a 1))
   (is-match '((a . 1)) (assoc 'a 1))
