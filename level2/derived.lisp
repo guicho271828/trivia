@@ -194,15 +194,44 @@ The last argument is matched against the rest of the list."
       `(guard1 ,it t (,accessor ,it) ,pattern))))
 
 (defpattern assoc (item subpattern &key (key nil) (test nil))
-  "It matches when the object X is a list, and then further matches the contents
+  "It matches when the object X is a proper association list,
+ and then further matches the contents
 returned by (cdr (assoc item X...)) against SUBPATTERN.
-If :KEY and :TEST is specified, they are passed to ASSOC."
-  (with-gensyms (it)
+If :KEY and :TEST are specified, they are passed to ASSOC.
+
+The TYPE-ERROR signaled by ASSOC, which means improper association list,
+is captured by the matcher and is not bubble up outside matcher.
+However, when TYPE-ERROR is signalled by the :test or :key functions,
+they are visible to the environment and the users are required to handle them.
+"
+  (with-gensyms (it flag x y blk)
     `(guard1 (,it :type list)
              (listp ,it)
-             (assoc ,item ,it
-                    ,@(when key `(:key ,key))
-                    ,@(when test `(:test ,test)))
+             (let (,flag)
+               (declare (special ,flag))
+               (block ,blk
+                 (handler-bind ((type-error
+                                 (lambda (c)
+                                   (unless ,flag
+                                     ;; for those not familiar with condition system: when flag is set, this
+                                     ;; is an error from :key or :test thus the handler should decline (==
+                                     ;; should not cause control transfer e.g. return-from, go, throw)
+                                     (return-from ,blk nil)))))
+                   (assoc ,item ,it
+                          ,@(when key
+                              `(:key (lambda (,x)
+                                       (handler-bind ((type-error (lambda (c)
+                                                                    (let ((,flag t))
+                                                                      (declare (special ,flag))
+                                                                      (signal c)))))
+                                         (funcall ,key ,x)))))
+                          ,@(when test
+                              `(:test (lambda (,x ,y)
+                                        (handler-bind ((type-error (lambda (c)
+                                                                     (let ((,flag t))
+                                                                       (declare (special ,flag))
+                                                                       (signal c)))))
+                                          (funcall ,test ,x ,y)))))))))
              (cons _ ,subpattern))))
 
 (defpattern property (key subpattern &optional (default nil) foundp)

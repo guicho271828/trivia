@@ -129,8 +129,36 @@
   (is-match '((1 . 2) (3 . 4)) (assoc 3 4))
   ;; NOTE: incompatibility --- this is not an association list, according to CLHS
   ;; (is-match '(1 (2 . 3)) (assoc 2 3))
+  ;; NOTE: old incompatibility --- superceded by the following
+  #+old
   (signals type-error
     (match '(1 (2 . 3)) ((assoc 2 3) t)))
+  ;; NOTE: new incompatibility --- when it is not an assoc list, do not match.
+  (is-not-match '(1 (2 . 3)) (assoc 2 3))
+  ;; issue #54
+  (is-not-match '(1) (assoc :foo val)) ; should not signal error
+  (signals type-error
+    (match '((:foo 1))
+      ((assoc :foo val :test (lambda (x y) (declare (ignorable x y)) (error 'type-error)))
+       val)))
+  (signals type-error
+    (match '((:foo 1))
+      ((assoc :foo val :key (lambda (x) (declare (ignorable x)) (error 'type-error)))
+       val)))
+  (let ((counter 0))
+    (is-false
+     (handler-bind ((type-error #'continue))
+       (match '((:foo 1) (:bar 1))
+         ((assoc :baz val :key (lambda (x)
+                                 (declare (ignorable x))
+                                 (restart-case (error 'type-error)
+                                   (continue ()
+                                     (incf counter)
+                                     (print :continue!)))
+                                 x))
+          val))))
+    (is (= 2 counter)))
+
   ;; NOTE: incompatibility --- first argument to assoc should be quoted or constant
   ;; (is-match '((a . 1)) (assoc a 1))
   (is-match '((a . 1)) (assoc 'a 1))
@@ -142,9 +170,12 @@
   (is-not-match '((foo . 2))   (assoc :foo val))
   (is-not-match '(("foo" . 3)) (assoc :foo val))
   (is-not-match '((0 . 4))     (assoc :foo val))
+  (is-not-match '(1)           (assoc :foo val))
+  (is-not-match '((1 . 2) 2)   (assoc :foo val))
   ;; NOTE: incompatibility --- keyword arguments to assoc is evaluated
   ;; (is-match '(("a" . 1)) (assoc "A" 1 :test string-equal))
   (is-match '(("a" . 1)) (assoc "A" 1 :test #'string-equal)))
+
 (test property
   (is-match '(:a 1) (property :a 1))
   (is-match '(:a 1 :b 2) (property :a 1))
