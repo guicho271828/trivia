@@ -649,3 +649,19 @@
       (is (= 2 (length lambda-list)))
       (is (equal '(a b) argument-precedence-order)))))
 )
+
+(test issue-51
+  ;; otherwise == _
+  (signals unbound-variable
+    (eval
+     '(match :anything
+       (otherwise
+        otherwise))))
+  (is-match :anything othewise)
+  (is-match (list :anything :anything)
+    (list othewise otherwise))
+  ;; this is explicitly allowed.
+  (is-true
+   (match (list :anything :anything)
+     (otherwise t)
+     (_ (error "should not match")))))
