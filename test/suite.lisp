@@ -40,6 +40,8 @@
   (defclass person ()
        ((name :initarg :name :reader name)
         (age :initarg :age)))
+  (defun age (a b c)
+    (format t "this function is meaningless ~a ~a ~a" a b c))
 
   (defstruct (point (:predicate point-p))
     x y)
