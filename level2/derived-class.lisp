@@ -313,7 +313,7 @@ accessor-name :
     (nil t) ;; if lambda-expression is unavailable, just return t
     ((or #+sbcl
          (list* 'sb-ext:named-lambda _ (list _) _)
-         (list* 'lambda _ (list _) _))
+         (list* 'lambda (list _) _))
      t)))
 
 (defun find-reader (slot type)
