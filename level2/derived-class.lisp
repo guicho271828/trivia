@@ -308,11 +308,21 @@ accessor-name :
 ;;; searching accessor functions
 ;; finally, handle the case any reader function should be found.
 
+(defun unary-function-p (fn)
+  (match (function-lambda-expression fn)
+    (nil t) ;; if lambda-expression is unavailable, just return t
+    ((or #+sbcl
+         (list* 'sb-int:named-lambda _ (list _) _)
+         (list* 'lambda (list _) _))
+     t)))
+
 (defun find-reader (slot type)
   (flet ((finder (&rest args)
            (let ((sym (find-symbol
                        (apply #'concatenate 'string args))))
-             (when (fboundp sym) sym))))
+             (when (and (fboundp sym)
+                        (unary-function-p (symbol-function sym)))
+               sym))))
     (flet ((hyphened () (finder (symbol-name type) "-" (symbol-name slot)))
            (concname () (finder (symbol-name type) (symbol-name slot)))
            (nameonly ()
