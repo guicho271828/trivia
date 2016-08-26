@@ -312,7 +312,9 @@ accessor-name :
   (match (function-lambda-expression fn)
     (nil t) ;; if lambda-expression is unavailable, just return t
     ((or #+sbcl
-         (list* 'sb-int:named-lambda _ (list _) _)
+         #.(if (find-symbol "NAMED-LAMBDA" (find-package "SB-INT"))
+               (read-from-string "'(list* 'sb-int:named-lambda _ (list _) _)")
+               (warn "failed to find named-lambda in sb-int"))
          (list* 'lambda (list _) _))
      t)))
 
