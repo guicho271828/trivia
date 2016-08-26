@@ -309,14 +309,18 @@ accessor-name :
 ;; finally, handle the case any reader function should be found.
 
 (defun unary-function-p (fn)
-  (match (function-lambda-expression fn)
-    (nil t) ;; if lambda-expression is unavailable, just return t
-    ((or #+sbcl
-         #.(if (find-symbol "NAMED-LAMBDA" (find-package "SB-INT"))
-               (read-from-string "'(list* 'sb-int:named-lambda _ (list _) _)")
-               (warn "failed to find named-lambda in sb-int"))
-         (list* 'lambda (list _) _))
-     t)))
+  (etypecase fn
+    (generic-function
+     (= 1 (length (c2mop:generic-function-lambda-list fn))))
+    (function
+     (match (function-lambda-expression fn)
+       (nil t)
+       ((or #+sbcl
+            #.(if (find-symbol "NAMED-LAMBDA" (find-package "SB-INT"))
+                  (read-from-string "'(list* 'sb-int:named-lambda _ (list _) _)")
+                  (warn "failed to find named-lambda in sb-int"))
+            (list* 'lambda (list _) _))
+        t)))))
 
 (defun find-reader (slot type)
   (flet ((finder (&rest args)
