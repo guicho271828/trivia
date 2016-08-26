@@ -312,7 +312,7 @@ accessor-name :
   (match (function-lambda-expression fn)
     (nil t) ;; if lambda-expression is unavailable, just return t
     ((or #+sbcl
-         (list* 'sb-ext:named-lambda _ (list _) _)
+         (list* 'sb-int:named-lambda _ (list _) _)
          (list* 'lambda (list _) _))
      t)))
 
