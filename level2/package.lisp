@@ -64,7 +64,11 @@
            :*optimizer*
            :in-optimizer
            :defoptimizer
-           :symbol-optimizer)
+           :symbol-optimizer
+           ;; for accessor arity check
+           :*test-call-argument*
+           :*arity-check-by-test-call*
+           )
   (:nicknames :trivia))
 
 (defpackage :trivia.level2.impl

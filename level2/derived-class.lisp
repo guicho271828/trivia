@@ -308,18 +308,38 @@ accessor-name :
 ;;; searching accessor functions
 ;; finally, handle the case any reader function should be found.
 
-(defun unary-function-p (fn)
+(defvar *arity-check-by-test-call* t
+  "If enabled (non-nil), UNARY-FUNCTION-P tests the arity of the candidate accessor function
+ by FUNCALLing it with *TEST-CALL-ARGUMENT* (see the docstring of *TEST-CALL-ARGUMENT*).
+
+PROGRAM-ERROR is treated as a reason of rejection; A function of arity != 1.
+Other errors, as well as completion of the call without errors, are treated as a success.")
+(defvar *test-call-argument* 42
+  "An argument used to call the candidate function in UNARY-FUNCTION-P.
+See *ARITY-CHECK-BY-TEST-CALL* for details.")
+(defun unary-function-p (fn type)
   (etypecase fn
     (generic-function
      (= 1 (length (c2mop:generic-function-lambda-list fn))))
     (function
+     #+ccl
+     (unless (= 1 (ccl:function-args fn))
+       (return-from unary-function-p nil))
+     (when *arity-check-by-test-call*
+       (handler-case (funcall fn *test-call-argument*)
+         (program-error () (return-from unary-function-p nil))
+         (error (c)
+           (simple-style-warning
+            "Calling ~a failed, but not by program-error (~a)." fn (type-of c)))))
      (match (function-lambda-expression fn)
        (nil t)
-       ((or #+sbcl
-            #.(if (find-symbol "NAMED-LAMBDA" (find-package "SB-INT"))
-                  (read-from-string "'(list* 'sb-int:named-lambda _ (list _) _)")
+       (#+sbcl
+        (or #.(if (find-symbol "NAMED-LAMBDA" (find-package "SB-INT"))
+                  `(list* ',(read-from-string "sb-int:named-lambda") _ (list _) _)
                   (warn "failed to find named-lambda in sb-int"))
             (list* 'lambda (list _) _))
+        #-sbcl
+        (list* 'lambda (list _) _)
         t)))))
 
 (defun find-reader (slot type)
@@ -327,7 +347,7 @@ accessor-name :
            (let ((sym (find-symbol
                        (apply #'concatenate 'string args))))
              (when (and (fboundp sym)
-                        (unary-function-p (symbol-function sym)))
+                        (unary-function-p (symbol-function sym) type))
                sym))))
     (flet ((hyphened () (finder (symbol-name type) "-" (symbol-name slot)))
            (concname () (finder (symbol-name type) (symbol-name slot)))
