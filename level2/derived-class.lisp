@@ -314,8 +314,8 @@ accessor-name :
      (= 1 (length (c2mop:generic-function-lambda-list fn))))
     (function
      #+ccl
-     (when (= 1 (ccl:function-args fn))
-       (return-from unary-function-p t))
+     (unless (= 1 (ccl:function-args fn))
+       (return-from unary-function-p nil))
      (match (function-lambda-expression fn)
        (nil t)
        (#+sbcl
