@@ -315,11 +315,13 @@ accessor-name :
     (function
      (match (function-lambda-expression fn)
        (nil t)
-       ((or #+sbcl
-            #.(if (find-symbol "NAMED-LAMBDA" (find-package "SB-INT"))
-                  (read-from-string "'(list* 'sb-int:named-lambda _ (list _) _)")
+       (#+sbcl
+        (or #.(if (find-symbol "NAMED-LAMBDA" (find-package "SB-INT"))
+                  `(list* ',(read-from-string "sb-int:named-lambda") _ (list _) _)
                   (warn "failed to find named-lambda in sb-int"))
             (list* 'lambda (list _) _))
+        #-sbcl
+        (list* 'lambda (list _) _)
         t)))))
 
 (defun find-reader (slot type)
