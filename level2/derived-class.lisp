@@ -308,7 +308,13 @@ accessor-name :
 ;;; searching accessor functions
 ;; finally, handle the case any reader function should be found.
 
-(defun unary-function-p (fn)
+(defvar *ARITY-CHECK-BY-TEST-CALL* t
+  "If enabled (non-nil), UNARY-FUNCTION-P tests the arity of the candidate accessor function
+by creating a test instance of the current matching type and calling the candidate function.
+PROGRAM-ERROR is treated as a reason of rejection; A function of arity != 1.
+Other errors, as well as completion of the call without errors, are treated as a success.
+")
+(defun unary-function-p (fn type)
   (etypecase fn
     (generic-function
      (= 1 (length (c2mop:generic-function-lambda-list fn))))
@@ -316,6 +322,25 @@ accessor-name :
      #+ccl
      (unless (= 1 (ccl:function-args fn))
        (return-from unary-function-p nil))
+     (when *ARITY-CHECK-BY-TEST-CALL*
+       (simple-style-warning
+        "In UNARY-FUNCTION-P (in file ~a):
+I create an instance of ~a and call ~a to test if it is unary.
+Beware of any side effects caused by ~a and the instantiation of ~a.
+This can be disabled by setting TRIVIA:*ARITY-CHECK-BY-TEST-CALL* to NIL.
+See the docstring of *ARITY-CHECK-BY-TEST-CALL*."
+        #.*load-pathname* type fn fn type)
+       (when-let ((c (find-class type nil)))
+         (handler-case
+             (let ((instance (allocate-instance c)))
+               (handler-case (funcall fn instance)
+                 (program-error () (return-from unary-function-p nil))
+                 (error ()
+                   (simple-style-warning
+                    "Calling ~a failed by other errors." fn))))
+           (error ()
+             (simple-style-warning
+              "Failed to creating a test instance of ~a." type)))))
      (match (function-lambda-expression fn)
        (nil t)
        (#+sbcl
@@ -332,7 +357,7 @@ accessor-name :
            (let ((sym (find-symbol
                        (apply #'concatenate 'string args))))
              (when (and (fboundp sym)
-                        (unary-function-p (symbol-function sym)))
+                        (unary-function-p (symbol-function sym) type))
                sym))))
     (flet ((hyphened () (finder (symbol-name type) "-" (symbol-name slot)))
            (concname () (finder (symbol-name type) (symbol-name slot)))
