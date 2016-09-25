@@ -55,8 +55,10 @@
     (make-load-form-saving-slots o
                                  :slot-names '(x y z)
                                  :environment environment))
+  (declaim (inline x))
   (defun x (a b c)
-    (format t "this function is meaningless ~a ~a ~a" a b c)))
+    (format t "this function is meaningless ~a ~a ~a" a b c))
+  (declaim (notinline x)))
 
 (test (constant-pattern :compile-at :definition-time)
   ;; integer
