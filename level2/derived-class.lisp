@@ -308,12 +308,15 @@ accessor-name :
 ;;; searching accessor functions
 ;; finally, handle the case any reader function should be found.
 
-(defvar *ARITY-CHECK-BY-TEST-CALL* t
+(defvar *arity-check-by-test-call* t
   "If enabled (non-nil), UNARY-FUNCTION-P tests the arity of the candidate accessor function
-by creating a test instance of the current matching type and calling the candidate function.
+ by FUNCALLing it with *TEST-CALL-ARGUMENT* (see the docstring of *TEST-CALL-ARGUMENT*).
+
 PROGRAM-ERROR is treated as a reason of rejection; A function of arity != 1.
-Other errors, as well as completion of the call without errors, are treated as a success.
-")
+Other errors, as well as completion of the call without errors, are treated as a success.")
+(defvar *test-call-argument* 42
+  "An argument used to call the candidate function in UNARY-FUNCTION-P.
+See *ARITY-CHECK-BY-TEST-CALL* for details.")
 (defun unary-function-p (fn type)
   (etypecase fn
     (generic-function
@@ -322,25 +325,12 @@ Other errors, as well as completion of the call without errors, are treated as a
      #+ccl
      (unless (= 1 (ccl:function-args fn))
        (return-from unary-function-p nil))
-     (when *ARITY-CHECK-BY-TEST-CALL*
-       (simple-style-warning
-        "In UNARY-FUNCTION-P (in file ~a):
-I create an instance of ~a and call ~a to test if it is unary.
-Beware of any side effects caused by ~a and the instantiation of ~a.
-This can be disabled by setting TRIVIA:*ARITY-CHECK-BY-TEST-CALL* to NIL.
-See the docstring of *ARITY-CHECK-BY-TEST-CALL*."
-        #.*load-pathname* type fn fn type)
-       (when-let ((c (find-class type nil)))
-         (handler-case
-             (let ((instance (allocate-instance c)))
-               (handler-case (funcall fn instance)
-                 (program-error () (return-from unary-function-p nil))
-                 (error ()
-                   (simple-style-warning
-                    "Calling ~a failed by other errors." fn))))
-           (error ()
-             (simple-style-warning
-              "Failed to creating a test instance of ~a." type)))))
+     (when *arity-check-by-test-call*
+       (handler-case (funcall fn *test-call-argument*)
+         (program-error () (return-from unary-function-p nil))
+         (error (c)
+           (simple-style-warning
+            "Calling ~a failed, but not by program-error (~a)." fn (type-of c)))))
      (match (function-lambda-expression fn)
        (nil t)
        (#+sbcl
