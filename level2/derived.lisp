@@ -234,7 +234,7 @@ they are visible to the environment and the users are required to handle them.
                                           (funcall ,test ,x ,y)))))))))
              (cons _ ,subpattern))))
 
-(defpattern property (key subpattern &optional (default nil) foundp)
+(defpattern property (key subpattern &optional (default nil) (foundp nil foundp-suppliedp))
   "It matches when the object X is a list, and then further matches the contents
 returned by (getf KEY X DEFAULT) against SUBPATTERN.
 FOUNDP is bound to T in order to indicate the reason that NIL is matched.
@@ -246,7 +246,7 @@ Also, the result may be affected by the safety setting of the optimization optio
              (listp ,it)
              (getf ,it ,key ',indicator) ;; indicator is treated as a compile-time constant
              (guard1 ,it2 t
-                     (if (eql ,it2 ',indicator) nil t) ,foundp
+                     ,@(if foundp-suppliedp `((if (eql ,it2 ',indicator) nil t) ,foundp))
                      (if (eql ,it2 ',indicator) ,default ,it2) ,subpattern))))
 
 (defpattern alist (&rest args)

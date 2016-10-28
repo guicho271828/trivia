@@ -33,7 +33,7 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
 ;; (1 3 5 7)
 ;; 3
 
-(defun parse-lambda-list (argv)
+(defun parse-lambda-list (argv &optional (canonicalp t))
   (let (results)
     (labels ((!lambda-list-keyword-p (thing) (not (member thing lambda-list-keywords)))
              (parse-whole (argv)
@@ -82,9 +82,9 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
 		 ((list* '&key argv)
 		  (multiple-value-bind (argv rest) (take-while argv #'!lambda-list-keyword-p)
 		    (match rest
-		      ((list* '&allow-other-keys rest2)
-		       (push `(:keyword-allow-other-keys
-			       ,@(mapcar #'compile-keyword-pattern argv)) results)
+		      ((or (list* '&allow-other-keys (and rest2 (or (list* '&aux _) nil)))
+			   (guard (list* '&allow-other-keys var (and rest2 (or (list* '&aux _) nil))) (not canonicalp)))
+		       (push `((:keyword-allow-other-keys ,var) ,@(mapcar #'compile-keyword-pattern argv)) results)
 		       (setf rest rest2))
 		      (_ (when argv (push `(:keyword ,@(mapcar #'compile-keyword-pattern argv)) results))))
 		    (ematch rest
@@ -109,6 +109,9 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
 ;; (parse-lambda-list '(a &optional (b 1 supplied) x)) ((:ATOM A) (:OPTIONAL (B 1 SUPPLIED) (X)))
 ;; (parse-lambda-list '(&whole whole a &optional (b 1 supplied) x)) ((:WHOLE WHOLE) (:ATOM A) (:OPTIONAL (B 1 SUPPLIED) (X)))
 
+;; non-canonical syntax
+;; (parse-lambda-list '(&key x &allow-other-keys rem) nil) (((:KEYWORD-ALLOW-OTHER-KEYS REM) ((X X))))
+
 (defun compile-destructuring-pattern (ops &optional default)
   (match ops
     (nil default)
@@ -128,20 +131,26 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
                   (cdr ,lst) ,(compile-destructuring-pattern `((:optional ,@more-subpatterns) ,@rest))))))
     ((list* (list :rest pattern) rest)
      `(and ,pattern ,(compile-destructuring-pattern rest '_)))
-    ((list* (list* (and mode (or :keyword :keyword-allow-other-keys)) subpatterns) rest)
+    ((list* (list* (and mode (or :keyword (list :keyword-allow-other-keys rem))) subpatterns) rest)
      ;; case 1,2 of the &key forms are already compiled into the 3rd form ; see parse-lambda-list
      `(and (type list)
            ;; proper plist
            ,(with-gensyms (it)
               `(guard1 ,it (evenp (length ,it))))
-           ,@(when (eq mode :keyword)
-               ;; match only when there are no invalid keywords.
-               ;; In contrast, :keyword-allow-other-keys does not check the invalid keywords
+           ,@(when (or (eq mode :keyword) rem)
                (let ((valid-keywords (mapcar (compose #'make-keyword #'caar) subpatterns)))
-                 (with-gensyms (lst key)
-                   `((guard1 ,lst (loop :for ,key :in ,lst :by #'cddr :always (member ,key ',valid-keywords)))))))
+		 (with-gensyms (lst key val)
+		   (if (eq mode :keyword)
+		       ;; match only when there are no invalid keywords.
+		       `((guard1 ,lst (loop :for ,key :in ,lst :by #'cddr :always (member ,key ',valid-keywords))))
+		       ;; In contrast, :keyword-allow-other-keys does not check the invalid keywords
+		       ;; In used in the non-canonical mode, sets rem to the additional keys given
+		       `((guard1 ,lst t (loop :for (,key ,val) :on ,lst :by #'cddr
+					   :unless (member ,key ',valid-keywords)
+					   :collect ,key :and :collect ,val)
+				 ,rem))))))
            ;; match the keywords
-           ,@(compile-keyword-patterns subpatterns)
+	   ,@(compile-keyword-patterns subpatterns)
            ;; compile the rest
            ,(compile-destructuring-pattern rest '_)))
     ((list (list* :aux subpatterns))
@@ -151,22 +160,20 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
                                           `(,expr ,var)))
                                     subpatterns)))))
 
+;;
 (defun compile-keyword-patterns (subpatterns)
   ;; FIXME: possible optimization --- copy-list the input and modify the
   ;; list removing the element, in order to make the worst-case complexity
   ;; from O(n^2) to O(n)
   (mapcar (lambda (keypat)
-            (with-gensyms (supplied-p-default-sym)
-              (destructuring-bind ((var subpattern)
-                                   &optional default
-                                   (supplied-p-pattern supplied-p-default-sym)) keypat
-                `(property ,(make-keyword var)
-                           ,subpattern ,default ,supplied-p-pattern))))
+            (destructuring-bind ((var subpattern)
+				 &optional default
+				 (supplied-p-pattern nil supplied-p-pattern-suppliedp)) keypat
+	      `(property ,(make-keyword var)
+			 ,subpattern ,default ,@(if supplied-p-pattern-suppliedp `(,supplied-p-pattern)))))
           subpatterns))
 
-
 ;(compile-destructuring-pattern (parse-lambda-list '(a . b)))
-
 (defpattern lambda-list (&rest patterns)
   "Matches to a list conforming to the lambda-list specified by PATTERN. In other words, it supports the same
    arguments as DESTRUCTURING-BIND. For example,
@@ -179,3 +186,13 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
 (defpattern λlist (&rest patterns)
   "Alias to lambda-list"
   (compile-destructuring-pattern (parse-lambda-list patterns)))
+
+(defpattern lambda-list-nc (&rest patterns)
+  "lambda-list but with additional non-canonical syntax,
+   1. (lambda-list &key a &allow-other-keys rem)
+      REM collects every key that wasn't declared"
+  (compile-destructuring-pattern (parse-lambda-list patterns nil)))
+
+(defpattern λlist-nc (&rest patterns)
+  "Alias to lambda-list-nc"
+  (compile-destructuring-pattern (parse-lambda-list patterns nil)))
