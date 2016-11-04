@@ -13,6 +13,8 @@ exec ros -Q -- $0 "$@"
 (print (machine-version))
 (print (long-site-name))
 (ql:register-local-projects)
+#+clisp
+(ql:quickload :asdf)
 (ql:quickload :uiop)
 (ql:quickload :fiveam)
 
