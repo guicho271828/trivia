@@ -51,8 +51,8 @@
            :defpattern-inline
            :inline-pattern-expand
            :place
-	   :lambda-list
-	   :λlist
+	   :lambda-list :lambda-list-nc
+	   :λlist :λlist-nc
            ;; 
            :defpattern
            :pattern-expand
