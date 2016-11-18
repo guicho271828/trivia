@@ -143,7 +143,10 @@ Variables in the subpattern are treated as dummy variables, and will not be visi
 
 (defpattern list* (&rest args)
   "Match against a list with an unspecified length.
-The last argument is matched against the rest of the list."
+The last argument is matched against the rest of the list.
+As a special case, if ARGS has a single element,
+then it matches anything. This behavior is consistent with CL:LIST*
+which returns itself if it takes a single argument."
   (if (cdr args)
       `(cons ,(car args) (list* ,@(cdr args)))
       (car args)))
