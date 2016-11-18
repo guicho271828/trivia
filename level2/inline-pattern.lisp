@@ -3,6 +3,7 @@
 ;; see impl.lisp:
 
 (defpattern-inline @ (&rest patterns)
+    "Expands into itself."
     ;; identity function
     patterns)
 
