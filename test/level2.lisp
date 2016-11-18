@@ -129,3 +129,15 @@
      (is (= c 2)))
     (_
      (fail "failed to match against row-major-array*"))))
+
+(test last
+      (is-match (alexandria:iota 5)
+                (last (list 3 4) 2))
+      (is-not-match (alexandria:iota 5)
+                    (last (list 4) 2))
+      (is-not-match 5 (last (list 3 4) 2))
+      (signals error
+               (macroexpand
+                '(match x
+                  ((last _ -1)
+                   t)))))

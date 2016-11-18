@@ -43,11 +43,10 @@ Subpattern is matched against NIL."
                (end-of-file ())
                (parse-error ())) ,pattern)))
 
-(defpattern last (n &rest subpatterns)
+(defpattern last (subpattern &optional (n 1))
   "Matches against a list, and matches subpatterns against N last elements obtained by CL:LAST."
-  (check-type n integer)
-  (assert (= n (length subpatterns)))
+  (check-type n (integer 0))
   (with-gensyms (it)
     `(guard1 (,it :type list) (listp ,it)
              (last ,it ,n)
-             (list ,@subpatterns))))
+             ,subpattern)))
