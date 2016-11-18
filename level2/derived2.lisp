@@ -44,6 +44,7 @@ Subpattern is matched against NIL."
                (parse-error ())) ,pattern)))
 
 (defpattern last (n &rest subpatterns)
+  "Matches against a list, and matches subpatterns against N last elements obtained by CL:LAST."
   (check-type n integer)
   (assert (= n (length subpatterns)))
   (with-gensyms (it)
