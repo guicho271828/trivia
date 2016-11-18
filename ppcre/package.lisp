@@ -1,8 +1,10 @@
 (defpackage :trivia.ppcre
-  (:export :ppcre))
+  (:export :ppcre
+           :split
+           :split*))
 
 (defpackage :trivia.ppcre.impl
-  (:use :cl :ppcre :alexandria
+  (:use :cl :alexandria
         :trivia.level0
         :trivia.level1
         :trivia.level2
@@ -16,7 +18,7 @@
   (destructuring-bind (regexp &key start end sharedp) (ensure-list regexp-and-options)
     (typecase regexp
       (string
-       (let ((register-num (count :register (flatten (parse-string regexp)))))
+       (let ((register-num (count :register (flatten (ppcre:parse-string regexp)))))
          (unless (= (length subpatterns) register-num)
            (simple-style-warning
             "The number of registers ~a in ~a is different than the # of subpatterns ~a in ~a!"
@@ -26,7 +28,7 @@
         "The given regexp is not a literal, and it prevents compile-time optimization")))
     (with-gensyms (it)
       `(guard1 (,it :type string) (stringp ,it)
-               (nth-value 1 (scan-to-strings
+               (nth-value 1 (ppcre:scan-to-strings
                              ,regexp ,it
                              ,@(when start `(:start ,start))
                              ,@(when end `(:end ,end))
