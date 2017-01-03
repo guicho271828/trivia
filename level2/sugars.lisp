@@ -86,65 +86,104 @@
 
 
 ;;;; lambda-match family
+(defun parse-matcher-body (body)
+  (multiple-value-bind (clauses declarations documentation)
+      (parse-body body :documentation t)
+    (values `(,@(when documentation
+                  (list documentation))
+              ,@declarations)
+            clauses)))
 
-(defmacro lambda-match (&body clauses)
-  (with-gensyms (clause)
-    `(lambda (,clause)
-       (match ,clause
-         ,@clauses))))
-(defmacro lambda-ematch (&body clauses)
-  (with-gensyms (clause)
-    `(lambda (,clause)
-       (ematch ,clause
-         ,@clauses))))
-(defmacro lambda-cmatch (&body clauses)
-  (with-gensyms (clause)
-    `(lambda (,clause)
-       (cmatch ,clause
-         ,@clauses))))
+(defmacro lambda-match (&body body)
+  (multiple-value-bind (preamble clauses) (parse-matcher-body body)
+    (with-gensyms (clause)
+      `(lambda (,clause)
+         ,@preamble
+         (match ,clause
+           ,@clauses)))))
 
-(defmacro lambda-match* (&body clauses)
-  (let ((gensyms (make-gensyms (caar clauses))))
-    `(lambda ,gensyms
-       (match* ,gensyms
-         ,@clauses))))
-(defmacro lambda-ematch* (&body clauses)
-  (let ((gensyms (make-gensyms (caar clauses))))
-    `(lambda ,gensyms
-       (ematch* ,gensyms
-         ,@clauses))))
-(defmacro lambda-cmatch* (&body clauses)
-  (let ((gensyms (make-gensyms (caar clauses))))
-    `(lambda ,gensyms
-       (cmatch* ,gensyms
-         ,@clauses))))
+(defmacro lambda-ematch (&body body)
+  (multiple-value-bind (preamble clauses) (parse-matcher-body body)
+    (with-gensyms (clause)
+      `(lambda (,clause)
+         ,@preamble
+         (ematch ,clause
+           ,@clauses)))))
+
+(defmacro lambda-cmatch (&body body)
+  (multiple-value-bind (preamble clauses) (parse-matcher-body body)
+    (with-gensyms (clause)
+      `(lambda (,clause)
+         ,@preamble
+         (cmatch ,clause
+           ,@clauses)))))
+
+(defmacro lambda-match* (&body body)
+  (multiple-value-bind (preamble clauses) (parse-matcher-body body)
+    (let ((gensyms (make-gensyms (caar clauses))))
+      `(lambda ,gensyms
+         ,@preamble
+         (match* ,gensyms
+           ,@clauses)))))
+
+(defmacro lambda-ematch* (&body body)
+  (multiple-value-bind (preamble clauses) (parse-matcher-body body)
+    (let ((gensyms (make-gensyms (caar clauses))))
+      `(lambda ,gensyms
+         ,@preamble
+         (ematch* ,gensyms
+           ,@clauses)))))
+
+(defmacro lambda-cmatch* (&body body)
+  (multiple-value-bind (preamble clauses) (parse-matcher-body body)
+    (let ((gensyms (make-gensyms (caar clauses))))
+      `(lambda ,gensyms
+         ,@preamble
+         (cmatch* ,gensyms
+           ,@clauses)))))
 
 ;;;; defun-match family
-(defmacro defun-match (name (arg) &body clauses)
-  `(defun ,name (,arg)
-     (match ,arg
-       ,@clauses)))
-(defmacro defun-ematch (name (arg) &body clauses)
-  `(defun ,name (,arg)
-     (ematch ,arg
-       ,@clauses)))
-(defmacro defun-cmatch (name (arg) &body clauses)
-  `(defun ,name (,arg)
-     (cmatch ,arg
-       ,@clauses)))
+(defmacro defun-match (name (arg) &body body)
+  (multiple-value-bind (preamble clauses) (parse-matcher-body body)
+    `(defun ,name (,arg)
+       ,@preamble
+       (match ,arg
+         ,@clauses))))
 
-(defmacro defun-match* (name args &body clauses)
-  `(defun ,name ,args
-     (match* ,args
-       ,@clauses)))
-(defmacro defun-ematch* (name args &body clauses)
-  `(defun ,name ,args
-     (ematch* ,args
-       ,@clauses)))
-(defmacro defun-cmatch* (name args &body clauses)
-  `(defun ,name ,args
-     (cmatch* ,args
-       ,@clauses)))
+(defmacro defun-ematch (name (arg) &body body)
+  (multiple-value-bind (preamble clauses) (parse-matcher-body body)
+    `(defun ,name (,arg)
+       ,@preamble
+       (ematch ,arg
+         ,@clauses))))
+
+(defmacro defun-cmatch (name (arg) &body body)
+  (multiple-value-bind (preamble clauses) (parse-matcher-body body)
+    `(defun ,name (,arg)
+       ,@preamble
+       (cmatch ,arg
+         ,@clauses))))
+
+(defmacro defun-match* (name args &body body)
+  (multiple-value-bind (preamble clauses) (parse-matcher-body body)
+    `(defun ,name ,args
+       ,@preamble
+       (match* ,args
+         ,@clauses))))
+
+(defmacro defun-ematch* (name args &body body)
+  (multiple-value-bind (preamble clauses) (parse-matcher-body body)
+    `(defun ,name ,args
+       ,@preamble
+       (ematch* ,args
+         ,@clauses))))
+
+(defmacro defun-cmatch* (name args &body body)
+  (multiple-value-bind (preamble clauses) (parse-matcher-body body)
+    `(defun ,name ,args
+       ,@preamble
+       (cmatch* ,args
+         ,@clauses))))
 
 ;;;; extras
 
