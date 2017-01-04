@@ -16,6 +16,9 @@ exec ros -Q -- $0 "$@"
 (ql:register-local-projects)
 #+clisp
 (ql:quickload :asdf)
+#+clisp
+(asdf:load-system :uiop)
+#-clisp
 (ql:quickload :uiop)
 (ql:quickload :fiveam)
 
