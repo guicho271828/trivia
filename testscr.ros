@@ -4,6 +4,7 @@
 exec ros -Q -- $0 "$@"
 |#
 
+(ros:ensure-using-downloaded-asdf)
 (print (lisp-implementation-type))
 (print (lisp-implementation-version))
 (print (software-type))
