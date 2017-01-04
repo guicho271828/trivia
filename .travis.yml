@@ -24,11 +24,17 @@ env:
 matrix:
   allow_failures:
     - env: LISP=alisp
+    - env: LISP=ecl
+    - env: LISP=cmucl
+    - env: LISP=sbcl-bin
+    - env: LISP=ccl-bin
+    - env: LISP=abcl
 
 install:
   - curl -L https://raw.githubusercontent.com/snmsts/roswell/release/scripts/install-for-ci.sh | sh
   - ( cd ~/lisp/ ; git clone https://github.com/guicho271828/lisp-namespace.git )
   - ros asdf install
+  - ros asdf use $(ros asdf list | head -n 1)
 
 cache:
   directories:
