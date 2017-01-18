@@ -41,7 +41,7 @@
              (guard1 ,it2 (= ,number ,it2)))))
 
 (defpattern /= (number)
-  "Match when the object is a number \= to the given number."
+  "Match when the object is a number /= to the given number."
   (with-gensyms (it it2)
     `(guard1 (,it :type number) (numberp ,it)
              ,it
