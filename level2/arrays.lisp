@@ -26,7 +26,7 @@ For example, DIMENSION = '(1 2 3) and RANK = 2 is inconsistent, the RANK should 
              (if (integerp rank)
                  rank
                  (if rank-error
-                     (error "Failed to deduce a rank --- this is required to parse the pattern")
+                     (error "Failed to deduce a rank --- this is required for parsing the pattern")
                      '_)))))
          (dimensions-spec
           (match dimensions
@@ -68,12 +68,14 @@ For example, DIMENSION = '(1 2 3) and RANK = 2 is inconsistent, the RANK should 
                    rank
                    total-size
                    (contents nil))
-  "Matches against an array, its contents, and its meta-level information such as size, element-type.
+  "Matches against an array, its contents, and its meta-level information
+such as size, element-type.
 
 * CONTENTS is a matrix notation of patterns, i.e., a tree of patterns.
-  For example, :contents ((A _ _) (_ B _) (_ _ C)) matches against (AREF X 0 0), (AREF X 1 1) (AREF X 2 2)
+  For example, :contents ((A _ _) (_ B _) (_ _ C)) matches against
+  (AREF X 0 0), (AREF X 1 1) (AREF X 2 2)
   of an array X and binds them to A, B, C respectively.
-* DIMENSIONS should be
+* DIMENSIONS should be either
   * a quoted list of integers (e.g. '(5 4 4)),
   * an integer specifying a 1-dimensional array (e.g. 256),
   * or a list pattern (e.g. (list 5 A _)).
@@ -82,10 +84,12 @@ For example, DIMENSION = '(1 2 3) and RANK = 2 is inconsistent, the RANK should 
   and the deduced rank and the specified RANK should be consistent when both are present.
   Otherwise, the compilation fails. Rank information is used to parse the subpatterns.
 * TOTAL-SIZE should be consistent with DIMENSIONS when all dimensions are fully specified
-  (e.g. when DIMENSIONS = '(5 4 4) and TOTAL-SIZE is a variable pattern, then it is bound to 80.
-  When TOTAL-SIZE is an integer, it should be 80 or it signals an error.)
+  (e.g. when DIMENSIONS = '(5 4 4) and TOTAL-SIZE is a variable pattern,
+        then it is bound to 80. When TOTAL-SIZE is an integer, it should be 80
+        or it signals an error.)
 * ELEMENT-TYPE is * unless specified.
-* If ADJUSTABLE, HAS-FILL-POINTER, DISPLACED-TO are all NIL, then it is a SIMPLE-ARRAY. Otherwise it's an ARRAY.
+* If ADJUSTABLE, HAS-FILL-POINTER, DISPLACED-TO are all NIL, then
+  it is a SIMPLE-ARRAY. Otherwise it's an ARRAY.
 "
   ;; deduce the array type
   (check-type displaced-index-offset (and fixnum (integer 0)))
