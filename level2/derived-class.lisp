@@ -330,7 +330,13 @@ See *ARITY-CHECK-BY-TEST-CALL* for details.")
          (program-error () (return-from unary-function-p nil))
          (error (c)
            (simple-style-warning
-            "Calling ~a failed, but not by program-error (~a)." fn (type-of c)))))
+            "Calling ~a failed, but not by program-error (~a).
+Trivia probed candidate function ~a by calling it with 
+a single dummy argument ~a. The call may fail due to various reasons,
+but program-error is a strong indication of not being unary.
+ In order to disable this probing, run ~s ."
+            fn (type-of c) fn *test-call-argument*
+            `(setf *arity-check-by-test-call* nil)))))
      (match (function-lambda-expression fn)
        (nil t)
        (#+sbcl
