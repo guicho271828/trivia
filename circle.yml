@@ -20,5 +20,5 @@ test:
     - ros -L cmu-bin testscr.ros
     - ros -L sbcl-bin testscr.ros
     - ros -L ccl-bin testscr.ros
-    - ros -L clisp testscr.ros
+    # - ros -L clisp testscr.ros
     - ros -L abcl-bin testscr.ros
