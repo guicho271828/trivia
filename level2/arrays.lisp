@@ -95,7 +95,7 @@ such as size, element-type.
   (check-type displaced-index-offset (and fixnum (integer 0)))
   (let ((array-type-spec (array-type-spec adjustable has-fill-pointer displaced-to displaced-index-offset))
         (element-type-spec (element-type-spec element-type)))
-    (multiple-value-bind (dimensions-spec total-size rank2) (common-specs dimensions rank total-size contents)
+    (multiple-value-bind (dimensions-spec total-size deduced-rank) (common-specs dimensions rank total-size contents)
       (with-gensyms (a)
         `(guard1 (,a :type (,array-type-spec ,element-type-spec ,dimensions-spec))
                  (typep ,a '(,array-type-spec ,element-type-spec ,dimensions-spec))
@@ -105,7 +105,12 @@ such as size, element-type.
                                                   ((or (and x (integer))
                                                        (list 'quote (and x (integer))))
                                                    `(list ,@(mapcar (constantly '_) (iota x))))
-                                                  (_ dimensions))
+                                                  (_
+                                                   ;; Enhancement. Balland2006 optimizer is able to merge these declarations
+                                                   `(and (list ,@(mapcar
+                                                                  (constantly `(type (integer 1 ,array-dimension-limit)))
+                                                                  (iota deduced-rank)))
+                                                         ,dimensions)))
                  (array-rank               ,a) ,rank
                  (array-total-size         ,a) ,total-size
                  (adjustable-array-p       ,a) ,adjustable
@@ -119,7 +124,7 @@ such as size, element-type.
                                            contents
                                            (iota (length contents))))))
                      (when contents
-                       (parse-array-body rank2 contents nil))))))))
+                       (parse-array-body deduced-rank contents nil))))))))
 
 (defpattern simple-array (&rest args &key element-type dimensions rank total-size contents)
   "Matches against a simple-array, its contents, and its meta-level information such as size, element-type.
