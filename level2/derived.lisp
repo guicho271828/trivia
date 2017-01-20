@@ -215,6 +215,7 @@ they are visible to the environment and the users are required to handle them.
                (block ,blk
                  (handler-bind ((type-error
                                  (lambda (c)
+                                   (declare (ignore c))
                                    (unless ,flag
                                      ;; for those not familiar with condition system: when flag is set, this
                                      ;; is an error from :key or :test thus the handler should decline (==
