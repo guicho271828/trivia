@@ -213,6 +213,8 @@
                           (type t)
                           place
                           (ignorable (if (symbol-package sym) nil t))
+                          dynamic-extent
+                          special
                           &allow-other-keys)
          options
        ;; the implementer of level2 patterns can append arbitrary
@@ -220,6 +222,8 @@
        (ensure-getf options :type type)
        (ensure-getf options :place place)
        (ensure-getf options :ignorable ignorable)
+       (ensure-getf options :dynamic-extent dynamic-extent)
+       (ensure-getf options :special special)
        (list* sym options)))))
 
 (defun bind-missing-vars-with-nil (pattern missing)
@@ -272,6 +276,10 @@
              ((,symbol ,arg))
              ,@(when (getf options :ignorable)
                  `((declare (ignorable ,symbol))))
+             ,@(when (getf options :dynamic-extent)
+                 `((declare (dynamic-extent ,symbol))))
+             ,@(when (getf options :special)
+                 `((declare (special ,symbol))))
              ,((lambda (x)
                  (if (eq t test-form)
                      ;; remove redundunt IF. x contains a return to NIL==toplevel.
