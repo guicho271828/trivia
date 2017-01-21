@@ -51,6 +51,7 @@
            :defpattern-inline
            :inline-pattern-expand
            :place
+           :dynamic
 	   :lambda-list :lambda-list-nc
 	   :λlist :λlist-nc
            ;; 
