@@ -334,3 +334,9 @@ by an and pattern."
   "Destructure a complex number."
   (with-gensyms (it)
     `(guard1 ,it (numberp ,it) (realpart ,it) ,r (imagpart ,it) ,i)))
+
+(defpattern dynamic (variable)
+  "Takes a single variable.
+Declares that the value bound to the variable has a dynamic-extent."
+  (check-type variable symbol)
+  `(guard1 (,variable :DYNAMIC-EXTENT t) t))
