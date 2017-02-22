@@ -211,7 +211,7 @@
              :conflicts `((,sym) ,(mapcar #'car *lexvars*)))
      (destructuring-bind (&key
                           (type t)
-                          place
+                          (binder 'let)
                           (ignorable (if (symbol-package sym) nil t))
                           dynamic-extent
                           special
@@ -220,7 +220,7 @@
        ;; the implementer of level2 patterns can append arbitrary
        ;; meta-infomation as a keyword.
        (ensure-getf options :type type)
-       (ensure-getf options :place place)
+       (ensure-getf options :binder binder)
        (ensure-getf options :ignorable ignorable)
        (ensure-getf options :dynamic-extent dynamic-extent)
        (ensure-getf options :special special)
@@ -269,11 +269,14 @@
      (let ((*lexvars* (cons symopts *lexvars*)))
        (ematch0 symopts
          ((list* symbol options)
-          `(,(if (getf options :place)
-                 (progn (signal 'place-pattern)
-                        'symbol-macrolet)
-                 'let)
-             ((,symbol ,arg))
+          `(,@(ecase (getf options :binder)
+                (symbol-macrolet
+                  (signal 'place-pattern)
+                  `(symbol-macrolet ((,symbol ,arg))))
+                (let
+                  `(let ((,symbol ,arg))))
+                (progv
+                  `(progv (,symbol) (,arg))))
              ,@(when (getf options :ignorable)
                  `((declare (ignorable ,symbol))))
              ,@(when (getf options :dynamic-extent)
