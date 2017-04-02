@@ -660,14 +660,18 @@
   ;; otherwise == _
   (signals unbound-variable
     (eval
-     '(match :anything
+     '(match :anything0
        (otherwise
         otherwise))))
-  (is-match :anything othewise)
-  (is-match (list :anything :anything)
-    (list othewise otherwise))
+  (is-match :anything1 otherwise)
+  (is-match (list :anything2 :anything2)
+    (list otherwise otherwise))
+  (is-match (list :anything3 :anything4)
+    (list otherwise otherwise))
+  (is-match (list :anything5 :anything6)
+    (list a b))
   ;; this is explicitly allowed.
   (is-true
-   (match (list :anything :anything)
+   (match (list :anything7 :anything7)
      (otherwise t)
      (_ (error "should not match")))))
