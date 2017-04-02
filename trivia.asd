@@ -8,7 +8,7 @@
                           str))
   :version "0.1"
   :author "Masataro Asai"
-  #+asdf3 :mailto #+asdf3 "guicho2.71828@gmail.com"
+  :mailto "guicho2.71828@gmail.com"
   :license "LLGPL"
   :depends-on (:trivia.level2)
   :in-order-to ((test-op (test-op :trivia.level2))))
