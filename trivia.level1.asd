@@ -2,7 +2,7 @@
   :description "Core patterns of Trivia"
   :version "0.1"
   :author "Masataro Asai"
-  #+asdf3 :mailto #+asdf3 "guicho2.71828@gmail.com"
+  :mailto "guicho2.71828@gmail.com"
   :license "LLGPL"
   :depends-on (:trivia.level0)
   :pathname "level1/"
