@@ -17,6 +17,24 @@
 ;;; Contrib tests
 
 (test cffi
-  )
+  (finishes
+    (pattern-expand
+     `(-> (:struct dd-node)
+        type                             ; foreign-slot-value access (leaf pattern)
+        (& type)                         ; explicit foreign-slot-pointer access
+        (type type)                      ; implicit foreign-slot-pointer access (nested pattern)
+        (type                            ; implicit foreign-slot-pointer access (nested pattern)
+         (-> (:union dd-node/type)
+           value))))))
 
 
+;; well, below does not actually compile because it rebinds multiple patterns to a same variable
+;; (match (cudd-regular node) ; returns a pointer
+;;   ((-> (:struct dd-node)
+;;      type                             ; foreign-slot-value access (leaf pattern)
+;;      (& type)                         ; explicit foreign-slot-pointer access
+;;      (type type)                      ; implicit foreign-slot-pointer access (nested pattern)
+;;      (type                            ; implicit foreign-slot-pointer access (nested pattern)
+;;       (-> (:union dd-node/type)
+;;         value)))                      ; leaf node: value access
+;;    value))

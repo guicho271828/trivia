@@ -23,6 +23,8 @@ Example:
           (-> (:union dd-node/type)
             value)))                      ; leaf node: value access
        value))
+
+Note: Above example does not actually compile because it rebinds multiple patterns to a same variable.
 "
   (with-gensyms (obj)
     `(guard1 (,obj :type foreign-pointer)
@@ -32,7 +34,7 @@ Example:
                   (ematch slot
                     ((symbol)
                      `((foreign-slot-value ,obj ',foreign-type ',slot) ,slot))
-                    ((list '& slot-name)
+                    ((list (symbol :name "&") slot-name)
                      `((foreign-slot-pointer ,obj ',foreign-type ',slot-name) ,slot-name))
                     ((list slot-name subpattern)
                      `((foreign-slot-pointer ,obj ',foreign-type ',slot-name) ,subpattern))))
