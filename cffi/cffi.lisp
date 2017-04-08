@@ -1,5 +1,5 @@
 (defpackage :trivia.cffi
-  (:export :->))
+  (:export :-> :null-pointer))
 
 (defpackage :trivia.cffi.impl
   (:use :cl :alexandria :cffi
@@ -40,3 +40,8 @@ Note: Above example does not actually compile because it rebinds multiple patter
                      `((foreign-slot-pointer ,obj ',foreign-type ',slot-name) ,subpattern))))
                 slots))))
 
+(defpattern null-pointer ()
+  "Matches when the given foreign pointer is null. "
+  (with-gensyms (obj)
+    `(guard1 (,obj :type foreign-pointer)
+             (null-pointer-p ,obj))))
