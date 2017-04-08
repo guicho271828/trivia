@@ -9,7 +9,8 @@
 + news!(05/21/2016) Added support for minor implementations: CMU, ECL, CLISP, ABCL.
 + news!(05/22/2016) Implemented =ARRAY=, =SIMPLE-ARRAY=, =ARRAY-ROW-MAJOR=, =ARRAY-ROW-MAJOR*= patterns! Multi-dimentional arrays are now more handy!
 + news!(07/21/2016) Added =READ=, =LAST=, =SPLIT=, =SPLIT*= patterns! Parsing the string is more conveninent.
-+ *news!(07/21/2016)* Added =DYNAMIC= pattern! Careful use of this pattern can impact the performance sensitive code.
++ news!(01/21/2017) Added =DYNAMIC= pattern! Careful use of this pattern can impact the performance sensitive code.
++ *news!(04/08/2017)* Added a new contrib package =TRIVIA.CFFI= which provides =->= pattern ! Offers convenient access to foreign objects.
 
 * Trivia : Trivial Pattern Matching Compiler
 
