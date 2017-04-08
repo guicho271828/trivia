@@ -5,7 +5,7 @@
   :license "LLGPL"
   :author "Masataro Asai"
   :mailto "guicho2.71828@gmail.com"
-  :depends-on (:trivia)
+  :depends-on (:trivia :cffi)
   :pathname "cffi/"
   :components ((:file "cffi"))
   :in-order-to ((test-op (test-op :trivia.cffi.test))))
