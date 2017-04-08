@@ -1,4 +1,5 @@
 (defpackage :trivia.cffi
+  (:import-from :cffi :null-pointer)
   (:export :-> :null-pointer))
 
 (defpackage :trivia.cffi.impl
