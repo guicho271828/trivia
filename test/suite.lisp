@@ -76,8 +76,8 @@
   (is-match "foo" "foo")
   ;; complex
   (is-match '(1 t 3.14 :foo "foo") '(1 t 3.14 :foo "foo"))
-  (is (= 3 (match '(1 2 3) ('(1 _ a) a))))
-  (is (= 3 (match #(1 2 3) (#(1 _ a) a))))
+  (is (eql 3 (match '(1 2 3) ('(1 _ a) a))))
+  (is (eql 3 (match #(1 2 3) (#(1 _ a) a))))
   ;; ensure these are compared by char-wise eql
   (is-match "aaa" "aaa")
   (is-not-match "aaa" "AAA")
