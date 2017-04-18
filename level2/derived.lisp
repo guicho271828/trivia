@@ -286,13 +286,59 @@ by an and pattern."
 ;; #(a) -> (constant #(a)) -> (vector a)
 
 (defpattern quote (x)
-  "Synonym to the constant pattern."
+  "Synonym for the constant pattern."
   `(constant ,x))
 
 (defpattern constant (x)
   "Constant-folds the argument.
-   The argument should be a load/read-time constant such as 5, '(2), #(1 2 3), #S(foo :a 1).
-   They are decomposed element-wise in the compile time, possibly merged by the optimizer in trivia."
+The argument should be a compile-time constant such as 5, x, (2), #(1 2 3), #S(foo :a 1).
+QUOTE pattern is a synonym for CONSTANT pattern. Thus (quote ...) is equivalent to (constant ...).
+
+Elementary objects are compared by EQL. (characters, numbers, symbols)
+Conses, structures, arrays are recursively decomposed element-wise in compile time.
+Thus the comparison is different from either EQUAL or EQUALP:
+EQUAL only descends into conses/strings/bitvec, and EQUALP uses case-insensitive comparison.
+
+Pathnames are compared by EQUAL.
+Hash-tables are compared by EQUALP, but this usage is not recommended and subject to change.
+If it does not match any of the above types, it is compared by EQ.
+
+When the given object is decomposed, each sub-object forms a pattern.
+Thus, '(a b) matches '(1 0) where A and B is bound to 1 and 0.
+If you want it to exactly match '(a b), use '('a 'b) or (list 'a 'b).
+
+Similarly, #(a _ 0) matches #(2 1 0) where A is bound to 2.
+#S(person :name (cons a b)) matches #S(person :name (\"Susan\" \"Calvin\")).
+#S(person :name '(a b)) also matches #S(person :name (\"Susan\" \"Calvin\")).
+#S(person :name (a b)) errors, because pattern (A B) is not defined.
+This behavior is compatible to Optima.
+
+Examples:
+
+  (constant x) matches a symbol 'x, not a variable x under the scope.
+  (constant x) does not match a symbol 'y.
+  (constant #\x) matches a character #\x, and not #\X. (-> eql)
+  (constant 1) matches 1.
+
+Sequences (cons,bitvec,vector,string):
+  (constant (a b)) matches '(1 0) where A and B is bound to 1 and 0.
+  '(a b) == (quote (a b)) == (constant (a b)).
+  (constant \"aaa\") matches \"aaa\".
+  (constant #(0 1)) matches #(0 1).
+  (constant #(_ _)) matches #(0 1).
+Unlike EQUAL, fill-pointer is ignored (lengths should match).
+
+Structures:
+  (constant #(person :name \"Bob\")) matches #(person :name \"Bob\").
+  (constant #(person :name \"Bob\")) does not match #(person :name \"bob\"). (-> case sensitive unlike EQUALP)
+  (constant #(person :name a)) matches #(person :name \"Bob\"), with A bound to \"Bob\".
+
+General Array:
+  (constant #2A((0 1) (0 1))) matches #2A((0 1) (0 1)).    (-> similar to equalp)
+  (constant #2A((#\a #\a))) does not match #2A((#\A #\A)). (-> case sensitive unlike EQUALP)
+  (constant #2A((0 a) (b 1))) matches #2A((0 1) (0 1)) where A and B bound to 1 and 0.
+
+"
   (typecase x
     (simple-base-string          `(simple-base-string ,@(coerce x 'list)))
     (base-string                 `(base-string ,@(coerce x 'list)))
@@ -302,7 +348,24 @@ by an and pattern."
     (bit-vector                  `(bit-vector ,@(coerce x 'list)))
     (simple-vector               `(simple-vector ,@(coerce x 'list)))
     (vector                      `(vector ,@(coerce x 'list)))
+    (hash-table
+     (warn "You seem to include a raw hash-table object in a pattern, perhaps~
+            using a read-time evaluation ( #. ) form. This is not a wise act.
+            The given hash table is compared against the input by equalp.")
+     `(equalp ,x))
+    ;; TODO
+    (array
+     `(array :dimensions ',(array-dimensions x)
+             :rank       ,(array-rank x)
+             ;; element-type is not here since it is not visible from the literal
+             :contents   ,(decompose-array-contents x)))
+    (pathname                    `(equal ,x))
+    (symbol                      `(eq ',x))
+    (cons                        `(cons ,(car x) (constant ,(cdr x))))
+    ((or number character) `(eql ,x))
     (structure-object
+     ;; this should be in the last of TYPECASE because some implementations
+     ;; implement PATHNAMEs as structures
      (let ((c (class-of x)))
        `(structure ,(class-name c)
                    ,@(mapcar (lambda (slotdef)
@@ -319,18 +382,17 @@ by an and pattern."
                                           (aref slotdef 1)))))
                                  (list name (slot-value x name))))
                              (c2mop:class-slots c)))))
-    (hash-table
-     (warn "You seem to include a raw hash-table object in a pattern, perhaps~
-            using a read-time evaluation ( #. ) form. This is not a wise act.
-            The given hash table is compared against the input by equalp.")
-     `(equalp ,x))
-    ;; TODO
-    (array                            `(equalp ,x))
-    (pathname                         `(equal ,x))
-    (symbol `(eq ',x))
-    (cons `(list ,@x))
-    ((or number character) `(eql ,x))
     (t `(eq ,x))))
+
+(defun decompose-array-contents (x &optional (dim 0) (offset 0))
+  (if (< dim (array-rank x))
+      (mapcar (lambda (i)
+                (decompose-array-contents
+                 x (1+ dim)
+                 (+ offset (* i (reduce #'* (subseq (array-dimensions x) (1+ dim)))))))
+              (iota (array-dimension x dim)))
+      (row-major-aref x offset)))
+
 
 (defpattern place (place &optional eager)
   "Declares the variable PLACE is setf-able.
