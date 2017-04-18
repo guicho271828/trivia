@@ -141,3 +141,7 @@
                 '(match x
                   ((last _ -1)
                    t)))))
+
+(test issue-81
+  (is-match 'x 'x))
+

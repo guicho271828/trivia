@@ -167,18 +167,28 @@ which returns itself if it takes a single argument."
     `(guard1 ,it (,predicate-name ,it))))
 
 ;; here is a lot of possibility; e.g. strings can be compared in char-wise, etc.
-(dolist (s '(equal equalp))
-  (setf (symbol-pattern s)
-        (lambda (arg)
-          (with-gensyms (it)
-            `(guard1 (,it :type ,(if (constantp arg)
-                                     (type-of arg) t))
-                     (,s ,it ,arg))))))
-(dolist (s '(eq eql))
-  (setf (symbol-pattern s)
-        (lambda (arg)
-          (with-gensyms (it)
-            `(guard1 (,it :type (eql ,arg)) (,s ,it ,arg))))))
+
+(defpattern equal (arg)
+  "Compare the matching value against ARG (evaluated)."
+  (with-gensyms (it)
+    `(guard1 (,it :type ,(if (constantp arg)
+                             (type-of arg) t))
+             (equal ,it ,arg))))
+(defpattern equalp (arg)
+  "Compare the matching value against ARG (evaluated)."
+  (with-gensyms (it)
+    `(guard1 (,it :type ,(if (constantp arg)
+                             (type-of arg) t))
+             (equalp ,it ,arg))))
+(defpattern eq (arg)
+  "Compare the matching value against ARG (evaluated)."
+  (with-gensyms (it)
+    `(guard1 (,it :type (eql ,arg)) (eq ,it ,arg))))
+(defpattern eql (arg)
+  "Compare the matching value against ARG (evaluated)."
+  (with-gensyms (it)
+    `(guard1 (,it :type (eql ,arg)) (eql ,it ,arg))))
+
 
 
 (defpattern type (type-specifier)
