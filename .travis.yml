@@ -13,12 +13,12 @@ env:
     - PATH=~/.roswell/bin:$PATH
     - ROSWELL_INSTALL_DIR=$HOME/.roswell
   matrix:
+    - LISP=clisp
     - LISP=ecl
     - LISP=cmucl
     - LISP=sbcl-bin
     - LISP=ccl-bin
     - LISP=abcl
-    - LISP=clisp
     - LISP=alisp
 
 matrix:
@@ -29,6 +29,8 @@ matrix:
 install:
   - curl -L https://raw.githubusercontent.com/snmsts/roswell/release/scripts/install-for-ci.sh | sh
   - ( cd ~/lisp/ ; git clone https://github.com/guicho271828/lisp-namespace.git )
+  - ros asdf install
+  - ros asdf use $(ros asdf list | head -n 1)
 
 cache:
   directories:

@@ -4,6 +4,7 @@
 exec ros -Q -- $0 "$@"
 |#
 
+(ros:asdf)
 (print (lisp-implementation-type))
 (print (lisp-implementation-version))
 (print (software-type))
@@ -13,6 +14,11 @@ exec ros -Q -- $0 "$@"
 (print (machine-version))
 (print (long-site-name))
 (ql:register-local-projects)
+#+clisp
+(ql:quickload :asdf)
+#+clisp
+(asdf:load-system :uiop)
+#-clisp
 (ql:quickload :uiop)
 (ql:quickload :fiveam)
 
