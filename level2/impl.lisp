@@ -308,7 +308,6 @@ or results in a compilation error when this is the outermost matching construct.
                        ;; if the number of argument is zero, there is no use
                        clauses)))
     `(symbol-macrolet ,bindings
-       (declare (ignorable ,@args))
        (declare ,@(remove nil
                           (mapcar (lambda (arg type)
                                     (unless (eq t type) `(type ,type ,arg)))
