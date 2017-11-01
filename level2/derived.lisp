@@ -265,7 +265,7 @@ Also, the result may be affected by the safety setting of the optimization optio
 
 (defpattern alist (&rest args)
   "alist and plist patterns expand into a collection of assoc and property patterns, respectively, connected
-by an and pattern."
+by an and pattern.  Example: (alist :key1 _ :key2 value)"
   `(and ,@(mapcar (lambda-match0
                     ((cons key pattern)
                      `(assoc ,key ,pattern)))
@@ -273,7 +273,7 @@ by an and pattern."
 
 (defpattern plist (&rest args)
   "alist and plist patterns expand into a collection of assoc and property patterns, respectively, connected
-by an and pattern."
+by an and pattern. Example: (plist :key1 _ :key2 value)"
   `(and ,@(mapcar (lambda-match0
                     ((cons key pattern)
                      `(property ,key ,pattern)))
