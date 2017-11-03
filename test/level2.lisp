@@ -110,6 +110,8 @@
     (simple-array :dimensions 2 :contents ((a b) (c d))))
   (is-match #2A((0 1) (2 3))
     (simple-array :dimensions '2 :contents ((a b) (c d))))
+  ;; quoted conses should not expand to patterns (issue #86)
+  #+(or)
   (is-match #2A((0 1) (2 3))
     (simple-array :dimensions '(_ _) :contents ((a b) (c d))))
   (is-match #2A((0 1) (2 3))
@@ -157,7 +159,16 @@
   (is-not-match 'y 'x)
   
   (is-match 1 1)
+
+  ;; http://clhs.lisp.se/Body/f_eq.htm , see Notes:
+  ;; 
+  ;; An implementation is permitted to make ``copies'' of characters and numbers
+  ;; at any time. The effect is that Common Lisp makes no guarantee that eq is
+  ;; true even when both its arguments are ``the same thing'' if that thing is a
+  ;; character or number.
+  ;; 
   #+undefined (is-match 1 (eq 1))
+  
   (is-match 1 (eql 1))
   (is-match 1 (equal 1))
   (is-match 1 (equalp 1))
@@ -197,8 +208,11 @@
   #+undefined (is-match '(a b) (eql '(a b)))
   (is-match '(a b) (equal '(a b)))
   (is-match '(a b) (equalp '(a b)))
-  
+
+  ;; quoted conses should not expand to patterns (issue #86)
+  #+(or)
   (is-match '(0 1) '(a b))
+  (is-not-match '(0 1) '(a b))
   (is-not-match '(0 1) (eq '(a b)))
   (is-not-match '(0 1) (eql '(a b)))
   (is-not-match '(0 1) (equal '(a b)))
@@ -255,3 +269,10 @@
   (is-not-match #S(POINT :x "A" :y "B") (equal #S(POINT :x "A" :y "B")))
   (is-match #S(POINT :x "A" :y "B") (equalp #S(POINT :x "A" :y "B")))
   (is-not-match #S(POINT :x "A" :y "B") #S(POINT :x "a" :y "b")))
+
+(test issue-86
+  (let ((a 0))
+    (match `(1)
+      ('(a)
+        (fail "should not match")))))
+  

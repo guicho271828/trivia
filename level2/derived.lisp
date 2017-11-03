@@ -362,7 +362,13 @@ General Array:
              :contents   ,(decompose-array-contents x)))
     (pathname                    `(equal ,x))
     (symbol                      `(eq ',x))
+    ;; WITH variables-in-quoted-literal extension (issue #86). Removed, since
+    ;; for conses we have quasiquotes. Arrays/structs does not have unquote, so
+    ;; the extensions are allowed.
+    #+(or)
     (cons                        `(cons ,(car x) (constant ,(cdr x))))
+    ;; WITHOUT variables-in-quoted-literal extension
+    (cons                        `(cons (constant ,(car x)) (constant ,(cdr x))))
     ((or number character) `(eql ,x))
     (structure-object
      ;; this should be in the last of TYPECASE because some implementations
