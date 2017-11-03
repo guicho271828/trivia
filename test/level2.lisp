@@ -157,7 +157,16 @@
   (is-not-match 'y 'x)
   
   (is-match 1 1)
+
+  ;; http://clhs.lisp.se/Body/f_eq.htm , see Notes:
+  ;; 
+  ;; An implementation is permitted to make ``copies'' of characters and numbers
+  ;; at any time. The effect is that Common Lisp makes no guarantee that eq is
+  ;; true even when both its arguments are ``the same thing'' if that thing is a
+  ;; character or number.
+  ;; 
   #+undefined (is-match 1 (eq 1))
+  
   (is-match 1 (eql 1))
   (is-match 1 (equal 1))
   (is-match 1 (equalp 1))
