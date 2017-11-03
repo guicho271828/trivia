@@ -213,7 +213,8 @@ returned by (cdr (assoc item X...)) against SUBPATTERN.
 If :KEY and :TEST are specified, they are passed to ASSOC.
 
 The TYPE-ERROR signaled by ASSOC, which means improper association list,
-is captured by the matcher and is not bubble up outside matcher.
+is captured by the matcher and treated as a match failure (proceeding to the next clause),
+rather than making it visible to the outer environment.
 However, when TYPE-ERROR is signalled by the :test or :key functions,
 they are visible to the environment and the users are required to handle them.
 "
