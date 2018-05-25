@@ -255,7 +255,14 @@ returned by (getf KEY X DEFAULT) against SUBPATTERN.
 FOUNDP is bound to T in order to indicate the reason that NIL is matched.
 It is implementation-dependent whether it matches against a list of odd number of elements or it signals an error.
 Also, the result may be affected by the safety setting of the optimization option.
-"
+
+By default, PROPERTY pattern matches even if the given KEY is missing in the property list,
+since the value of a missing key is NIL, due to closed-world assumption --- a bit of classical AI context.
+If you want to make it fail when KEY is missing, i.e. to treat a property list like a structure,
+
++ Use FOUNDP optional argument: (property :key subpattern nil t) does not match when :key is missing in the list,
+  since the FOUNDP value is NIL and it does not match T.
++ We also provide a syntax sugar, PROPERTY!, i.e. a 'stricter' PROPERTY pattern." 
   (with-gensyms (it it2 indicator)
     `(guard1 (,it :type list)
              (listp ,it)
@@ -263,6 +270,18 @@ Also, the result may be affected by the safety setting of the optimization optio
              (guard1 ,it2 t
                      ,@(if foundp-suppliedp `((if (eql ,it2 ',indicator) nil t) ,foundp))
                      (if (eql ,it2 ',indicator) ,default ,it2) ,subpattern))))
+
+(defpattern property! (key subpattern &optional (default nil))
+  "This is a simple syntax sugar on top of PROPERTY pattern, using (PROPERTY KEY SUBPATTERN DEFAULT T).
+
+It matches when the object X is a list, and then further matches the contents
+returned by (getf KEY X DEFAULT) against SUBPATTERN.
+Here, unlike PROPERTY pattern, an additional constraint is applied:
+the KEY element should exist in the property list.
+When KEY is missing in the property list, it fails and proceeds to the next pattern.
+
+Note that it matches when the property list contains KEY and its value is NIL, e.g. :B in (:A 2 :B NIL)."
+  `(property ,key ,subpattern ,default t))
 
 (defpattern alist (&rest args)
   "alist and plist patterns expand into a collection of assoc and property patterns, respectively, connected
