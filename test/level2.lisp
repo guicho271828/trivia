@@ -276,3 +276,32 @@
       ('(a)
         (fail "should not match")))))
   
+(test issue-89-property!
+  (is (eq nil
+          (match '(:y 88)
+            ((property :x x) x)
+            ((property :y y) y))))
+  (is (eq 88
+          (match '(:y 88)
+            ((property :x (and x (not nil))) x)
+            ((property :y y) y))))
+
+  (is (eq nil
+          (match '(:y 88 :x nil)
+            ((property :x x nil t) x)  ; constant t matches the constant t.
+            ((property :y y) y))))
+
+  (is (eq 88
+          (match '(:y 88)
+            ((property :x x nil t) x)  ; t does not match nil, thus fail
+            ((property :y y) y))))
+
+  (is (eq nil
+          (match '(:y 88 :x nil)
+            ((property! :x x) x)
+            ((property! :y y) y))))
+  (is (eq 88
+          (match '(:y 88)
+            ((property! :x x) x)
+            ((property! :y y) y)))))
+
