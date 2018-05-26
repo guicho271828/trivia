@@ -40,6 +40,7 @@
            :alist
            :plist
            :property
+           :property!
            :access
            :$guard1
            :$or1
