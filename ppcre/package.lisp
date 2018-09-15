@@ -1,4 +1,5 @@
 (defpackage :trivia.ppcre
+  (:import-from :cl-ppcre :split)
   (:export :ppcre
            :split
            :split*))
@@ -15,6 +16,10 @@
 ;; we may even be able to implement ppcre-specific optimizer, do we?
 
 (defpattern ppcre (regexp-and-options &rest subpatterns)
+  "Accepts both a short form and a long form.
+Long  form: ppcre (regexp &key start end sharedp) &rest subpatterns
+Short form: ppcre regexp &rest subpatterns
+"
   (destructuring-bind (regexp &key start end sharedp) (ensure-list regexp-and-options)
     (typecase regexp
       (string
@@ -37,10 +42,7 @@
                (simple-vector* ,@subpatterns)))))
 
 (defmacro ppcre ((regexp &key start end sharedp) &rest subpatterns)
-  "Accepts both a short form and a long form.
-Long  form: ppcre (regexp &key start end sharedp) &rest subpatterns
-Short form: ppcre regexp &rest subpatterns
-"
+  "A dummy macro for PPCRE pattern to be recognized in eldoc"
   (declare (ignorable regexp start end sharedp subpatterns))
   (warn "stub!"))
 
