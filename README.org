@@ -11,7 +11,8 @@
 + news!(07/21/2016) Added =READ=, =LAST=, =SPLIT=, =SPLIT*= patterns! Parsing the string is more conveninent.
 + news!(01/21/2017) Added =DYNAMIC= pattern! Careful use of this pattern can impact the performance sensitive code.
 + news!(04/08/2017) Added a new contrib package =TRIVIA.CFFI= which provides =->= pattern ! Offers convenient access to foreign objects.
-+ *news!(05/26/2018)* Added =property!=, which only matches when the key is present in a plist.
++ news!(05/26/2018) Added =property!=, which only matches when the key is present in a plist.
++ *news!(09/06/2018)* SPLIT symbol was exported from the =trivia.ppcre= package.
 
 * Trivia : Trivial Pattern Matching Compiler
 
