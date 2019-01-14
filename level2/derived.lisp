@@ -168,28 +168,38 @@ which returns itself if it takes a single argument."
 
 ;; here is a lot of possibility; e.g. strings can be compared in char-wise, etc.
 
+(defun type-of-form (form)
+  (cond ((and (consp form)
+              (eq (first form) 'quote)
+              (consp (rest form))
+              (null (rest (rest form))))
+         `(eql ,(second form)))
+        ((and (atom form)
+              (not (symbolp form)))
+         `(eql ,form))
+        (t 't)))
+
 (defpattern equal (arg)
   "Compare the matching value against ARG (evaluated)."
   (with-gensyms (it)
-    `(guard1 (,it :type ,(if (constantp arg)
-                             (type-of arg) t))
+    `(guard1 (,it :type ,(type-of-form arg))
              (equal ,it ,arg))))
+
 (defpattern equalp (arg)
   "Compare the matching value against ARG (evaluated)."
   (with-gensyms (it)
-    `(guard1 (,it :type ,(if (constantp arg)
-                             (type-of arg) t))
+    `(guard1 (,it :type ,(type-of-form arg))
              (equalp ,it ,arg))))
+
 (defpattern eq (arg)
   "Compare the matching value against ARG (evaluated)."
   (with-gensyms (it)
-    `(guard1 (,it :type (eql ,arg)) (eq ,it ,arg))))
+    `(guard1 (,it :type ,(type-of-form arg)) (eq ,it ,arg))))
+
 (defpattern eql (arg)
   "Compare the matching value against ARG (evaluated)."
   (with-gensyms (it)
-    `(guard1 (,it :type (eql ,arg)) (eql ,it ,arg))))
-
-
+    `(guard1 (,it :type ,(type-of-form arg)) (eql ,it ,arg))))
 
 (defpattern type (type-specifier)
   "Match when (typep OBJ type-specifier) returns true."
