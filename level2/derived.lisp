@@ -168,27 +168,73 @@ which returns itself if it takes a single argument."
 
 ;; here is a lot of possibility; e.g. strings can be compared in char-wise, etc.
 
-(defun type-of-form (form)
-  (cond ((and (consp form)
-              (eq (first form) 'quote)
-              (consp (rest form))
-              (null (rest (rest form))))
-         `(eql ,(second form)))
-        ((and (atom form)
-              (not (symbolp form)))
-         `(eql ,form))
-        (t 't)))
+(defun type-of-quoted-form (form)
+  (match0 form
+    ((cons a b)
+     `(cons ,(type-of-quoted-form a)
+            ,(type-of-quoted-form b)))
+    (_
+     (etypecase form
+       ((or symbol number character)
+        `(eql ,form))
+       (t
+        (type-of form))))))
+
+(defun type-of-form (form &optional weak)
+  "Returns a type of FORM.
+When WEAK is non-nil, it returns a decomposed type of the quoted cons cells instead of eql type for the cons object itself.
+Note that this is equivalent to the full type-inference mechanism, so we are reinventing a wheel here."
+  ;;
+  ;; See carefully below:
+  ;; file:///usr/share/doc/hyperspec/Body/f_eql.htm
+  ;; file:///usr/share/doc/hyperspec/Body/t_eql.htm
+  ;; file:///usr/share/doc/hyperspec/Body/f_consta.htm
+  (match0 form
+    ((list 'quote thing)
+     (etypecase thing
+       ((or symbol number character)    ;e.g. '42, '#\c, 'a --- if they are equal/equalp, it implies eql
+        `(eql ,thing))
+       (t
+        ;; '"string", '#S(point :x 5 :y 5), arrays, conses, standard-objects etc.
+        (if weak
+            ;; if the comparison is done in equal / equalp, then the object
+            ;; might not be (most likely not) eql to the object used in the macro expansion.
+            (type-of-quoted-form thing)
+            ;; if the comparison is done in eq / eql, then the matched object
+            ;; should be eql to the object that appeared in the form, thus it is
+            ;; safe to declare the type with eql. BTW, the only case that this
+            ;; happens is when THING is cached somewhere and is eq to the object
+            ;; in the form.
+            `(eql ,thing)))))
+    (_
+     ;; not quoted: evaluated.
+     ;; at least try to macroexpand it
+     (multiple-value-bind (form expanded) (macroexpand form)
+       (cond
+         (expanded
+          ;; retry
+          (type-of-form form))
+         
+         ((constantp form)
+          ;; (constantp form) returns true when FORM is either:
+          ;; * self-evaluating atoms (e.g. numbers, chars, arrays, structs),
+          ;; * constant vars (keywords, nil, t, pi, etc.),
+          ;; * quoted forms (which is already handled in the first clause),
+          ;; * some impl-dependent form that is reasoned to be a constant (e.g. (* 2 pi))
+          (type-of-form `(quote ,(eval form)) weak))
+
+         (t t))))))
 
 (defpattern equal (arg)
   "Compare the matching value against ARG (evaluated)."
   (with-gensyms (it)
-    `(guard1 (,it :type ,(type-of-form arg))
+    `(guard1 (,it :type ,(type-of-form arg t))
              (equal ,it ,arg))))
 
 (defpattern equalp (arg)
   "Compare the matching value against ARG (evaluated)."
   (with-gensyms (it)
-    `(guard1 (,it :type ,(type-of-form arg))
+    `(guard1 (,it :type ,(type-of-form arg t))
              (equalp ,it ,arg))))
 
 (defpattern eq (arg)
