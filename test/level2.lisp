@@ -305,3 +305,125 @@
             ((property! :x x) x)
             ((property! :y y) y)))))
 
+(test issue-93-eq-type-inference
+
+  (is (equal '(eql 42)
+             (trivia.level2.impl::type-of-form 42 t)))
+  (is (equal '(eql 42)
+             (trivia.level2.impl::type-of-form '42 t)))
+  (is (equal '(eql 42)
+             (trivia.level2.impl::type-of-form `(quote 42) t)))
+  (is (equal '(eql 42)
+             (trivia.level2.impl::type-of-form 42 nil)))
+  (is (equal '(eql 42)
+             (trivia.level2.impl::type-of-form '42 nil)))
+  (is (equal '(eql 42)
+             (trivia.level2.impl::type-of-form `(quote 42) nil)))
+
+  (is (equal '(eql #\c)
+             (trivia.level2.impl::type-of-form #\c t)))
+  (is (equal '(eql #\c)
+             (trivia.level2.impl::type-of-form '#\c t)))
+  (is (equal '(eql #\c)
+             (trivia.level2.impl::type-of-form `(quote #\c) t)))
+  (is (equal '(eql #\c)
+             (trivia.level2.impl::type-of-form #\c nil)))
+  (is (equal '(eql #\c)
+             (trivia.level2.impl::type-of-form '#\c nil)))
+  (is (equal '(eql #\c)
+             (trivia.level2.impl::type-of-form `(quote #\c) nil)))
+
+  (is (equal t
+             (trivia.level2.impl::type-of-form 'a t)))
+  (is (equal '(eql a)
+             (trivia.level2.impl::type-of-form `(quote a) t)))
+  (is (equal t
+             (trivia.level2.impl::type-of-form 'a nil)))
+  (is (equal '(eql a)
+             (trivia.level2.impl::type-of-form `(quote a) nil)))
+
+  (is (equal '(eql :keyword)
+             (trivia.level2.impl::type-of-form :keyword t)))
+  (is (equal '(eql :keyword)
+             (trivia.level2.impl::type-of-form ':keyword t)))
+  (is (equal '(eql :keyword)
+             (trivia.level2.impl::type-of-form `(quote :keyword) t)))
+  (is (equal '(eql :keyword)
+             (trivia.level2.impl::type-of-form :keyword nil)))
+  (is (equal '(eql :keyword)
+             (trivia.level2.impl::type-of-form ':keyword nil)))
+  (is (equal '(eql :keyword)
+             (trivia.level2.impl::type-of-form `(quote :keyword) nil)))
+
+  (is (equal (type-of "str")
+             (trivia.level2.impl::type-of-form "str" t)))
+  (is (equal (type-of "str")
+             (trivia.level2.impl::type-of-form '"str" t)))
+  (is (equal (type-of "str")
+             (trivia.level2.impl::type-of-form `(quote "str") t)))
+  (let ((s "str"))
+    (is (equal `(eql ,s)
+               (trivia.level2.impl::type-of-form s nil)))
+    (is (equal `(eql ,s)
+               (trivia.level2.impl::type-of-form `(quote ,s) nil))))
+  
+  (is (equal 'person
+             (trivia.level2.impl::type-of-form (make-instance 'person) t)))
+  (is (equal 'person
+             (trivia.level2.impl::type-of-form `(quote ,(make-instance 'person)) t)))
+  (let ((p (make-instance 'person)))
+    (is (equal `(eql ,p)
+               (trivia.level2.impl::type-of-form p nil)))
+    (is (equal `(eql ,p)
+               (trivia.level2.impl::type-of-form `(quote ,p) nil))))
+
+  (is (equal 'point
+             (trivia.level2.impl::type-of-form (make-point) t)))
+  (is (equal 'point
+             (trivia.level2.impl::type-of-form (quote #.(make-point)) t)))
+  (is (equal 'point
+             (trivia.level2.impl::type-of-form `(quote ,(make-point)) t)))
+  (is (equal 'point
+             (trivia.level2.impl::type-of-form #S(point) t)))
+  (is (equal 'point
+             (trivia.level2.impl::type-of-form (quote #S(point)) t)))
+  (is (equal 'point
+             (trivia.level2.impl::type-of-form `(quote #S(point)) t)))
+  
+  (let ((p #S(point)))
+    (is (equal `(eql ,p)
+               (trivia.level2.impl::type-of-form p nil)))
+    (is (equal `(eql ,p)
+               (trivia.level2.impl::type-of-form `(quote ,p) nil))))
+
+  ;; structural (conses)
+  (is (equal t
+             (trivia.level2.impl::type-of-form `(unknownfunctionform a b) t)))
+  (is (equal t
+             (trivia.level2.impl::type-of-form `(unknownfunctionform a b) nil)))
+  (defconstant +answer-to-everything+ 42)
+  (is (equal `(eql 42)
+             (trivia.level2.impl::type-of-form `+answer-to-everything+ t)))
+  (is (equal `(eql 42)
+             (trivia.level2.impl::type-of-form `+answer-to-everything+ nil)))
+  (define-symbol-macro %%answer-to-everything%% +answer-to-everything+)
+  (is (equal `(eql 42)
+             (trivia.level2.impl::type-of-form `%%answer-to-everything%% t)))
+  (is (equal `(eql 42)
+             (trivia.level2.impl::type-of-form `%%answer-to-everything%% nil)))
+
+  (is (equal '(cons point point)
+             (trivia.level2.impl::type-of-form `(quote (,(make-point) . ,(make-point))) t)))
+  
+  (let* ((p #S(point))
+         (c `(,p . ,p)))
+    (is (equal '(cons point point)
+               (trivia.level2.impl::type-of-form `(quote ,c) t)))
+    (is (equal `(eql ,c)
+               (trivia.level2.impl::type-of-form `(quote ,c) nil))))
+
+  (let ((c '(x y z)))
+    (is (equal '(cons (eql x) (cons (eql y) (cons (eql z) (eql nil))))
+               (trivia.level2.impl::type-of-form `(quote ,c) t)))
+    (is (equal `(eql ,c)
+               (trivia.level2.impl::type-of-form `(quote ,c) nil)))))
