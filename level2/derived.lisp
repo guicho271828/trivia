@@ -380,14 +380,14 @@ Hash-tables are compared by EQUALP, but this usage is not recommended and subjec
 If it does not match any of the above types, it is compared by EQ.
 
 When the given object is decomposed, each sub-object forms a pattern.
-Thus, '(a b) matches '(1 0) where A and B is bound to 1 and 0.
-If you want it to exactly match '(a b), use '('a 'b) or (list 'a 'b).
-
-Similarly, #(a _ 0) matches #(2 1 0) where A is bound to 2.
-#S(person :name (cons a b)) matches #S(person :name (\"Susan\" \"Calvin\")).
-#S(person :name '(a b)) also matches #S(person :name (\"Susan\" \"Calvin\")).
-#S(person :name (a b)) errors, because pattern (A B) is not defined.
+ (constant #(a _ 0)) matches #(2 1 0) where A is bound to 2.
+ (constant #S(person :name (cons a b))) matches #S(person :name (\"Susan\" \"Calvin\")).
+ (constant #S(person :name (a b))) errors, because pattern expander A is not defined.
 This behavior is compatible to Optima.
+
+However, this rule does not apply to conses, as the feature is instead supported by quasiquotes (see issue #86).
+i.e., (constant (a b)) DOES NOT match '(1 0) and matches '(a b).
+
 
 Examples:
 
@@ -397,11 +397,11 @@ Examples:
   (constant 1) matches 1.
 
 Sequences (cons,bitvec,vector,string):
-  (constant (a b)) matches '(1 0) where A and B is bound to 1 and 0.
-  '(a b) == (quote (a b)) == (constant (a b)).
+  (constant (a b)) matches '(A B) and not '(1 0).
   (constant \"aaa\") matches \"aaa\".
   (constant #(0 1)) matches #(0 1).
   (constant #(_ _)) matches #(0 1).
+  (constant #(A B)) matches #(0 1) with A bound to 1, B bound to 0.
 Unlike EQUAL, fill-pointer is ignored (lengths should match).
 
 Structures:
