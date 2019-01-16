@@ -221,7 +221,14 @@ Note that this is equivalent to the full type-inference mechanism, so we are rei
           ;; * constant vars (keywords, nil, t, pi, etc.),
           ;; * quoted forms (which is already handled in the first clause),
           ;; * some impl-dependent form that is reasoned to be a constant (e.g. (* 2 pi))
-          (type-of-form `(quote ,(eval form)) weak))
+          (handler-case
+              (type-of-form `(quote ,(eval form)) weak)
+            (unbound-variable ()
+              ;; handle potential unbound-variable.
+              ;; CLHS constantp:
+              ;; > An implementation may choose to evaluate the value-form at compile time, load time, or both
+              ;; the value may not be bound in the compile time.
+              t)))
 
          (t t))))))
 
