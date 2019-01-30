@@ -107,10 +107,12 @@ such as size, element-type.
                                                    `(list ,@(mapcar (constantly '_) (iota x))))
                                                   (_
                                                    ;; Enhancement. Balland2006 optimizer is able to merge these declarations
+                                                   #+(or)
                                                    `(and (list ,@(mapcar
                                                                   (constantly `(type (integer 1 ,array-dimension-limit)))
                                                                   (iota deduced-rank)))
-                                                         ,dimensions)))
+                                                         ,dimensions)
+                                                   dimensions))
                  (array-rank               ,a) ,rank
                  (array-total-size         ,a) ,total-size
                  (adjustable-array-p       ,a) ,adjustable
