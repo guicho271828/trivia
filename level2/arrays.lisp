@@ -1,7 +1,7 @@
 (in-package :trivia.level2.impl)
 
-(defun-match* array-type-spec (adjustable has-fill-pointer displaced-to displaced-index-offset)
-  ((nil nil nil 0) 'simple-array)
+(defun-match* array-type-spec (adjustable has-fill-pointer displaced-to)
+  ((nil nil nil) 'simple-array)
   (_ 'array))
 
 (defun-match element-type-spec (element-type)
@@ -63,7 +63,7 @@ For example, DIMENSION = '(1 2 3) and RANK = 2 is inconsistent, the RANK should 
                    adjustable
                    has-fill-pointer
                    displaced-to
-                   (displaced-index-offset 0)
+                   displaced-index-offset
                    dimensions
                    rank
                    total-size
@@ -91,9 +91,7 @@ such as size, element-type.
 * If ADJUSTABLE, HAS-FILL-POINTER, DISPLACED-TO are all NIL, then
   it is a SIMPLE-ARRAY. Otherwise it's an ARRAY.
 "
-  ;; deduce the array type
-  (check-type displaced-index-offset (and fixnum (integer 0)))
-  (let ((array-type-spec (array-type-spec adjustable has-fill-pointer displaced-to displaced-index-offset))
+  (let ((array-type-spec (array-type-spec adjustable has-fill-pointer displaced-to))
         (element-type-spec (element-type-spec element-type)))
     (multiple-value-bind (dimensions-spec total-size deduced-rank) (common-specs dimensions rank total-size contents)
       (with-gensyms (a)
@@ -136,7 +134,7 @@ such as size, element-type.
 This is an alias to the base ARRAY pattern.
 "
   (declare (ignorable element-type dimensions rank total-size contents))
-  `(array :adjustable nil  :has-fill-pointer nil :displaced-to nil :displaced-index-offset 0 ,@args))
+  `(array :adjustable nil  :has-fill-pointer nil :displaced-to nil ,@args))
 
 (defpattern row-major-array* (&key element-type
                                    adjustable
@@ -149,7 +147,7 @@ This is an alias to the base ARRAY pattern.
                                    contents)
   "This is a soft-match variant of ROW-MAJOR-ARRAY pattern
 i.e. the total length of CONTENTS (subpatterns) can be less than the actual size of the pattern."
-  (let ((array-type-spec (array-type-spec adjustable has-fill-pointer displaced-to displaced-index-offset))
+  (let ((array-type-spec (array-type-spec adjustable has-fill-pointer displaced-to))
         (element-type-spec (element-type-spec element-type)))
     (multiple-value-bind (dimensions-spec total-size) (common-specs dimensions rank total-size)
       (with-gensyms (a)
