@@ -130,7 +130,11 @@
      (is (= b 1))
      (is (= c 2)))
     (_
-     (fail "failed to match against row-major-array*"))))
+     (fail "failed to match against row-major-array*")))
+
+  (let* ((a (make-array 10))
+         (d (make-array 8 :displaced-to a :displaced-index-offset 2)))
+    (is-match d (array))))
 
 (test last
       (is-match (alexandria:iota 5)
