@@ -104,6 +104,9 @@ such as size, element-type.
                  (array-dimensions         ,a) ,(match dimensions
                                                   ((or (and x (integer))
                                                        (list 'quote (and x (integer))))
+                                                   ;; When the DIMENSIONS pattern was given in an integer,
+                                                   ;; it should be replaced with a list pattern,
+                                                   ;; otherwise it fails to match.
                                                    `(list ,@(mapcar (constantly '_) (iota x))))
                                                   (_
                                                    ;; Enhancement. Balland2006 optimizer is able to merge these declarations
@@ -157,6 +160,9 @@ i.e. the total length of CONTENTS (subpatterns) can be less than the actual size
                  (array-dimensions         ,a) ,(match dimensions
                                                   ((or (and x (integer))
                                                        (list 'quote (and x (integer))))
+                                                   ;; When the DIMENSIONS pattern was given in an integer,
+                                                   ;; it should be replaced with a list pattern,
+                                                   ;; otherwise it fails to match.
                                                    `(list ,@(mapcar (constantly '_) (iota x))))
                                                   (_ dimensions))
                  (array-rank               ,a) ,rank
