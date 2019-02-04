@@ -117,8 +117,10 @@ such as size, element-type.
                  (array-rank               ,a) ,rank
                  (array-total-size         ,a) ,total-size
                  (adjustable-array-p       ,a) ,adjustable
-                 (multiple-value-list (array-displacement ,a))
-                 (list ,displaced-to ,displaced-index-offset)
+                 (nth-value 0 (array-displacement ,a))
+                 ,displaced-to
+                 (nth-value 1 (array-displacement ,a))
+                 ,displaced-index-offset
                  ,@(labels ((parse-array-body (rank contents r-subscripts)
                               (if (= rank 0)
                                   `((aref ,a ,@(reverse r-subscripts)) ,contents)
