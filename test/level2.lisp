@@ -431,3 +431,10 @@
                (trivia.level2.impl::type-of-form `(quote ,c) t)))
     (is (equal `(eql ,c)
                (trivia.level2.impl::type-of-form `(quote ,c) nil)))))
+
+(test member
+      (is-match 1 (member '(1 2 3)))
+      (is-not-match 6 (member '(1 2 3)))
+      (let ((list (list 1 2 3)))
+        (is-match 1 (member '(1 2 3)))
+        (is-not-match 6 (member '(1 2 3)))))

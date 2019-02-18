@@ -50,3 +50,14 @@ Subpattern is matched against NIL."
     `(guard1 (,it :type list) (listp ,it)
              (last ,it ,n)
              ,subpattern)))
+
+
+(defpattern member (list &rest args &key (key nil) (test 'eql))
+  "Matches against an object O that satisfies (member O LIST <args>)."
+  (with-gensyms (it)
+    `(guard1 (,it :type ,(if (and (constantp list)
+                                  (eq test 'eql)
+                                  (eq key nil))
+                             `(member ,@(eval list))
+                             t))
+             (member ,it ,list ,@args))))
