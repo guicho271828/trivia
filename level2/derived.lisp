@@ -348,7 +348,7 @@ Note that it matches when the property list contains KEY and its value is NIL, e
 
 (defpattern alist (&rest args)
   "alist and plist patterns expand into a collection of assoc and property patterns, respectively, connected
-by an and pattern.  Example: (alist :key1 _ :key2 value)"
+by an and pattern.  Example: (alist (:key1 . _) (:key2 . value))"
   `(and ,@(mapcar (lambda-match0
                     ((cons key pattern)
                      `(assoc ,key ,pattern)))
