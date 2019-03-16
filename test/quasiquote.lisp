@@ -10,12 +10,12 @@
 
 (test quasiquote
   (finishes
-   (match (list 1 2)
+   (ematch (list 1 2)
      (`(,b ,c)
        (is (= 1 b))
        (is (= 2 c)))))
   (finishes
-   (match (list 1 2 3)
+   (ematch (list 1 2 3)
      (`(,b ,@c)
        (is (= 1 b))
        (is (equal c (list 2 3)))))))
