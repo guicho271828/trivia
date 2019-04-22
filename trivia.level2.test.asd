@@ -2,7 +2,7 @@
   :author "Masataro Asai"
   :mailto "guicho2.71828@gmail.com"
   :description "Test system of trivia.level2"
-  :depends-on ("fiveam" "trivia.level2")
+  :depends-on ("fiveam" "trivia.level2" "optima")
   :pathname "test/"
   :serial t
   :components ((:file "suite")

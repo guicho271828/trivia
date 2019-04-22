@@ -438,3 +438,52 @@
       (let ((list (list 1 2 3)))
         (is-match 1 (member '(1 2 3)))
         (is-not-match 6 (member '(1 2 3)))))
+
+(test more-guards
+  (flet ((optima (x)
+           (optima:match x
+             ((list (optima:guard x (eql x y)) y)
+              :ok)))
+         (trivia (x)
+           (match x
+             ((list (guard x (eql x y)) y)
+              :ok))))
+
+    (is (eql :ok (optima '(1 1))))
+    (is (eql nil (optima '(1 2))))
+    (is (eql :ok (trivia '(1 1))))
+    (is (eql nil (trivia '(1 2)))))
+
+  (flet ((optima (x)
+           (optima:match x
+             ((not (optima:guard (list x y) (eql x y)))
+              t)))
+         ;; does not compile; variables in NOT are not captured
+         #+(or)
+         (optima2 (x)
+           (optima:match x
+             ((not (optima:guard (list x y) (eql x y)))
+              (+ x y))))
+         (trivia (x)
+           (match x
+             ((not (guard (list x y) (eql x y)))
+              t))))
+
+    ;; optima:
+    ;; (or (guard (list #:x #:y) (not (eql #:x #:y)))
+    ;;     (not (list #:x #:y)))
+    ;; --- variables are renamed
+    (is (eql nil (optima '(1 1))))
+    (is (eql t   (optima '(1 2))))
+    (is (eql t   (optima :a)))
+
+    ;; currently:
+    ;; (is (eql nil (trivia '(1 1))))
+    ;; (is (eql nil (trivia '(1 2))))
+    ;; (is (eql t   (trivia :a)))
+
+    ;; should be:
+    (is (eql nil (trivia '(1 1))))
+    (is (eql t   (trivia '(1 2))))
+    (is (eql t   (trivia :a)))))
+
