@@ -101,6 +101,7 @@ should be negated, but the test itself should remain T
   "Matches when the SUBPATTERN does not match.
 Variables in the subpattern are treated as dummy variables, and will not be visible from the clause body."
   (ematch0 (pattern-expand subpattern)
+    ;; now the result should contain only either guard1 or or1 patterns.
     ((list* 'guard1 sym test guard1-subpatterns)
          ;; no symbols are visible from the body
      (let ((negated-case (make-negated-case sym test)))

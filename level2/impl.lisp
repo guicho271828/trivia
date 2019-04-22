@@ -6,7 +6,8 @@
 (lispn:define-namespace pattern function)
 (lispn:define-namespace inline-pattern function)
 
-(define-condition wildcard () ())
+(define-condition wildcard () ()
+  (:documentation "signaled when a wildcard pattern is found. pattern-expand-all receives it and removes the pattern"))
 
 (defun wildcardp (pattern)
   (and (symbolp pattern)
