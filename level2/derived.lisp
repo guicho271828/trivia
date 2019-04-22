@@ -52,10 +52,16 @@
 (defpattern guard (subpattern test-form &rest more-patterns)
   "If SUBPATTERN matches, TEST-FORM is evaluated under the lexical binding of variables in SUBPATTERN.
 If TEST-FORM returns true, matching to MORE-PATTERNS are performed."
-  (with-gensyms (guard)
-    `(and ,subpattern
-          (guard1 (,guard :deferred ,test-form) t ,@more-patterns))))
-
+  (restart-case
+      (progn (signal 'guard-pattern
+                     :subpattern subpattern
+                     :test test-form
+                     :more-patterns more-patterns)
+             (with-gensyms (guard-dummy)
+               `(and ,subpattern
+                     (guard1 ,guard-dummy ,test-form ,@more-patterns))))
+    (use-value (v)
+      v)))
 
 (defun subst-notsym (pattern symopt?)
   "substitute a symbol with an anonymous symbol, in order to avoid capturing the variables inside NOT pattern.
@@ -71,32 +77,6 @@ This should return 1, however without proper renaming of variable `it', `it' wil
      (with-gensyms (notsym)
        (subst notsym sym pattern))))
 
-(defun deferred-p (symopt?)
-  "returns if the symopt has :deferred flag"
-  (let ((sym (preprocess-symopts symopt? nil)))
-    (destructuring-bind (oldsym &key (deferred nil supplied-p) &allow-other-keys) sym
-      (declare (ignore oldsym deferred))
-      supplied-p)))
-
-(defun negate-deferred (symopt?)
-  "make a new symopt whose :deferred test is negated if set"
-  (let ((sym (copy-list (preprocess-symopts symopt? nil))))
-    (with-gensyms (negsym)
-      (destructuring-bind (oldsym &key (deferred nil supplied-p) &allow-other-keys) sym
-        (when supplied-p
-          (setf (getf (cdr sym) :deferred) `(not ,(subst negsym oldsym deferred)))))
-      (setf (car sym) negsym))
-    sym))
-
-(defun make-negated-case (sym test)
-  "Creates a negated pattern. If the pattern is deferred, the deferred test
-should be negated, but the test itself should remain T
- (Otherwise the matching fails at this point because the test (not t) always fails.)"
-  (let ((negsym (negate-deferred sym)))
-    (if (deferred-p sym)
-        `(guard1 ,negsym t)
-        `(guard1 ,sym (not ,test)))))
-
 (defpattern not (subpattern)
   "Matches when the SUBPATTERN does not match.
 Variables in the subpattern are treated as dummy variables, and will not be visible from the clause body."
@@ -104,7 +84,7 @@ Variables in the subpattern are treated as dummy variables, and will not be visi
     ;; now the result should contain only either guard1 or or1 patterns.
     ((list* 'guard1 sym test guard1-subpatterns)
          ;; no symbols are visible from the body
-     (let ((negated-case (make-negated-case sym test)))
+     (let ((negated-case `(guard1 ,sym (not ,test))))
        (subst-notsym
         (if guard1-subpatterns
             `(or1 ,negated-case
