@@ -80,20 +80,19 @@ Variables in the subpattern are treated as dummy variables, and will not be visi
   (ematch0 (pattern-expand subpattern)
     ;; now the result should contain only either guard1 or or1 patterns.
     ((list* 'guard1 sym test guard1-subpatterns)
-         ;; no symbols are visible from the body
-     (let ((negated-case `(guard1 ,sym (not ,test))))
-       (subst-notsym
-        (if guard1-subpatterns
-            `(or1 ,negated-case
-                  (guard1 ,sym ,test
-                          ,@(alist-plist
-                             (mapcar
-                              (lambda-ematch0
-                                ((cons generator test-form)
-                                 (cons generator `(not ,test-form)))) 
-                              (plist-alist guard1-subpatterns)))))
-            negated-case)
-        sym)))
+     ;; no symbols are visible from the body
+     (subst-notsym
+      (if guard1-subpatterns
+          `(or1 (guard1 ,sym (not ,test))
+                (guard1 ,sym ,test
+                        ,@(alist-plist
+                           (mapcar
+                            (lambda-ematch0
+                              ((cons generator subpattern)
+                               (cons generator `(not ,subpattern))))
+                            (plist-alist guard1-subpatterns)))))
+          negated-case)
+      sym))
     ((list* 'or1 or-subpatterns)
      `(and ,@(mapcar (lambda (or-sp)
                        `(not ,or-sp))
