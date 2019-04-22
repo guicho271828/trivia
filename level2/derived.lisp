@@ -74,10 +74,22 @@ This should return 1, however without proper renaming of variable `it', `it' wil
      (with-gensyms (notsym)
        (subst notsym sym pattern))))
 
+;; (optima:match x
+;;   ((not (optima:guard (list x y) (eql x y)))
+;;    t)))
+;; ==
+;; (or (guard (list #:x #:y) (not (eql #:x #:y)))
+;;     (not (list #:x #:y)))
+
 (defpattern not (subpattern)
   "Matches when the SUBPATTERN does not match.
 Variables in the subpattern are treated as dummy variables, and will not be visible from the clause body."
-  (ematch0 (pattern-expand subpattern)
+  (ematch0 (handler-case (pattern-expand-all subpattern)
+             (guard-pattern (c)
+               ;; just one level below
+               (with-slots ((s2 subpattern) (t2 test) (m2 more-patterns)) c
+                 `(or1 (guard ,s2 (not ,t2) ,@m2)
+                       (not ,s2)))))
     ;; now the result should contain only either guard1 or or1 patterns.
     ((list* 'guard1 sym test guard1-subpatterns)
      ;; no symbols are visible from the body
