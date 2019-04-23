@@ -49,17 +49,68 @@
         `(guard1 ,intersection t
                  ,@(wrap-test symopts tests more-patterns))))))
 
-(defpattern guard (subpattern test-form &rest more-patterns)
+(defpattern guard (subpattern test-form)
   "If SUBPATTERN matches, TEST-FORM is evaluated under the lexical binding of variables in SUBPATTERN.
-If TEST-FORM returns true, matching to MORE-PATTERNS are performed."
+If TEST-FORM returns true, the entire match succeeds.
+
+TEST-FORM in guard pattern is able to see the variables in the surrounding patterns. That is,
+the following pattern is valid and should compile successfully:
+
+ (list (guard x (eql x y)) y)
+
+The mechanics behind this is that the guard patterns are always `lifted`, i.e.,
+transformed into a form equivalent to
+
+ (guard (list x y) (eql x y))
+
+which is further equivalent to
+
+ (and (list x y)
+      (guard1 _ (eql x y))).      (*)
+
+---
+
+When GUARD pattern is used under NOT pattern, e.g. the following form
+
+ (not (guard <pattern> <condition>)),
+
+ it is equivalent to:
+
+ (or (guard <pattern> (not <condition>))
+     (not <pattern>))
+
+ then
+
+ (or (and <pattern>
+          (guard1 _ (not <condition>)))
+     (not <pattern>))
+
+That is,
+
+1. The object is first matched against SUBPATTERN.
+2. When SUBPATTERN fails to match, then the match against the guard pattern will succeeds.
+3. When SUBPATTERN matches, then TEST-FORM is evaluated.
+4. When TEST-FORM evaluates to true, then the match fails; if false, then the match succeeds.
+
+Notice that this compilation is equivalent to the negation of the form (*).
+
+ (not (and (list x y)
+           (guard1 _ (eql x y))))
+ ==
+ (or (not (list x y))
+     (and (list x y)
+          (guard1 _ (not (eql x y)))))
+
+Note that the variables bound in the NOT pattern are renamed and are made not
+accessible in the clause.
+"
   (restart-case
       (progn (signal 'guard-pattern
                      :subpattern subpattern
-                     :test test-form
-                     :more-patterns more-patterns)
+                     :test test-form)
              (with-gensyms (guard-dummy)
                `(and ,subpattern
-                     (guard1 ,guard-dummy ,test-form ,@more-patterns))))
+                     (guard1 ,guard-dummy ,test-form))))
     (use-value (v)
       v)))
 
@@ -77,37 +128,40 @@ This should return 1, however without proper renaming of variable `it', `it' wil
      (with-gensyms (notsym)
        (subst notsym sym pattern))))
 
-;; (optima:match x
-;;   ((not (optima:guard (list x y) (eql x y)))
-;;    t)))
-;; ==
-;; (or (guard (list #:x #:y) (not (eql #:x #:y)))
-;;     (not (list #:x #:y)))
-
 (defpattern not (subpattern)
   "Matches when the SUBPATTERN does not match.
 Variables in the subpattern are treated as dummy variables, and will not be visible from the clause body."
-  (ematch0 (pattern-expand-all/lift subpattern)
-    ;; now the result should contain only either guard1 or or1 patterns.
-    ((list* 'guard1 sym test guard1-subpatterns)
-     ;; no symbols are visible from the body
-     (subst-notsym
-      (if guard1-subpatterns
-          `(or1 (guard1 ,sym ,test
-                        ,@(alist-plist
-                           (mapcar
-                            (lambda-ematch0
-                              ((cons generator subpattern)
-                               ;; this not pattern is expanded further
-                               (cons generator `(not ,subpattern))))
-                            (plist-alist guard1-subpatterns))))
-                (guard1 ,sym (not ,test)))
-          `(guard1 ,sym (not ,test)))
-      sym))
-    ((list* 'or1 or-subpatterns)
-     `(and ,@(mapcar (lambda (or-sp)
-                       `(not ,or-sp))
-                     or-subpatterns)))))
+  (multiple-value-bind (result guard-tests) (pattern-expand-all/lift0 subpattern)
+    (if guard-tests
+        ;; reexpansion
+        (with-gensyms (lift-dummy)
+          ;; (not RESULT) will be reexpanded, but it no longer contains the guarded tests
+          `(or1 (not ,result)
+                (and ,result
+                     (guard1 ,lift-dummy
+                             (not (and ,@(nreverse guard-tests)))))))
+        ;; there is no guarded tests.
+        (ematch0 result
+          ;; now the result should contain only either guard1 or or1 patterns.
+          ((list* 'guard1 sym test guard1-subpatterns)
+           ;; the symbol should be made invisible by renaming
+           (subst-notsym
+            (if guard1-subpatterns
+                `(or1 (guard1 ,sym ,test
+                              ,@(alist-plist
+                                 (mapcar
+                                  (lambda-ematch0
+                                    ((cons generator subpattern)
+                                     ;; this not pattern is expanded further
+                                     (cons generator `(not ,subpattern))))
+                                  (plist-alist guard1-subpatterns))))
+                      (guard1 ,sym (not ,test)))
+                `(guard1 ,sym (not ,test)))
+            sym))
+          ((list* 'or1 or-subpatterns)
+           `(and ,@(mapcar (lambda (or-sp)
+                             `(not ,or-sp))
+                           or-subpatterns)))))))
 
 (defpattern or (&rest subpatterns)
   "Match when some subpattern match."

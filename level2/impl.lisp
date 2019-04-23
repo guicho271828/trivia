@@ -19,14 +19,6 @@
        (string/= "_" (symbol-name pattern))
        (string/= "OTHERWISE" (symbol-name pattern))))
 
-
-(define-condition guard-pattern ()
-  ((subpattern :initarg :subpattern)
-   (test :initarg :test)
-   (more-patterns :initarg :more-patterns))
-  (:documentation "signaled when a guard pattern is found. "))
-
-
 (defun pattern-expand-1 (p)
   "expand the given pattern once, just like macroexpand-1.
  Returns (values expansion-form expanded-p)"
@@ -79,30 +71,6 @@ just like macroexpand"
           (values (rec new) t)
           new))))
 
-;; lift1:
-;;     (list (guard x (consp x)) (guard y (eq y (car x))))
-;;  => (guard (list x (guard y (eq y (car x)))) (consp x))
-;;  => (guard (guard (list x y) (eq y (car x))) (consp x))
-;;  => (guard (list x y) (and (consp x) (eq y (car x))))
-;; 
-;; lift2:
-;;     (list 3 (or 1 (guard x (evenp x))))
-;;  => (or (list 3 1) (list 3 (guard x (evenp x))))
-;;  => (or (list 3 1) (guard (list 3 x) (evenp x)))
-
-;; in contrast, with pattern-expand-all,
-;;     (list (guard x (consp x) MORE2))
-;;  => (guard1 tmp (consp tmp) (car tmp) (guard x (consp x) MORE2) MORE1)
-;;  => (guard (guard1 tmp (consp tmp) (car tmp) x MORE1) (consp x) MORE2)
-;;  => rerun pattern-expand-all
-;;  => (and (guard1 tmp (consp tmp) (car tmp) x MORE1)
-;;          (guard1 guard-dummy (consp x) MORE2))
-
-;; (not (guard pattern condition)) is (or (guard pattern (not condition)) (not pattern)).
-
-;; (or1 (guard pattern condition) otherpat) is not (guard (or1 pattern otherpat) condition)
-;; i.e. guard does not get lifted beyond an or-pattern.
-
 (defun pattern-expand-all (p)
   "expand the given pattern recursively"
   ;; should start by guard1 or or1
@@ -122,29 +90,53 @@ just like macroexpand"
        (list* 'or1
               (mapcar #'pattern-expand-all/lift subpatterns))))))
 
-(defun pattern-expand-all/lift (subpattern)
+;; Guard lifting rules from optima:
+;; lift1:
+;;     (list (guard x (consp x)) (guard y (eq y (car x))))
+;;  => (guard (list x (guard y (eq y (car x)))) (consp x))
+;;  => (guard (guard (list x y) (eq y (car x))) (consp x))
+;;  => (guard (list x y) (and (consp x) (eq y (car x))))
+;; 
+;; lift2:
+;;     (list 3 (or 1 (guard x (evenp x))))
+;;  => (or (list 3 1) (list 3 (guard x (evenp x))))
+;;  => (or (list 3 1) (guard (list 3 x) (evenp x)))
+
+;; However, we don't use lift2; it is unnecesary.
+;; Guard is not lifted beyond or1 patterns.
+;; See the documentation string of the guard pattern for more details.
+
+(define-condition guard-pattern ()
+  ((subpattern :initarg :subpattern)
+   (test :initarg :test))
+  (:documentation "signaled when a guard pattern is found. "))
+
+(defun pattern-expand-all/lift0 (subpattern)
+  "Expand the given pattern recursively. On encoutnering a guard pattern,
+it accumulates its condition into a list.
+Returns two values: the pattern without guarded conditions, and a list of conditions."
   (let* (guard-tests
-         guard-more-patterns
          (result (handler-bind 
                      ((guard-pattern
                        (lambda (c)
                          ;; just one level below
-                         (with-slots ((s2 subpattern) (t2 test) (m2 more-patterns)) c
-                           ;; lift t2 and m2
+                         (with-slots ((s2 subpattern) (t2 test)) c
                            (format *trace-output* "~&lifted ~a~%" t2)
                            (push t2 guard-tests)
-                           (dolist (p m2)
-                             (push p guard-more-patterns))
                            (use-value s2)))))
                    (pattern-expand-all subpattern))))
+    (values result guard-tests)))
+
+(defun pattern-expand-all/lift (subpattern)
+  "Expand the given pattern recursively. On encoutnering a guard pattern,
+it lifts its condition."
+  (multiple-value-bind (result guard-tests) (pattern-expand-all/lift0 subpattern)
     (if guard-tests
         (with-gensyms (lift-dummy)
           (pattern-expand-all
            `(and ,result
                  (guard1 ,lift-dummy
-                         (and ,@(nreverse guard-tests))
-                         ;; more patterns are expanded
-                         ,@(nreverse guard-more-patterns)))))
+                         (and ,@(nreverse guard-tests))))))
         result)))
 
 (defmacro defpattern (name args &body body)
