@@ -114,54 +114,70 @@ accessible in the clause.
     (use-value (v)
       v)))
 
-(defun subst-notsym (pattern symopt?)
-  "substitute a symbol with an anonymous symbol, in order to avoid capturing the variables inside NOT pattern.
-For example,
+(defun anonymize-pattern (pattern sym)
+  (let ((sym (car (preprocess-symopts sym pattern))))
+    (with-gensyms (anon)
+      (subst anon sym pattern))))
 
-  (let ((it 1))
-    (match 2
-      ((not (guard it (eql it 3))) it)
-      (_ :fail)))
+(defun anonymize-level1-pattern (pattern)
+  "Recursively anonymize the given pattern. Only accepts guard1 and or1 patterns"
+  (let (syms)
+    ;; analysis phase
+    (labels ((analyze-more-patterns (more-patterns)
+               (ematch0 more-patterns
+                 ((list _ pattern)
+                  (analyze-pattern pattern))
+                 ((list* _ pattern more-patterns)
+                  (analyze-pattern pattern)
+                  (analyze-more-patterns more-patterns))))
+             (analyze-pattern (pattern)
+               (ematch0 pattern
+                 ((list 'guard1 sym test)
+                  (pushnew (first (ensure-list sym)) syms))
+                 ((list* 'guard1 sym test more-patterns)
+                  (pushnew (first (ensure-list sym)) syms)
+                  (analyze-more-patterns more-patterns))
+                 ((list* 'or1 or-subpatterns)
+                  (map nil #'analyze-pattern or-subpatterns)))))
+      (analyze-pattern pattern))
 
-This should return 1, however without proper renaming of variable `it', `it' will be bound to NIL."
-  (let ((sym (car (preprocess-symopts symopt? pattern))))
-     (with-gensyms (notsym)
-       (subst notsym sym pattern))))
+    (reduce #'anonymize-pattern syms :initial-value pattern)))
+
+(defun negate-level1-pattern (pattern)
+  "Recursively anonymize the given pattern. Only accepts guard1 and or1 patterns"
+  (ematch0 pattern
+    ((list* 'guard1 sym test guard1-subpatterns)
+     (if guard1-subpatterns
+         `(or1 (guard1 ,sym (not ,test))
+               (guard1 ,sym ,test
+                       ,@(alist-plist
+                          (mapcar
+                           (lambda-ematch0
+                             ((cons generator subpattern)
+                              ;; this not pattern is expanded further
+                              (cons generator `(not ,subpattern))))
+                           (plist-alist guard1-subpatterns)))))
+         `(guard1 ,sym (not ,test))))
+    ((list* 'or1 or-subpatterns)
+     `(and ,@(mapcar (lambda (or-sp)
+                       `(not ,or-sp))
+                     or-subpatterns)))))
 
 (defpattern not (subpattern)
   "Matches when the SUBPATTERN does not match.
 Variables in the subpattern are treated as dummy variables, and will not be visible from the clause body."
   (multiple-value-bind (result guard-tests) (pattern-expand-all/lift0 subpattern)
-    (if guard-tests
-        ;; reexpansion
-        (with-gensyms (lift-dummy)
-          ;; (not RESULT) will be reexpanded, but it no longer contains the guarded tests
-          `(or1 (not ,result)
-                (and ,result
-                     (guard1 ,lift-dummy
-                             (not (and ,@(nreverse guard-tests)))))))
-        ;; there is no guarded tests.
-        (ematch0 result
-          ;; now the result should contain only either guard1 or or1 patterns.
-          ((list* 'guard1 sym test guard1-subpatterns)
-           ;; the symbol should be made invisible by renaming
-           (subst-notsym
-            (if guard1-subpatterns
-                `(or1 (guard1 ,sym ,test
-                              ,@(alist-plist
-                                 (mapcar
-                                  (lambda-ematch0
-                                    ((cons generator subpattern)
-                                     ;; this not pattern is expanded further
-                                     (cons generator `(not ,subpattern))))
-                                  (plist-alist guard1-subpatterns))))
-                      (guard1 ,sym (not ,test)))
-                `(guard1 ,sym (not ,test)))
-            sym))
-          ((list* 'or1 or-subpatterns)
-           `(and ,@(mapcar (lambda (or-sp)
-                             `(not ,or-sp))
-                           or-subpatterns)))))))
+    (anonymize-level1-pattern
+     (pattern-expand-all
+      (let ((negated (negate-level1-pattern result)))
+        (if guard-tests
+            (with-gensyms (lift-dummy)
+              ;; (not RESULT) will be reexpanded, but it no longer contains the guarded tests
+              `(or1 ,negated
+                    (and ,result
+                         (guard1 ,lift-dummy
+                                 (not (and ,@(nreverse guard-tests)))))))
+            negated))))))
 
 (defpattern or (&rest subpatterns)
   "Match when some subpattern match."
