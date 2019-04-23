@@ -87,21 +87,21 @@ This should return 1, however without proper renaming of variable `it', `it' wil
 (defpattern not (subpattern)
   "Matches when the SUBPATTERN does not match.
 Variables in the subpattern are treated as dummy variables, and will not be visible from the clause body."
-  (ematch0 (pattern-expand-all subpattern)
+  (ematch0 (pattern-expand-all/lift subpattern)
     ;; now the result should contain only either guard1 or or1 patterns.
     ((list* 'guard1 sym test guard1-subpatterns)
      ;; no symbols are visible from the body
      (subst-notsym
       (if guard1-subpatterns
-          `(or1 (guard1 ,sym (not ,test))
-                (guard1 ,sym ,test
+          `(or1 (guard1 ,sym ,test
                         ,@(alist-plist
                            (mapcar
                             (lambda-ematch0
                               ((cons generator subpattern)
                                ;; this not pattern is expanded further
                                (cons generator `(not ,subpattern))))
-                            (plist-alist guard1-subpatterns)))))
+                            (plist-alist guard1-subpatterns))))
+                (guard1 ,sym (not ,test)))
           `(guard1 ,sym (not ,test)))
       sym))
     ((list* 'or1 or-subpatterns)

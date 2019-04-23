@@ -120,27 +120,32 @@ just like macroexpand"
                       (apply #'rec more-patterns)))))
       ((list* 'or1 subpatterns)
        (list* 'or1
-              (mapcar (lambda (subpattern)
-                        (let* (guard-tests
-                               guard-more-patterns
-                               (result (handler-bind 
-                                           ((guard-pattern
-                                             (lambda (c)
-                                               ;; just one level below
-                                               (with-slots ((s2 subpattern) (t2 test) (m2 more-patterns)) c
-                                                 ;; lift t2 and m2
-                                                 (push t2 guard-tests)
-                                                 (dolist (p m2)
-                                                   (push p guard-more-patterns))
-                                                 (use-value s2)))))
-                                         (pattern-expand-all subpattern))))
-                          (if guard-tests
-                              (pattern-expand-all
-                               `(guard1 ,result (and ,@(nreverse guard-tests))
-                                        ;; more patterns are expanded
-                                        ,@(nreverse guard-more-patterns)))
-                              result)))
-                      subpatterns))))))
+              (mapcar #'pattern-expand-all/lift subpatterns))))))
+
+(defun pattern-expand-all/lift (subpattern)
+  (let* (guard-tests
+         guard-more-patterns
+         (result (handler-bind 
+                     ((guard-pattern
+                       (lambda (c)
+                         ;; just one level below
+                         (with-slots ((s2 subpattern) (t2 test) (m2 more-patterns)) c
+                           ;; lift t2 and m2
+                           (format *trace-output* "~&lifted ~a~%" t2)
+                           (push t2 guard-tests)
+                           (dolist (p m2)
+                             (push p guard-more-patterns))
+                           (use-value s2)))))
+                   (pattern-expand-all subpattern))))
+    (if guard-tests
+        (with-gensyms (lift-dummy)
+          (pattern-expand-all
+           `(and ,result
+                 (guard1 ,lift-dummy
+                         (and ,@(nreverse guard-tests))
+                         ;; more patterns are expanded
+                         ,@(nreverse guard-more-patterns)))))
+        result)))
 
 (defmacro defpattern (name args &body body)
   "Adds a new derived pattern.
@@ -374,7 +379,7 @@ or results in a compilation error when this is the outermost matching construct.
   (ematch0 patterns
     ((list) nil)
     ((list* first rest)
-     (let ((first* (correct-pattern (pattern-expand-all first))))
+     (let ((first* (correct-pattern (pattern-expand-all/lift first))))
        (cons first*
              (let ((*lexvars* (variables first*)))
                (expand-multipatterns rest)))))))
