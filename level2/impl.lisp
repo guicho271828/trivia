@@ -121,6 +121,7 @@ Returns two values: the pattern without guarded conditions, and a list of condit
                        (lambda (c)
                          ;; just one level below
                          (with-slots ((s2 subpattern) (t2 test)) c
+                           #+(or)
                            (format *trace-output* "~&lifted ~a~%" t2)
                            (push t2 guard-tests)
                            (use-value s2)))))
