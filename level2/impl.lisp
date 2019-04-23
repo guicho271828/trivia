@@ -6,19 +6,18 @@
 (lispn:define-namespace pattern function)
 (lispn:define-namespace inline-pattern function)
 
-(define-condition wildcard () ())
+(define-condition wildcard () ()
+  (:documentation "signaled when a wildcard pattern is found. pattern-expand-all receives it and removes the pattern"))
 
 (defun wildcardp (pattern)
   (and (symbolp pattern)
        (or (string= "_" (symbol-name pattern))
            (string= "OTHERWISE" (symbol-name pattern)))))
 
-
 (defun variablep (pattern)
   (and (symbolp pattern)
        (string/= "_" (symbol-name pattern))
        (string/= "OTHERWISE" (symbol-name pattern))))
-
 
 (defun pattern-expand-1 (p)
   "expand the given pattern once, just like macroexpand-1.
@@ -79,18 +78,67 @@ just like macroexpand"
     (assert (= (length p) 1) nil "Toplevel inline pattern is invalid: ~a" p)
     (ematch0 (pattern-expand (first p))
       ((list* 'guard1 sym test more-patterns)
-       (list* 'guard1 sym test
-              (mappend
-               (lambda (gen-pat)
-                 (ematch0 gen-pat
-                   ((cons generator subpattern)
-                    (handler-case
-                        (list generator (pattern-expand-all subpattern))
-                      (wildcard () ;; remove unnecessary wildcard pattern
-                        nil)))))
-               (plist-alist more-patterns))))
+       (labels ((rec (generator subpattern &rest more-patterns)
+                  (list* generator
+                         (pattern-expand-all subpattern)
+                         (when more-patterns
+                           (apply #'rec more-patterns)))))
+         `(guard1 ,sym ,test
+                  ,@(when more-patterns
+                      (apply #'rec more-patterns)))))
       ((list* 'or1 subpatterns)
-       (list* 'or1 (mapcar #'pattern-expand-all subpatterns))))))
+       (list* 'or1
+              (mapcar #'pattern-expand-all/lift subpatterns))))))
+
+;; Guard lifting rules from optima:
+;; lift1:
+;;     (list (guard x (consp x)) (guard y (eq y (car x))))
+;;  => (guard (list x (guard y (eq y (car x)))) (consp x))
+;;  => (guard (guard (list x y) (eq y (car x))) (consp x))
+;;  => (guard (list x y) (and (consp x) (eq y (car x))))
+;; 
+;; lift2:
+;;     (list 3 (or 1 (guard x (evenp x))))
+;;  => (or (list 3 1) (list 3 (guard x (evenp x))))
+;;  => (or (list 3 1) (guard (list 3 x) (evenp x)))
+
+;; However, we don't use lift2; it is unnecesary.
+;; Guard is not lifted beyond or1 patterns.
+;; See the documentation string of the guard pattern for more details.
+
+(define-condition guard-pattern ()
+  ((subpattern :initarg :subpattern)
+   (test :initarg :test))
+  (:documentation "signaled when a guard pattern is found. "))
+
+(defun pattern-expand-all/lift0 (subpattern)
+  "Expand the given pattern recursively. On encoutnering a guard pattern,
+it accumulates its condition into a list.
+Returns two values: the pattern without guarded conditions, and a list of conditions."
+  (let* (guard-tests
+         (result (handler-bind 
+                     ((guard-pattern
+                       (lambda (c)
+                         ;; just one level below
+                         (with-slots ((s2 subpattern) (t2 test)) c
+                           #+(or)
+                           (format *trace-output* "~&lifted ~a~%" t2)
+                           (push t2 guard-tests)
+                           (use-value s2)))))
+                   (pattern-expand-all subpattern))))
+    (values result guard-tests)))
+
+(defun pattern-expand-all/lift (subpattern)
+  "Expand the given pattern recursively. On encoutnering a guard pattern,
+it lifts its condition."
+  (multiple-value-bind (result guard-tests) (pattern-expand-all/lift0 subpattern)
+    (if guard-tests
+        (with-gensyms (lift-dummy)
+          (pattern-expand-all
+           `(and ,result
+                 (guard1 ,lift-dummy
+                         (and ,@(nreverse guard-tests))))))
+        result)))
 
 (defmacro defpattern (name args &body body)
   "Adds a new derived pattern.
@@ -317,91 +365,17 @@ or results in a compilation error when this is the outermost matching construct.
 (defun expand-clause (clause)
   (ematch0 clause
     ((list* patterns body)
-     (list* (postprocess-deferred (expand-multipatterns patterns))
+     (list* (expand-multipatterns patterns)
             body))))
+
 (defun expand-multipatterns (patterns)
   (ematch0 patterns
     ((list) nil)
     ((list* first rest)
-     (let ((first* (correct-pattern (pattern-expand-all first))))
+     (let ((first* (correct-pattern (pattern-expand-all/lift first))))
        (cons first*
              (let ((*lexvars* (variables first*)))
                (expand-multipatterns rest)))))))
-
-(define-condition deferred ()
-  ((test :initarg :test :accessor deferred-test)))
-
-(defun postprocess-deferred (patterns)
-  "equivalent to optima's lift 1/2:
-
-   lift1:
-       (list (guard x (consp x)) (guard y (eq y (car x))))
-    => (guard (list x (guard y (eq y (car x)))) (consp x))
-    => (guard (guard (list x y) (eq y (car x))) (consp x))
-    => (guard (list x y) (and (consp x) (eq y (car x))))
-
-   lift2:
-       (list 3 (or 1 (guard x (evenp x))))
-    => (or (list 3 1) (list 3 (guard x (evenp x))))
-    => (or (list 3 1) (guard (list 3 x) (evenp x)))"
-  ;; search for any deferred tests in patterns, then append them to the last pattern.
-  (let (tests)
-    (let ((patterns
-           (handler-bind ((deferred (lambda (c)
-                                      (push (deferred-test c) tests)
-                                      (continue c))))
-             (mapcar #'postprocess-deferred-1 patterns))))
-      (if tests
-          (with-gensyms (it)
-            `(,@(butlast patterns) (guard1 ,it t
-                                           ,it ,(lastcar patterns)
-                                           ,@(mappend (lambda (test)
-                                                        (with-gensyms (dummy)
-                                                          `(t (guard1 ,dummy ,test))))
-                                                      tests))))
-          patterns))))
-
-(defun postprocess-deferred-1 (pattern)
-  (ematch0 pattern
-    ((list* 'guard1 (list* sym fields) test more-patterns)
-     (destructuring-bind (&key (deferred nil supplied-p) &allow-other-keys) fields
-       (when supplied-p
-         (restart-case
-             ;; workaround for ECL bug;
-             #-ecl (signal 'deferred :test deferred)
-             #+ecl (signal (make-condition 'deferred :test deferred))
-             (continue ()))))
-     (list* 'guard1 (list* sym fields) test
-            (alist-plist
-             (mapcar (lambda-ematch0
-                       ((cons gen pat)
-                        (cons gen (postprocess-deferred-1 pat))))
-                     (plist-alist more-patterns)))))
-    ((list* 'or1 patterns)
-     ;; deferred patterns do not go beyond or1 boundary.
-     (list* 'or1 (mappend #'postprocess-deferred (mapcar #'list patterns))))))
-
-;; (postprocess-deferred
-;;  '((or1
-;;     (guard1
-;;      (a :type cons) (consp a)
-;;      (car a) (guard1 (b :type t) t)
-;;      (cdr a) (guard1 (c :type t) t))
-;;     (guard1
-;;      (a :type cons) (consp a)
-;;      (car a) (guard1 (b :type t) t)
-;;      (cdr a) (guard1 (c :type t :deferred (evenp c)) t)))))
-;; 
-;; (postprocess-deferred
-;;  '((or1
-;;     (guard1
-;;      (a :type cons) (consp a)
-;;      (car a) (guard1 (b :type t) t)
-;;      (cdr a) (guard1 (c :type t :deferred (evenp c)) t))
-;;     (guard1
-;;      (a :type cons) (consp a)
-;;      (car a) (guard1 (b :type t) t)
-;;      (cdr a) (guard1 (c :type t) t)))))
 
 (defun generate-multi-matcher (args *lexvars* clauses &optional in-clause-block)
   ;; take 3 : switch to the genuine BDD-based matcher
