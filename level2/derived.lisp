@@ -70,27 +70,27 @@ which is further equivalent to
 
 ---
 
-When GUARD pattern is used under NOT pattern, e.g. the following form
+When GUARD pattern is used under NOT pattern, the following form
 
- (not (guard <pattern> <condition>)),
+ (not (guard <SUBPATTERN> <test-form>)),
 
- it is equivalent to:
+ is equivalent to:
 
- (or (guard <pattern> (not <condition>))
-     (not <pattern>))
+ (or (not <SUBPATTERN>)
+     (guard <SUBPATTERN> (not <test-form>)))
 
  then
 
- (or (and <pattern>
-          (guard1 _ (not <condition>)))
-     (not <pattern>))
+ (or (not <SUBPATTERN>)
+     (and <SUBPATTERN>
+          (guard1 _ (not <test-form>)))).
 
 That is,
 
 1. The object is first matched against SUBPATTERN.
-2. When SUBPATTERN fails to match, then the match against the guard pattern will succeeds.
+2. When SUBPATTERN fails to match, then the match against the guard pattern should be successful.
 3. When SUBPATTERN matches, then TEST-FORM is evaluated.
-4. When TEST-FORM evaluates to true, then the match fails; if false, then the match succeeds.
+4. If TEST-FORM evaluates to true, then the match should fail; If false, then the match should be successful.
 
 Notice that this compilation is equivalent to the negation of the form (*).
 
@@ -101,8 +101,8 @@ Notice that this compilation is equivalent to the negation of the form (*).
      (and (list x y)
           (guard1 _ (not (eql x y)))))
 
-Note that the variables bound in the NOT pattern are renamed and are made not
-accessible in the clause.
+Also note that the variables bound in the NOT pattern are renamed and are made not
+accessible in the clause. --- see NOT pattern documentation.
 "
   (restart-case
       (progn (signal 'guard-pattern
