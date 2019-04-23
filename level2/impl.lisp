@@ -98,6 +98,11 @@ just like macroexpand"
 ;;  => (and (guard1 tmp (consp tmp) (car tmp) x MORE1)
 ;;          (guard1 guard-dummy (consp x) MORE2))
 
+;; (not (guard pattern condition)) is (or (guard pattern (not condition)) (not pattern)).
+
+;; (or1 (guard pattern condition) otherpat) is not (guard (or1 pattern otherpat) condition)
+;; i.e. guard does not get lifted beyond an or-pattern.
+
 (defun pattern-expand-all (p)
   "expand the given pattern recursively"
   ;; should start by guard1 or or1
@@ -105,31 +110,37 @@ just like macroexpand"
     (assert (= (length p) 1) nil "Toplevel inline pattern is invalid: ~a" p)
     (ematch0 (pattern-expand (first p))
       ((list* 'guard1 sym test more-patterns)
-       (let (guard-tests
-             guard-more-patterns)
-         (labels ((rec (generator subpattern &rest more-patterns)
-                    (list* generator
-                           (handler-case (pattern-expand-all subpattern)
-                             (wildcard () ;; remove unnecessary wildcard pattern
-                               nil)
-                             (guard-pattern (c)
-                               ;; just one level below
-                               (with-slots ((s2 subpattern) (t2 test) (m2 more-patterns)) c
-                                 (push t2 guard-tests)
-                                 (dolist (p m2)
-                                   (push p guard-more-patterns))
-                                 s2)))
-                           (when more-patterns
-                             (apply #'rec more-patterns)))))
-           (let ((result `(guard1 ,sym ,test
-                                  ,@(when more-patterns
-                                      (apply #'rec more-patterns)))))
-             (if guard-tests
-                 (pattern-expand-all
-                  `(guard ,result (and ,@(nreverse guard-tests)) ,@guard-more-patterns))
-                 result)))))
+       (labels ((rec (generator subpattern &rest more-patterns)
+                  (list* generator
+                         (pattern-expand-all subpattern)
+                         (when more-patterns
+                           (apply #'rec more-patterns)))))
+         `(guard1 ,sym ,test
+                  ,@(when more-patterns
+                      (apply #'rec more-patterns)))))
       ((list* 'or1 subpatterns)
-       (list* 'or1 (mapcar #'pattern-expand-all subpatterns))))))
+       (list* 'or1
+              (mapcar (lambda (subpattern)
+                        (let* (guard-tests
+                               guard-more-patterns
+                               (result (handler-bind 
+                                           ((guard-pattern
+                                             (lambda (c)
+                                               ;; just one level below
+                                               (with-slots ((s2 subpattern) (t2 test) (m2 more-patterns)) c
+                                                 ;; lift t2 and m2
+                                                 (push t2 guard-tests)
+                                                 (dolist (p m2)
+                                                   (push p guard-more-patterns))
+                                                 (use-value s2)))))
+                                         (pattern-expand-all subpattern))))
+                          (if guard-tests
+                              (pattern-expand-all
+                               `(guard1 ,result (and ,@(nreverse guard-tests))
+                                        ;; more patterns are expanded
+                                        ,@(nreverse guard-more-patterns)))
+                              result)))
+                      subpatterns))))))
 
 (defmacro defpattern (name args &body body)
   "Adds a new derived pattern.
