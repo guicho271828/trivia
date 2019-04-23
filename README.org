@@ -13,7 +13,8 @@
 + news!(04/08/2017) Added a new contrib package =TRIVIA.CFFI= which provides =->= pattern ! Offers convenient access to foreign objects.
 + news!(05/26/2018) Added =property!=, which only matches when the key is present in a plist.
 + news!(09/06/2018) SPLIT symbol was exported from the =trivia.ppcre= package.
-+ *news!(02/19/2019)* Added =MEMBER= pattern. When the argument is a constant, it also adds type declaration.
++ news!(02/19/2019) Added =MEMBER= pattern. When the argument is a constant, it also adds type declaration.
++ *news!(04/24/2019)* Improved the compilation of =GUARD= pattern. It no longer uses the internal hackery.
 
 * Trivia : Trivial Pattern Matching Compiler
 
