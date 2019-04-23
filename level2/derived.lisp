@@ -52,13 +52,16 @@
 (defpattern guard (subpattern test-form &rest more-patterns)
   "If SUBPATTERN matches, TEST-FORM is evaluated under the lexical binding of variables in SUBPATTERN.
 If TEST-FORM returns true, matching to MORE-PATTERNS are performed."
-  (signal 'guard-pattern
-          :subpattern subpattern
-          :test test-form
-          :more-patterns more-patterns)
-  (with-gensyms (guard-dummy)
-    `(and ,subpattern
-          (guard1 ,guard-dummy ,test-form ,@more-patterns))))
+  (restart-case
+      (progn (signal 'guard-pattern
+                     :subpattern subpattern
+                     :test test-form
+                     :more-patterns more-patterns)
+             (with-gensyms (guard-dummy)
+               `(and ,subpattern
+                     (guard1 ,guard-dummy ,test-form ,@more-patterns))))
+    (use-value (v)
+      v)))
 
 (defun subst-notsym (pattern symopt?)
   "substitute a symbol with an anonymous symbol, in order to avoid capturing the variables inside NOT pattern.
