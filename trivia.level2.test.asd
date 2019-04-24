@@ -7,4 +7,6 @@
   :serial t
   :components ((:file "suite")
                (:file "level2"))
-  :perform (test-op (o c) (eval (read-from-string "(5am:run! :trivia)"))))
+  :perform (test-op (o c)
+                    (eval (read-from-string "(trivia:in-optimizer :trivial t)"))
+                    (eval (read-from-string "(5am:run! :trivia)"))))
