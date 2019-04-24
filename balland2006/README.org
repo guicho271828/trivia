@@ -1,8 +1,6 @@
 
 * Trivia.Balland2006
 
-[[https://travis-ci.org/guicho271828/trivia.balland2006][https://travis-ci.org/guicho271828/trivia.balland2006.svg?branch=master]]
-
 This is an optimizer implementation based on (Balland et.al. 2006).
 
 c.f.
@@ -17,21 +15,7 @@ transformation. [Technical Report] 2006, pp.19. <inria-00001127v2>
 
 ** Usage & Dependencies
 
-After loading Trivia, use =(ql:quickload :trivia.balland2006.enabled)= to activate the optimizer.
-
 The flag =*trace-optimization*= controls the debug printing during the fusing/grounding operation.
-
-It depends on the following libraries:
-
-+ [[https://github.com/guicho271828/trivia][Trivia by Me]] :: NON-Optimized Pattern Matching Library
-
-+ [[https://github.com/guicho271828/type-i][Type-i]] by Me :: Type inference utility for fundamentally 1-arg predicates
-
-+ alexandria ::
-    Alexandria is a collection of portable public domain utilities.
-
-+ iterate ::
-    Jonathan Amsterdam's iterator/gatherer/accumulator facility
 
 * Optimizer Details
 
