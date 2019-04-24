@@ -4,7 +4,7 @@
   :author "Masataro Asai"
   :mailto "guicho2.71828@gmail.com"
   :license "LLGPL"
-  :depends-on ("trivia.level2" "cl-ppcre")
+  :depends-on ("trivia.trivial" "cl-ppcre")
   :pathname "ppcre/"
   :serial t
   :components ((:file "package"))
