@@ -16,4 +16,4 @@
   :description "Base level system of Trivia with a trivial optimizer.
  Systems that intend to enhance Trivia should depend on this package, not the TRIVIA system,
  in order to avoid the circular dependency."
-  :in-order-to ((test-op (test-op trivia.level2.test))))
+  :in-order-to ((test-op (test-op trivia.trivial.test))))
