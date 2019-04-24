@@ -5,7 +5,6 @@
         :trivia.cffi))
 (in-package :trivia.cffi.test)
 
-(def-suite :trivia.cffi)
 (in-suite :trivia.cffi)
 
 (defmacro is-match (arg pattern)
@@ -16,7 +15,7 @@
 
 ;;; Contrib tests
 
-(test cffi
+(test (cffi :compile-at :run-time)
   (finishes
     (pattern-expand
      `(-> (:struct dd-node)

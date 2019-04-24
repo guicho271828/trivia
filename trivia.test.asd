@@ -1,6 +1,15 @@
 (defsystem "trivia.test"
   :author "Masataro Asai"
   :mailto "guicho2.71828@gmail.com"
-  :description "Runs the level2 test with various optimizers"
-  :depends-on ("trivia.level2.test")
-  :in-order-to ((test-op (test-op "trivia.trivial.test"))))
+  :description "Test system of trivia"
+  :depends-on ("fiveam" "trivia" "trivia.ppcre" "trivia.quasiquote" "trivia.cffi" "optima")
+  :pathname "test/"
+  :components ((:file "base")
+               (:file "level0")
+               (:file "level1")
+               (:file "level2")
+               (:file "ppcre")
+               (:file "quasiquote")
+               (:file "cffi"))
+  :serial t
+  :perform (test-op (o c) (eval (read-from-string "(5am:run! :trivia)"))))
