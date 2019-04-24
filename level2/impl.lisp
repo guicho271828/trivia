@@ -270,8 +270,10 @@ The default value of &optional arguments are '_, instead of nil."
 ;;;; optimizer database
 (lispn:define-namespace optimizer (function (list &key &allow-other-keys) list))
 (defvar *optimizer* :trivial)
-(defmacro in-optimizer (name)
+(defmacro in-optimizer (name &optional verbose)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
+     ,@(when verbose
+         `((format *trace-output* "~&Switching to the ~A optimizer~%" ',name)))
      (setf *optimizer* ',name)))
 
 (defmacro defoptimizer (name args &body body)
