@@ -7,7 +7,7 @@
 
 (in-suite :trivia.quasiquote)
 
-(test quasiquote
+(test (quasiquote :compile-at :run-time)
   (finishes
    (ematch (list 1 2)
      (`(,b ,c)

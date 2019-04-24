@@ -59,7 +59,7 @@
     (format t "this function is meaningless ~a ~a ~a" a b c))
   (declaim (notinline x)))
 
-(test (constant-pattern :compile-at :definition-time)
+(test (constant-pattern :compile-at :run-time)
   ;; integer
   (is-match 1 1)
   ;; t
@@ -94,7 +94,7 @@
   (is-not-match #S(POINT3 :x "A" :y "B" :z "C")
                 #S(POINT3 :x "a" :y "b" :z "c")))
 
-(test variable-pattern
+(test (variable-pattern :compile-at :run-time)
   ;; simple bind
   (is (eql 1 (match 1 (x x))))
   ;; anonymous bind
@@ -104,7 +104,7 @@
            (match '(1 2 3)
              ((list x y z) (+ x y z))))))
 
-(test place-pattern
+(test (place-pattern :compile-at :run-time)
   ;; level 0
   (let ((z 1))
     (match z ((place x) (incf x)))
@@ -123,17 +123,17 @@
        (incf x)))
     (is (equalp (list (vector 2)) z))))
 
-(test predicatep
+(test (predicatep :compile-at :run-time)
   (is (null (predicatep 'point)))
   (is (eq 'point-p (predicate-p 'point))))
 
 
-(test constructor-pattern
+(test (constructor-pattern :compile-at :run-time)
   ;; cons
   (is-match (cons 1 2) (cons 1 2)))
 
 #-ecl ;; there is a magical error on ECL only on travis.
-(test assoc
+(test (assoc :compile-at :run-time)
   (is-match '((1 . 2)) (assoc 1 2))
   (is-match '((1 . 2) (3 . 4)) (assoc 3 4))
   ;; NOTE: incompatibility --- this is not an association list, according to CLHS
@@ -185,7 +185,7 @@
   ;; (is-match '(("a" . 1)) (assoc "A" 1 :test string-equal))
   (is-match '(("a" . 1)) (assoc "A" 1 :test #'string-equal)))
 
-(test property
+(test (property :compile-at :run-time)
   (is-match '(:a 1) (property :a 1))
   (is-match '(:a 1 :b 2) (property :a 1))
   ;; NOTE: depends on SAFETY setting, it may signal type-error
@@ -198,7 +198,7 @@
   (is-not-match '(:a 1) (property :b 1))
   (is-not-match '(:a 1 :b 2) (property :b 3)))
 
-(test property-default-foundp
+(test (property-default-foundp :compile-at :run-time)
   (is (= 3 (match '(:a 1 :b 2)
              ((property :c c 3)
               c))))
@@ -212,14 +212,14 @@
               ((property :b b 3 foundp)
                foundp))))
 
-(test vector
+(test (vector :compile-at :run-time)
   (is-match (vector 1 2) (vector 1 2))
   (match (vector 1 2)
     ;; soft vector pattern
     ((vector* 1 2 a) (is (eq a nil)))))
-(test simple-vector
+(test (simple-vector :compile-at :run-time)
   (is-match (vector 1 2) (simple-vector 1 2)))
-(test class
+(test (class :compile-at :run-time)
   (let ((person (make-instance 'person :name "Bob" :age 31)))
     (is (equal '("Bob" 31)
                (match person
@@ -231,11 +231,11 @@
     (is-not-match person (person (name "Alice")))
     (is-not-match person (person (age 49)))
     (is-not-match 1 (person))))
-(test make-instance
+(test (make-instance :compile-at :run-time)
   (let ((person (make-instance 'person :name "Bob" :age 31)))
     (is-match person (person :name "Bob" :age 31))
     (is-not-match person (person :name "Bob" :age 49))))
-(test structure
+(test (structure :compile-at :run-time)
   (let ((point (make-point :x 1 :y 2)))
     (is (equal '(1 2)
                (match point
@@ -252,64 +252,64 @@
     (is-match point (point- (y 2)))
     (is-not-match point (point- (x 2)))
     (is-not-match 1 (point-))))
-(test structure-make-instance
+(test (structure-make-instance :compile-at :run-time)
   (let ((point (make-point :x 1 :y 2)))
     (is-match point (point- :x 1 :y 2))
     (is-not-match point (point- :x 2 :y 2))))
 
-(test list
+(test (list :compile-at :run-time)
   (is-match '() (list))
   (is-match '(1 2 3) (list 1 2 3))
   (is-not-match '() (list _))
   (is-not-match 5 (list _)))
-(test list*
+(test (list* :compile-at :run-time)
   (is-match '() (list* _))
   (is-match '(1 2 3) (list* 1 2 (list 3)))
   (is-match '(1 2 3) (list* _))
   ;;;;; guicho271828 --- this is incorrect, should match because (list* 5) == 5
   ;; (is-not-match 5 (list* _))
   (is-match 5 (list* _)))
-(test alist
+(test (alist :compile-at :run-time)
   (is-match '((1 . 2) (2 . 3) (3 . 4)) (alist (3 . 4) (1 . 2))))
-(test plist
+(test (plist :compile-at :run-time)
   (is-match '(:a 1 :b 2 :c 3) (plist :c 3 :a 1)))
-(test satisfies
+(test (satisfies :compile-at :run-time)
   (is-match 1 (satisfies numberp))
   (is-not-match 1 (satisfies stringp)))
-(test eq-family
+(test (eq-family :compile-at :run-time)
   (is-match :foo (eq :foo))
   (is-match 1 (eql 1))
   (is-match "foo" (equal "foo"))
   (is-match #(1) (equalp #(1))))
-(test type
+(test (type :compile-at :run-time)
   (is-match 1 (type number))
   (is-match "foo" (type string))
   (is-match :foo (type (eql :foo)))
   (is-match 1 (type (or string number)))
   (is-not-match 1 (type (not t))))
 
-(test guard-pattern
+(test (guard-pattern :compile-at :run-time)
   (is-match 1 (guard _ t))
   (is-not-match 1 (guard _ nil))
   (is-match 1 (guard 1 t))
   (is-not-match 1 (guard 1 nil))
   (is-not-match 1 (guard 2 t))
   (is-match 1 (guard x (eql x 1))))
-(test lift
+(test (lift :compile-at :run-time)
   (is-match 1 (and x (guard y (eql x y))))
   (is-match 1 (and (guard x (eql x y)) y)) ;; forward-referencing guard
   (is-not-match 1 (and x (guard 2 (eql x 1))))
   (is-not-match 1 (and x (guard y (not (eql x y)))))
   (is-match '(1 1) (list x (guard y (eql x y))))
   (is-match '(1 1) (list (guard x (oddp x)) (guard y (eql x y)))))
-(test lift1
+(test (lift1 :compile-at :run-time)
   (is-not-match '(1 2) (list (guard x (oddp x)) (guard y (eql x y))))
   (is-match '(1 (1)) (list x (guard (list (guard y (eql x y))) (eql x 1))))
   (is-not-match '(1 (1)) (list x (guard (list (guard y (eql x y))) (eql x 2))))
   (is-match 1 (or (list x) (guard x (oddp x))))
   (is-match '(1) (or (list x) (guard x (oddp x))))
   (is-not-match 1 (or (list x) (guard x (evenp x)))))
-(test lift2
+(test (lift2 :compile-at :run-time)
   (is-match '(1) (list (or (list x) (guard x (oddp x)))))
   (is-not-match '(1) (or (list (or (list x) (guard x (evenp x))))
                          (list (guard x (eql x 2)))))
@@ -332,7 +332,7 @@
                                 (list (or (guard x (eql x 1))
                                           (list)))))))))
 
-(test not-pattern
+(test (not-pattern :compile-at :run-time)
   (is-match 1 (not 2))
   (is-not-match 1 (not 1))
   ;; double negation
@@ -347,7 +347,7 @@
                  ((not (guard it (eql it 3))) it)
                  (_ :fail))))))
 
-(test or-pattern
+(test (or-pattern :compile-at :run-time)
   (is-not-match 1 (or))
   (is-match 1 (or 1))
   (is-match 1 (or 1 1))
@@ -367,7 +367,7 @@
   (is (equal '(1 nil)
              (match '(1) ((or 1 (list x) y) (list x y))))))
 
-(test and-pattern
+(test (and-pattern :compile-at :run-time)
   (is-match 1 (and))
   (is-match 1 (and 1))
   (is-match 1 (and 1 1))
@@ -397,7 +397,7 @@
              ((list (and 1 (type number)) 2))
              ((list (and 2 (type number)) 2) t))))
 
-(test match
+(test (match :compile-at :run-time)
   ;; empty
   (is-false (match 1))
   ;; values
@@ -443,7 +443,7 @@
   #+nil
   (is-true (match 1 (_ unless nil t))))
 
-(test multiple-value-match
+(test (multiple-value-match :compile-at :run-time)
   (is (eql 2
            (multiple-value-match (values 1 2)
              ((2) 1)
@@ -457,7 +457,7 @@
   (is-true (multiple-value-match 1
              ((_ _) t))))
 
-(test ematch
+(test (ematch :compile-at :run-time)
   (is-true (ematch 1 (1 t)))
   (signals match-error
     (ematch 1 (2 t)))
@@ -471,7 +471,7 @@
                    (first (match-error-values e)))))))))
 
 #-cmu ;; there is a magical error only on CMU on travis.
-(test multiple-value-ematch
+(test (multiple-value-ematch :compile-at :run-time)
   (signals match-error
     (multiple-value-ematch (values 1 2)
       ((2 1) t)))
@@ -484,7 +484,7 @@
                  (match-error (e)
                    (first (match-error-values e)))))))))
 
-(test cmatch
+(test (cmatch :compile-at :run-time)
   (is-true (cmatch 1 (1 t)))
   (is-false (handler-bind ((match-error #'continue))
               (cmatch 1 (2 t))))
@@ -496,7 +496,7 @@
                  (match-error (e)
                    (first (match-error-values e)))))))))
 
-(test multiple-value-cmatch
+(test (multiple-value-cmatch :compile-at :run-time)
   (is-false (handler-bind ((match-error #'continue))
               (multiple-value-cmatch (values 1 2)
                 ((2 1) t))))
@@ -510,7 +510,7 @@
 
 ;;; Regression tests
 
-(test issue39
+(test (issue39 :compile-at :run-time)
   (is (eql 0
            (match '(0) ((list x) x))))
   (is (eql 0
@@ -519,18 +519,18 @@
 ;; This is from https://github.com/m2ym/optima/issues/38 , but no description is given and it's not clear why
 ;; this should not be allowed.
 #+nil
-(test issue38
+(test (issue38 :compile-at :run-time)
   (signals error
     (eval '(match 1 ((or (place x) (place x)))))))
 
-(test issue31
+(test (issue31 :compile-at :run-time)
   (is (equal '(2 1 (3 4))
              (match '(1 2 3 4)
                ((or (list* (and (type symbol) x) y z)
                     (list* y x z))
                 (list x y z))))))
 
-(test issue68
+(test (issue68 :compile-at :run-time)
   (is (equal '(:b 1)
              (match 1
                ((guard x (equal x 2)) (list :a x))
@@ -542,25 +542,25 @@
   (match 1
     ((not 2)
      (signal-error))))
-(test issue101
+(test (issue101 :compile-at :run-time)
   (signals error (will-fail)))
 
 #-cmu ;; there is a magical error on CMU only on travis.
-(test issue105
+(test (issue105 :compile-at :run-time)
   (is-match '(1) (list* (or 1 2) _)))
 
 (defun ^2 (x) (* x x))
 
-(test access
+(test (access :compile-at :run-time)
   (is-match '(2) (list (access #'^2 4))))
 
-(test match*
+(test (match* :compile-at :run-time)
   (match* ((list 2) (list 3) (list 5))
     (((list x) (list y) (list (guard z (= z (+ x y)))))
      (is (= 5 z)))
     (_ (fail))))
 
-(test defun-match*
+(test (defun-match* :compile-at :run-time)
   (defun-match* myfunc (x y)
     ((1 2) 3)
     ((4 5) 6)
@@ -570,7 +570,7 @@
   (is-false (myfunc 7 8)))
 
 
-(test next
+(test (next :compile-at :run-time)
   ;; optima:fail --> trivia:next : it causes symbol conflict with fiveam
   ;; and not convenient but note that it you :use trivia.fail package, it
   ;; exports 'trivia:fail, same functionality as in optima
@@ -620,19 +620,19 @@
       ;; using `next' in the last clause of match2
       (eval x))))
 
-(test hash-table
+(test (hash-table :compile-at :run-time)
   (match (make-hash-table)
     ((hash-table count) (is (= count 0)))))
 
 
-(test and-wildcard-bug
+(test (and-wildcard-bug :compile-at :run-time)
   ;; unintended unwinding by "wildcard" condition
   (is-true
    (match 3
      ((guard1 it t it (and (type number) a _))
       (eq a 3)))))
 
-(test issue-23
+(test (issue-23 :compile-at :run-time)
   (is-match '(shader foo :fragment "")
             (guard (list shader name type value)
                    (string-equal (symbol-name shader) "shader"))))
@@ -644,7 +644,7 @@
 (defmethod plus ((a fixnum) (b fixnum))
   (+ a b))
 
-(test issue-24
+(test (issue-24 :compile-at :run-time)
   (is-match #'plus
             (generic-function))
   (match #'plus
@@ -659,7 +659,7 @@
       (is (equal '(a b) argument-precedence-order)))))
 )
 
-(test issue-51
+(test (issue-51 :compile-at :run-time)
   ;; otherwise == _
   (signals unbound-variable
     (eval
@@ -679,16 +679,16 @@
      (otherwise t)
      (_ (error "should not match")))))
 
-(test defpattern
+(test (defpattern :compile-at :run-time)
   (finishes (print (pattern-expand '(cons a b)))))
 
-(test pad
+(test (pad :compile-at :run-time)
   (is (= 1 (match* nil (() 1) (() 1)))))
 
 (defmacro testmatcher (list)
   `(match ,list ((λlist a b &key (c -1)) (list a b c))))
 
-(test destructuring-key
+(test (destructuring-key :compile-at :run-time)
   (is (equal '(1 2 3)   (testmatcher '(1 2 :c 3))))
   (is (equal '(1 2 -1)  (testmatcher '(1 2))))
   (is (equal nil        (testmatcher '(1 2 :c)))))
@@ -698,7 +698,7 @@
      ((λlist a b &optional c &rest rr &key (d -1) &allow-other-keys)
       (list a b c rr d))))
 
-(test destructuring-opt-key
+(test (destructuring-opt-key :compile-at :run-time)
   (is (equal '(1 2 3 (:c 4 :d 5) 5)
              (testmatcher2 '(1 2 3 :c 4 :d 5))))
   (is (equal nil
@@ -706,23 +706,23 @@
              (testmatcher2 '(1 2 :c 3 :d 4)))))
 
 ;;complex
-(test complex
+(test (complex :compile-at :run-time)
   (is (= 0 (match #c(0 1) ((cl:complex r 1) r)))))
 
 ;; inline patterns
 
-(test vector-inline-patterns
+(test (vector-inline-patterns :compile-at :run-time)
   (is (equal '((vector 1 _ _ _ _ _ _ _ _ _ _ 5))
              (inline-pattern-expand '(vector 1 (@@ 10 _) 5))))
   (is-match (vector 1 2 3 4 5 6 7 8 9 10)
             (vector 1 (@@ 8 _) 10)))
 
-(test issue-21
+(test (issue-21 :compile-at :run-time)
   ;; inline-pattern-expand is confused when the pattern contains non-pattern forms
   (finishes
     (inline-pattern-expand '(guard x (let ((y 1)) (= x y))))))
 
-(test issue-32
+(test (issue-32 :compile-at :run-time)
   (match (list 1 2 3)
     ((lambda-list 1 2)
      (fail "should not match"))
@@ -733,7 +733,7 @@
   (signals error
     (pattern-expand-1 `(lambda-list a &aux (c 2) &rest d))))
 
-(test issue-41
+(test (issue-41 :compile-at :run-time)
   (match (list :x 1 :y 1)
     ((lambda-list &key &allow-other-keys)
      (pass))
@@ -742,7 +742,7 @@
   (signals error
     (pattern-expand-1 `(lambda-list &allow-other-keys))))
 
-(test lambda-list-nc
+(test (lambda-list-nc :compile-at :run-time)
   (match (list :x 1 :y 1)
     ((lambda-list-nc &key x &allow-other-keys (list :y 1))
      (pass))
@@ -751,7 +751,7 @@
   (signals error
     (pattern-expand-1 `(lambda-list &key x &allow-other-keys (list :y 1)))))
 
-(test array
+(test (array :compile-at :run-time)
   (match #2A((0 1) (2 3))
     ((array :adjustable nil
             :has-fill-pointer nil
@@ -812,7 +812,7 @@
          (d (make-array 8 :displaced-to a :displaced-index-offset 2)))
     (is-match d (array))))
 
-(test last
+(test (last :compile-at :run-time)
       (is-match (alexandria:iota 5)
                 (last (list 3 4) 2))
       (is-not-match (alexandria:iota 5)
@@ -824,10 +824,10 @@
                   ((last _ -1)
                    t)))))
 
-(test issue-81
+(test (issue-81 :compile-at :run-time)
   (is-match 'x 'x))
 
-(test extensive-eq-test
+(test (extensive-eq-test :compile-at :run-time)
   ;; note: whether eq returns t for read-time literal is implementation-defined
   ;; except symbols
   
@@ -950,13 +950,13 @@
   (is-match #S(POINT :x "A" :y "B") (equalp #S(POINT :x "A" :y "B")))
   (is-not-match #S(POINT :x "A" :y "B") #S(POINT :x "a" :y "b")))
 
-(test issue-86
+(test (issue-86 :compile-at :run-time)
   (let ((a 0))
     (match `(1)
       ('(a)
         (fail "should not match")))))
   
-(test issue-89-property!
+(test (issue-89-property! :compile-at :run-time)
   (is (eq nil
           (match '(:y 88)
             ((property :x x) x)
@@ -985,7 +985,7 @@
             ((property! :x x) x)
             ((property! :y y) y)))))
 
-(test issue-93-eq-type-inference
+(test (issue-93-eq-type-inference :compile-at :run-time)
 
   (is (equal '(eql 42)
              (trivia.level2.impl::type-of-form 42 t)))
@@ -1108,14 +1108,14 @@
     (is (equal `(eql ,c)
                (trivia.level2.impl::type-of-form `(quote ,c) nil)))))
 
-(test member
+(test (member :compile-at :run-time)
       (is-match 1 (member '(1 2 3)))
       (is-not-match 6 (member '(1 2 3)))
       (let ((list (list 1 2 3)))
         (is-match 1 (member '(1 2 3)))
         (is-not-match 6 (member '(1 2 3)))))
 
-(test more-guards
+(test (more-guards :compile-at :run-time)
   (flet ((optima (x)
            (optima:match x
              ((list (optima:guard x (eql x y)) y)

@@ -15,7 +15,7 @@
 
 ;;; Contrib tests
 
-(test ppcre
+(test (ppcre :compile-at :run-time)
   (is-match "a" (ppcre "^a$"))
   (is-not-match "a" (ppcre "^b$"))
   (is-not-match 1 (ppcre "a"))

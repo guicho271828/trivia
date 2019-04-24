@@ -15,7 +15,7 @@
 
 ;;; Contrib tests
 
-(test cffi
+(test (cffi :compile-at :run-time)
   (finishes
     (pattern-expand
      `(-> (:struct dd-node)
