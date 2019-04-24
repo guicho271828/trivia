@@ -13,7 +13,9 @@
   :mailto "guicho2.71828@gmail.com"
   :license "LLGPL"
   :depends-on (:trivia.level2)
+  :components ((:file "level2/trivial"))
   :description "Base level system of Trivia with a trivial optimizer.
+ Loading this system will set the optimizer to the :trivial optimizer.
  Systems that intend to enhance Trivia should depend on this package, not the TRIVIA system,
  in order to avoid the circular dependency."
   :in-order-to ((test-op (test-op trivia.trivial.test))))
