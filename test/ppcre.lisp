@@ -5,7 +5,6 @@
         :trivia.ppcre))
 (in-package :trivia.ppcre.test)
 
-(def-suite :trivia.ppcre)
 (in-suite :trivia.ppcre)
 
 (defmacro is-match (arg pattern)

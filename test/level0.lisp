@@ -3,7 +3,6 @@
   (:use :cl :fiveam :trivia.level0))
 (in-package :trivia.level0.test)
 
-(def-suite :trivia.level0)
 (in-suite :trivia.level0)
 
 (defun testfn (x) 

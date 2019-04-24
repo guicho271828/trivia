@@ -3,7 +3,6 @@
   (:use :cl :fiveam :trivia.level1 :alexandria))
 (in-package :trivia.level1.test)
 
-(def-suite :trivia.level1)
 (in-suite :trivia.level1)
 
 (defmacro is-match (arg pattern)

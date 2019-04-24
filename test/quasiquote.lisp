@@ -5,7 +5,6 @@
 
 (in-readtable :fare-quasiquote)
 
-(def-suite :trivia.quasiquote)
 (in-suite :trivia.quasiquote)
 
 (test quasiquote
