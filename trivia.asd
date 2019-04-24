@@ -6,4 +6,4 @@
   :mailto "guicho2.71828@gmail.com"
   :license "LLGPL"
   :depends-on ("trivia.trivial")
-  :in-order-to ((test-op (test-op "trivia.level2"))))
+  :in-order-to ((test-op (test-op "trivia.test"))))
