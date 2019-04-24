@@ -457,7 +457,7 @@
   (flet ((optima (x)
            (optima:match x
              ((not (optima:guard (list x y) (eql x y)))
-              t)))
+              :ok)))
          ;; does not compile; variables in NOT are not captured
          #+(or)
          (optima2 (x)
@@ -467,15 +467,15 @@
          (trivia (x)
            (match x
              ((not (guard (list x y) (eql x y)))
-              t))))
+              :ok))))
 
     ;; optima:
     ;; (or (guard (list #:x #:y) (not (eql #:x #:y)))
     ;;     (not (list #:x #:y)))
     ;; --- variables are renamed
     (is (eql nil (optima '(1 1))))
-    (is (eql t   (optima '(1 2))))
-    (is (eql t   (optima :a)))
+    (is (eql :ok (optima '(1 2))))
+    (is (eql :ok (optima :a)))
 
     ;; currently:
     ;; (is (eql nil (trivia '(1 1))))
@@ -484,6 +484,6 @@
 
     ;; should be:
     (is (eql nil (trivia '(1 1))))
-    (is (eql t   (trivia '(1 2))))
-    (is (eql t   (trivia :a)))))
+    (is (eql :ok (trivia '(1 2))))
+    (is (eql :ok (trivia :a)))))
 
