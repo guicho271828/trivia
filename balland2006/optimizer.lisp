@@ -23,6 +23,7 @@
 (defparameter *optimization-timeout* 3 "Optimization timeout in seconds. It matters for a very complex pattern")
 (defparameter *grounding-clause-limit* 500 "The limit for grounding the OR patterns. If the grounding
 resulted in clauses more than this limit, it undoes the grounding.")
+(defparameter *optimization-report-threshold* 1 "Prints the runtime of optimization passes when it exceeds this limit")
 
 (defun timeout-p (start-time)
   (let ((result (< *optimization-timeout*
@@ -39,9 +40,9 @@ resulted in clauses more than this limit, it undoes the grounding.")
     result))
 
 (defun balland2006 (clauses types)
-  (let ((% clauses))
+  (let ((% clauses)
+        (start-time (get-universal-time)))
     (iter (for prev = %)
-          (with start-time = (get-universal-time))
           (when *trace-optimization*
             (format t "~&~<; ~@;Current pattern~_ ~s~:>~%" (list %)))
           (until (timeout-p start-time))
@@ -64,6 +65,9 @@ resulted in clauses more than this limit, it undoes the grounding.")
           (when *trace-optimization*
             (format t "~&~<; ~@;Interleaving result~_ ~s~:>~%" (list %)))
           (until (equal % prev)))
+    (let ((runtime (- (get-universal-time) start-time)))
+      (when (< *optimization-report-threshold* runtime)
+        (format t "~&~<; ~@;Optimization took ~a seconds. Resuting clauses: ~a clauses. ~:>~%" (list runtime (length %)))))
     %))
 
 ;;; or lifting
