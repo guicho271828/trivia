@@ -21,11 +21,21 @@
 |#
 
 (defparameter *optimization-timeout* 3 "Optimization timeout in seconds. It matters for a very complex pattern")
+(defparameter *grounding-clause-limit* 500 "The limit for grounding the OR patterns. If the grounding
+resulted in clauses more than this limit, it undoes the grounding.")
+
 (defun timeout-p (start-time)
   (let ((result (< *optimization-timeout*
                    (- (get-universal-time) start-time))))
     (when result
       (format t "~&~<; ~@;Optimization timed out! Return the current result~:>~%" nil))
+    result))
+
+(defun grounding-limit-reached-p (clauses)
+  (let ((result (< *grounding-clause-limit* (length clauses))))
+    (when result
+      (format t "~&~<; ~@;Discarding the grounding result with ~a clauses; more than ~a clauses.~:>~%"
+              (list (length clauses) *grounding-clause-limit*)))
     result))
 
 (defun balland2006 (clauses types)
@@ -35,9 +45,12 @@
           (when *trace-optimization*
             (format t "~&~<; ~@;Current pattern~_ ~s~:>~%" (list %)))
           (until (timeout-p start-time))
-          (setf % (apply-or-grounding %))
-          (when *trace-optimization*
-            (format t "~&~<; ~@;Grounding result~_ ~s~:>~%" (list %)))
+          (let ((result (apply-or-grounding %)))
+            (when *trace-optimization*
+              (format t "~&~<; ~@;Grounding result~_ ~s~:>~%" (list result)))
+            (until (grounding-limit-reached-p result))
+            ;; it can't continue, since swapping cannot be applied to OR patterns
+            (setf % result))
           (until (timeout-p start-time))
           (setf % (apply-swapping     % types))
           (when *trace-optimization*
