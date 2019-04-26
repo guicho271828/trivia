@@ -20,21 +20,33 @@
 
 |#
 
+(defparameter *optimization-timeout* 3 "Optimization timeout in seconds. It matters for a very complex pattern")
+(defun timeout-p (start-time)
+  (let ((result (< *optimization-timeout*
+                   (- (get-universal-time) start-time))))
+    (when result
+      (format t "~&~<; ~@;Optimization timed out! Return the current result~:>~%" nil))
+    result))
 
 (defun balland2006 (clauses types)
   (let ((% clauses))
     (iter (for prev = %)
+          (with start-time = (get-universal-time))
           (when *trace-optimization*
             (format t "~&~<; ~@;Current pattern~_ ~s~:>~%" (list %)))
+          (until (timeout-p start-time))
           (setf % (apply-or-grounding %))
           (when *trace-optimization*
             (format t "~&~<; ~@;Grounding result~_ ~s~:>~%" (list %)))
+          (until (timeout-p start-time))
           (setf % (apply-swapping     % types))
           (when *trace-optimization*
             (format t "~&~<; ~@;Swapping result~_ ~s~:>~%" (list %)))
+          (until (timeout-p start-time))
           (setf % (apply-fusion       % types))
           (when *trace-optimization*
             (format t "~&~<; ~@;Fusion result~_ ~s~:>~%" (list %)))
+          (until (timeout-p start-time))
           (setf % (apply-interleaving % types))
           (when *trace-optimization*
             (format t "~&~<; ~@;Interleaving result~_ ~s~:>~%" (list %)))
