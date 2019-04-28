@@ -547,7 +547,15 @@ General Array:
    time, referencing PLACE would cause the invokation of the function each time. For this purpose, we also allow EAGER variable.
    The value of EAGER will be invalidated when PLACE is modified."
   ;; optional arguments in defpattern is defaulted to _, not nil
-  `(guard1 (,place :place t) t ,place ,eager))
+  `(guard1 (,place :binder symbol-macrolet) t ,place ,eager))
+
+
+(defpattern progv (name)
+  "Binds the current matching value to a dynamic variable named by NAME.
+NAME is evaluated and should evaluate to a symbol.
+In another word, the variable to bind the value can be altered in runtime."
+  `(guard1 (,place :binder progv) t))
+
 
 (defpattern cl:complex (r i)
   "Destructure a complex number."

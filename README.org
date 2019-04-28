@@ -16,6 +16,7 @@
 + news!(02/19/2019) Added =MEMBER= pattern. When the argument is a constant, it also adds type declaration.
 + *news!(04/24/2019)* Improved the compilation of =GUARD= pattern. It no longer uses the internal hackery.
 + *news!(04/24/2019)* *Balland2006 optimizer is now the default optimizer for the pattern compiler!*
++ *news!(04/28/2019)* Added a =progv= pattern, which can dynamically alter the dynamic variable the value will be bound to.
 
 * Trivia : Trivial Pattern Matching Compiler
 
