@@ -260,27 +260,35 @@
 
 (defun run-benchmark (matcher name)
   (format t "~&-------------------- ~a ----------------------------------------~&" name)
-  (list 
-   (let ((fn (compile nil (fibonacci-form matcher))))
-     (format t "~&Running Fibonacci")
-     (time (iter (repeat 200)
-                 (collect (funcall fn 32)))))
+  (list
+   (block nil
+     (let ((fn (handler-case (compile nil (fibonacci-form matcher))
+                 (error (c)
+                   (print c)
+                   (return nil)))))
+       (format t "~&Running Fibonacci")
+       (time (iter (repeat 200)
+                   (collect (funcall fn 32))))))
 
-   (let ((fn (compile nil (gomoku-form matcher))))
-     (format t "~&Running Gomoku")
-     (time
-      (iter outer
-            (repeat 100)
-            (iter (for test in *gomoku-testset*)
-                  (case (funcall fn test)
-                    (0 (in outer (counting t into black)))
-                    (1 (in outer (counting t into white)))))
-            (finally
-             (format t "~& Black : White : Notany = ~a : ~a : ~a "
-                     black white
-                     (- (* 30 (length *gomoku-testset*))
-                        black white))
-             (return-from outer (list black white))))))
+   (block nil
+     (let ((fn (handler-case (compile nil (gomoku-form matcher))
+                 (error (c)
+                   (print c)
+                   (return nil)))))
+       (format t "~&Running Gomoku")
+       (time
+        (iter outer
+              (repeat 100)
+              (iter (for test in *gomoku-testset*)
+                    (case (funcall fn test)
+                      (0 (in outer (counting t into black)))
+                      (1 (in outer (counting t into white)))))
+              (finally
+               (format t "~& Black : White : Notany = ~a : ~a : ~a "
+                       black white
+                       (- (* 30 (length *gomoku-testset*))
+                          black white))
+               (return-from outer (list black white)))))))
    #+nil
    (let ((fn (compile nil (eratosthenes-form matcher)))
          (input 100000))
@@ -288,14 +296,18 @@
      (let ((res (time (funcall fn input))))
        (format t "~&~a primes" (length res))
        res))
-   (let ((fn (compile nil (strmatch-form matcher))))
-     (format t "~&Running String-match")
-     (time (let ((sum (iter (repeat 10000)
-                         (summing
-                          (iter (for word in *longstr*)
-                                (count (funcall fn word)))))))
-             (format t "~& Matched ~a times" sum)
-             sum)))))
+   (block nil
+     (let ((fn (handler-case (compile nil (strmatch-form matcher))
+                 (error (c)
+                   (print c)
+                   (return nil)))))
+       (format t "~&Running String-match")
+       (time (let ((sum (iter (repeat 10000)
+                              (summing
+                               (iter (for word in *longstr*)
+                                     (count (funcall fn word)))))))
+               (format t "~& Matched ~a times" sum)
+               sum))))))
 
 (defun run-benchmarks (&optional *optimization*)
   (let ((balland (let ((*optimizer* :balland2006))
