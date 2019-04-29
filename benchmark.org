@@ -1,0 +1,337 @@
+
+* Summary
+
+There seems some perculiarity in Optima about the handling of the strings.
+This error happened in all of ccl 1.10, 1.11, 1.11.5 .
+ECL seems very slow in something.
+
+|            |         |    fib |  gomoku |  sting |
+|------------+---------+--------+---------+--------|
+| SBCL 1.5.1 | balland |  5.897 |  19.926 |  0.280 |
+|            | optima  |  6.205 |  20.637 |  5.069 |
+|            | trivial |  5.724 |  22.625 |  0.319 |
+|------------+---------+--------+---------+--------|
+| CCL 1.11.5 | balland |   3.93 |   24.50 |  0.199 |
+|            | optima  |   3.76 |   23.76 |  error |
+|            | trivial |   3.57 |   78.87 |  0.347 |
+|------------+---------+--------+---------+--------|
+| ECL 16.1.3 | balland | 20.114 |  49.264 | 40.977 |
+|            | optima  | 19.855 |  54.293 | 11.535 |
+|            | trivial | 19.870 | 470.787 | 48.930 |
+|------------+---------+--------+---------+--------|
+
+* SBCL 1.5.1 on RYZEN1700
+
+|         |   fib | gomoku | sting |
+|---------+-------+--------+-------|
+| balland | 5.897 | 19.926 | 0.280 |
+| optima  | 6.205 | 20.637 | 5.069 |
+| trivial | 5.724 | 22.625 | 0.319 |
+
+-------------------- BALLAND ----------------------------------------
+Running Fibonacci
+Evaluation took:
+  5.897 seconds of real time
+  5.898945 seconds of total run time (5.898945 user, 0.000000 system)
+  100.03% CPU
+  17,657,552,310 processor cycles
+  160 bytes consed
+  
+Running Gomoku
+ Black : White : Notany = 16097600 : 16943400 : 26959000 
+Evaluation took:
+  19.926 seconds of real time
+  19.924481 seconds of total run time (19.921608 user, 0.002873 system)
+  99.99% CPU
+  59,665,656,840 processor cycles
+  0 bytes consed
+  
+Running String-match
+ Matched 710000 times
+Evaluation took:
+  0.280 seconds of real time
+  0.280123 seconds of total run time (0.280123 user, 0.000000 system)
+  100.00% CPU
+  838,361,550 processor cycles
+  0 bytes consed
+  
+-------------------- OPTIMA ----------------------------------------
+Running Fibonacci
+Evaluation took:
+  6.205 seconds of real time
+  6.204156 seconds of total run time (6.204156 user, 0.000000 system)
+  99.98% CPU
+  18,579,454,890 processor cycles
+  10,816 bytes consed
+  
+Running Gomoku
+ Black : White : Notany = 16097600 : 16943400 : 26959000 
+Evaluation took:
+  20.637 seconds of real time
+  20.626641 seconds of total run time (20.626641 user, 0.000000 system)
+  99.95% CPU
+  61,795,483,770 processor cycles
+  0 bytes consed
+  
+Running String-match
+ Matched 710000 times
+Evaluation took:
+  5.069 seconds of real time
+  5.067670 seconds of total run time (5.067670 user, 0.000000 system)
+  99.98% CPU
+  15,176,010,690 processor cycles
+  0 bytes consed
+  
+-------------------- TRIVIAL ----------------------------------------
+Running Fibonacci
+Evaluation took:
+  5.724 seconds of real time
+  5.723684 seconds of total run time (5.723684 user, 0.000000 system)
+  100.00% CPU
+  17,140,497,840 processor cycles
+  18,736 bytes consed
+  
+Running Gomoku
+ Black : White : Notany = 16097600 : 16943400 : 26959000 
+Evaluation took:
+  22.625 seconds of real time
+  22.614209 seconds of total run time (22.614209 user, 0.000000 system)
+  99.95% CPU
+  67,747,530,300 processor cycles
+  35,696 bytes consed
+  
+Running String-match
+ Matched 710000 times
+Evaluation took:
+  0.319 seconds of real time
+  0.319354 seconds of total run time (0.319354 user, 0.000000 system)
+  100.00% CPU
+  956,109,660 processor cycles
+  2,400 bytes consed
+
+
+* CCL 1.10 on RYZEN1700
+
+|         |  fib | gomoku | sting |
+|---------+------+--------+-------|
+| balland | 3.77 |   23.0 | 0.203 |
+| optima  | 3.82 |   23.9 | error |
+| trivial | 2.90 |  77.12 |  0.33 |
+
+-------------------- BALLAND ----------------------------------------
+Running Fibonacci
+(ITER (REPEAT 200) (COLLECT (FUNCALL FN 32)))
+took 3,777,048 microseconds (3.777048 seconds) to run.
+During that period, and with 16 available CPU cores,
+     3,777,291 microseconds (3.777291 seconds) were spent in user mode
+             4 microseconds (0.000004 seconds) were spent in system mode
+ 3,200 bytes of memory allocated.
+ 2 minor page faults, 0 major page faults, 0 swaps.
+Running Gomoku
+ Black : White : Notany = 16054600 : 16840400 : 27105000 
+(ITER OUTER (REPEAT 100) (ITER (FOR TEST IN *GOMOKU-TESTSET*) (CASE (FUNCALL FN TEST) (0 (IN OUTER (COUNTING T INTO BLACK))) (1 (IN OUTER (COUNTING T INTO WHITE))))) (FINALLY (FORMAT T "~& Black : White : Notany = ~a : ~a : ~a " BLACK WHITE (- (* 30 (LENGTH *GOMOKU-TESTSET*)) BLACK WHITE)) (RETURN-FROM OUTER (LIST BLACK WHITE))))
+took 23,065,913 microseconds (23.065912 seconds) to run.
+During that period, and with 16 available CPU cores,
+     23,056,820 microseconds (23.056820 seconds) were spent in user mode
+             39 microseconds ( 0.000039 seconds) were spent in system mode
+ 880 bytes of memory allocated.
+Running String-match
+ Matched 710000 times
+(LET ((SUM (ITER (REPEAT 10000) (SUMMING (ITER (FOR WORD IN *LONGSTR*) (COUNT (FUNCALL FN WORD))))))) (FORMAT T "~& Matched ~a times" SUM) SUM)
+took 203,210 microseconds (0.203210 seconds) to run.
+During that period, and with 16 available CPU cores,
+     203,611 microseconds (0.203611 seconds) were spent in user mode
+           0 microseconds (0.000000 seconds) were spent in system mode
+ 464 bytes of memory allocated.
+-------------------- OPTIMA ----------------------------------------
+Running Fibonacci
+(ITER (REPEAT 200) (COLLECT (FUNCALL FN 32)))
+took 3,825,234 microseconds (3.825234 seconds) to run.
+During that period, and with 16 available CPU cores,
+     3,825,454 microseconds (3.825454 seconds) were spent in user mode
+             7 microseconds (0.000007 seconds) were spent in system mode
+ 3,200 bytes of memory allocated.
+Running Gomoku
+ Black : White : Notany = 16054600 : 16840400 : 27105000 
+(ITER OUTER (REPEAT 100) (ITER (FOR TEST IN *GOMOKU-TESTSET*) (CASE (FUNCALL FN TEST) (0 (IN OUTER (COUNTING T INTO BLACK))) (1 (IN OUTER (COUNTING T INTO WHITE))))) (FINALLY (FORMAT T "~& Black : White : Notany = ~a : ~a : ~a " BLACK WHITE (- (* 30 (LENGTH *GOMOKU-TESTSET*)) BLACK WHITE)) (RETURN-FROM OUTER (LIST BLACK WHITE))))
+took 23,932,941 microseconds (23.932940 seconds) to run.
+During that period, and with 16 available CPU cores,
+     23,923,276 microseconds (23.923277 seconds) were spent in user mode
+              3 microseconds ( 0.000003 seconds) were spent in system mode
+ 880 bytes of memory allocated.
+
+#<TYPE-ERROR #x30201C689E8D> 
+-------------------- TRIVIAL ----------------------------------------
+Running Fibonacci
+(ITER (REPEAT 200) (COLLECT (FUNCALL FN 32)))
+took 3,901,193 microseconds (3.901193 seconds) to run.
+During that period, and with 16 available CPU cores,
+     3,901,316 microseconds (3.901316 seconds) were spent in user mode
+            19 microseconds (0.000019 seconds) were spent in system mode
+ 3,200 bytes of memory allocated.
+Running Gomoku
+ Black : White : Notany = 16054600 : 16840400 : 27105000 
+(ITER OUTER (REPEAT 100) (ITER (FOR TEST IN *GOMOKU-TESTSET*) (CASE (FUNCALL FN TEST) (0 (IN OUTER (COUNTING T INTO BLACK))) (1 (IN OUTER (COUNTING T INTO WHITE))))) (FINALLY (FORMAT T "~& Black : White : Notany = ~a : ~a : ~a " BLACK WHITE (- (* 30 (LENGTH *GOMOKU-TESTSET*)) BLACK WHITE)) (RETURN-FROM OUTER (LIST BLACK WHITE))))
+took 77,121,050 microseconds (77.121050 seconds) to run.
+During that period, and with 16 available CPU cores,
+     77,103,044 microseconds (77.103040 seconds) were spent in user mode
+          4,059 microseconds ( 0.004059 seconds) were spent in system mode
+ 880 bytes of memory allocated.
+Running String-match
+ Matched 710000 times
+(LET ((SUM (ITER (REPEAT 10000) (SUMMING (ITER (FOR WORD IN *LONGSTR*) (COUNT (FUNCALL FN WORD))))))) (FORMAT T "~& Matched ~a times" SUM) SUM)
+took 335,661 microseconds (0.335661 seconds) to run.
+During that period, and with 16 available CPU cores,
+     336,058 microseconds (0.336058 seconds) were spent in user mode
+           1 microseconds (0.000001 seconds) were spent in system mode
+ 464 bytes of memory allocated.
+
+
+* CCL 1.11 on RYZEN1700
+
+Irrecoverable error during tests
+
+* CCL 1.11.5 on RYZEN1700
+
+|         |  fib | gomoku | sting |
+|---------+------+--------+-------|
+| balland | 3.93 |  24.50 | 0.199 |
+| optima  | 3.76 |  23.76 | error |
+| trivial | 3.57 |  78.87 | 0.347 |
+
+-------------------- BALLAND ----------------------------------------
+Running Fibonacci
+(ITER (REPEAT 200) (COLLECT (FUNCALL FN 32)))
+took 3,366,717 microseconds (3.366717 seconds) to run.
+During that period, and with 16 available CPU cores,
+     3,366,710 microseconds (3.366710 seconds) were spent in user mode
+             0 microseconds (0.000000 seconds) were spent in system mode
+ 3,200 bytes of memory allocated.
+ 3 minor page faults, 0 major page faults, 0 swaps.
+Running Gomoku
+ Black : White : Notany = 16034700 : 16966000 : 26999300 
+(ITER OUTER (REPEAT 100) (ITER (FOR TEST IN *GOMOKU-TESTSET*) (CASE (FUNCALL FN TEST) (0 (IN OUTER (COUNTING T INTO BLACK))) (1 (IN OUTER (COUNTING T INTO WHITE))))) (FINALLY (FORMAT T "~& Black : White : Notany = ~a : ~a : ~a " BLACK WHITE (- (* 30 (LENGTH *GOMOKU-TESTSET*)) BLACK WHITE)) (RETURN-FROM OUTER (LIST BLACK WHITE))))
+took 21,872,875 microseconds (21.872875 seconds) to run.
+During that period, and with 16 available CPU cores,
+     21,858,636 microseconds (21.858637 seconds) were spent in user mode
+          3,765 microseconds ( 0.003765 seconds) were spent in system mode
+ 880 bytes of memory allocated.
+Running String-match
+ Matched 710000 times
+(LET ((SUM (ITER (REPEAT 10000) (SUMMING (ITER (FOR WORD IN *LONGSTR*) (COUNT (FUNCALL FN WORD))))))) (FORMAT T "~& Matched ~a times" SUM) SUM)
+took 197,087 microseconds (0.197087 seconds) to run.
+       3,595 microseconds (0.003595 seconds, 1.82%) of which was spent in GC.
+During that period, and with 16 available CPU cores,
+     197,488 microseconds (0.197488 seconds) were spent in user mode
+           6 microseconds (0.000006 seconds) were spent in system mode
+ 464 bytes of memory allocated.
+ 45 minor page faults, 0 major page faults, 0 swaps.
+-------------------- OPTIMA ----------------------------------------
+Running Fibonacci
+(ITER (REPEAT 200) (COLLECT (FUNCALL FN 32)))
+took 3,221,534 microseconds (3.221534 seconds) to run.
+During that period, and with 16 available CPU cores,
+     3,221,443 microseconds (3.221443 seconds) were spent in user mode
+             0 microseconds (0.000000 seconds) were spent in system mode
+ 3,200 bytes of memory allocated.
+Running Gomoku
+ Black : White : Notany = 16034700 : 16966000 : 26999300 
+(ITER OUTER (REPEAT 100) (ITER (FOR TEST IN *GOMOKU-TESTSET*) (CASE (FUNCALL FN TEST) (0 (IN OUTER (COUNTING T INTO BLACK))) (1 (IN OUTER (COUNTING T INTO WHITE))))) (FINALLY (FORMAT T "~& Black : White : Notany = ~a : ~a : ~a " BLACK WHITE (- (* 30 (LENGTH *GOMOKU-TESTSET*)) BLACK WHITE)) (RETURN-FROM OUTER (LIST BLACK WHITE))))
+took 22,526,634 microseconds (22.526634 seconds) to run.
+During that period, and with 16 available CPU cores,
+     22,516,544 microseconds (22.516544 seconds) were spent in user mode
+              0 microseconds ( 0.000000 seconds) were spent in system mode
+ 880 bytes of memory allocated.
+
+#<TYPE-ERROR #x30201C4BEABD> 
+-------------------- TRIVIAL ----------------------------------------
+Running Fibonacci
+(ITER (REPEAT 200) (COLLECT (FUNCALL FN 32)))
+took 3,525,859 microseconds (3.525859 seconds) to run.
+During that period, and with 16 available CPU cores,
+     3,525,758 microseconds (3.525758 seconds) were spent in user mode
+             0 microseconds (0.000000 seconds) were spent in system mode
+ 3,200 bytes of memory allocated.
+Running Gomoku
+ Black : White : Notany = 16034700 : 16966000 : 26999300 
+(ITER OUTER (REPEAT 100) (ITER (FOR TEST IN *GOMOKU-TESTSET*) (CASE (FUNCALL FN TEST) (0 (IN OUTER (COUNTING T INTO BLACK))) (1 (IN OUTER (COUNTING T INTO WHITE))))) (FINALLY (FORMAT T "~& Black : White : Notany = ~a : ~a : ~a " BLACK WHITE (- (* 30 (LENGTH *GOMOKU-TESTSET*)) BLACK WHITE)) (RETURN-FROM OUTER (LIST BLACK WHITE))))
+took 75,013,688 microseconds (75.013690 seconds) to run.
+During that period, and with 16 available CPU cores,
+     75,002,335 microseconds (75.002335 seconds) were spent in user mode
+              0 microseconds ( 0.000000 seconds) were spent in system mode
+ 880 bytes of memory allocated.
+Running String-match
+ Matched 710000 times
+(LET ((SUM (ITER (REPEAT 10000) (SUMMING (ITER (FOR WORD IN *LONGSTR*) (COUNT (FUNCALL FN WORD))))))) (FORMAT T "~& Matched ~a times" SUM) SUM)
+took 352,260 microseconds (0.352260 seconds) to run.
+During that period, and with 16 available CPU cores,
+     352,633 microseconds (0.352633 seconds) were spent in user mode
+           0 microseconds (0.000000 seconds) were spent in system mode
+ 464 bytes of memory allocated.
+
+((2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309) (16034700 16966000) 710000) 
+((2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309) (16034700 16966000) NIL) 
+((2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309 2178309) (16034700 16966000) 710000) 
+
+* ECL 16.1.3 on RYZEN1700
+
+|         |    fib |  gomoku |  sting |
+|---------+--------+---------+--------|
+| balland | 20.114 |  49.264 | 40.977 |
+| optima  | 19.855 |  54.293 | 11.535 |
+| trivial | 19.870 | 470.787 | 48.930 |
+
+-------------------- BALLAND ----------------------------------------
+Running Fibonacci
+real time : 20.114 secs
+run time  : 20.122 secs
+gc count  : 1 times
+consed    : 27248 bytes
+Running Gomoku
+ Black : White : Notany = 16147500 : 16864500 : 26988000 
+real time : 49.264 secs
+run time  : 49.286 secs
+gc count  : 1 times
+consed    : 60800 bytes
+Running String-match
+ Matched 710000 times
+real time : 40.977 secs
+run time  : 40.994 secs
+gc count  : 1 times
+consed    : 42320 bytes
+-------------------- OPTIMA ----------------------------------------
+Running Fibonacci
+real time : 19.855 secs
+run time  : 19.864 secs
+gc count  : 1 times
+consed    : 27904 bytes
+Running Gomoku
+ Black : White : Notany = 16147500 : 16864500 : 26988000 
+real time : 54.293 secs
+run time  : 54.272 secs
+gc count  : 1 times
+consed    : 16624 bytes
+Running String-match
+ Matched 710000 times
+real time : 11.535 secs
+run time  : 11.534 secs
+gc count  : 1 times
+consed    : 11904 bytes
+-------------------- TRIVIAL ----------------------------------------
+Running Fibonacci
+real time : 19.870 secs
+run time  : 19.854 secs
+gc count  : 1 times
+consed    : 13856 bytes
+Running Gomoku
+ Black : White : Notany = 16147500 : 16864500 : 26988000 
+real time : 470.787 secs
+run time  : 470.690 secs
+gc count  : 1 times
+consed    : 11312 bytes
+Running String-match
+ Matched 710000 times
+real time : 48.930 secs
+run time  : 48.918 secs
+gc count  : 1 times
+consed    : 13520 bytes
