@@ -21,7 +21,7 @@
 |#
 
 (defparameter *optimization-timeout* 3 "Optimization timeout in seconds. It matters for a very complex pattern")
-(defparameter *grounding-clause-limit* 500 "The limit for grounding the OR patterns. If the grounding
+(defparameter *grounding-clause-limit* 300 "The limit for grounding the OR patterns. If the grounding
 resulted in clauses more than this limit, it undoes the grounding.")
 (defparameter *optimization-report-threshold* 1 "Prints the runtime of optimization passes when it exceeds this limit")
 
