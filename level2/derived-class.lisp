@@ -317,7 +317,7 @@ Other errors, as well as completion of the call without errors, are treated as a
 (defvar *test-call-argument* 42
   "An argument used to call the candidate function in UNARY-FUNCTION-P.
 See *ARITY-CHECK-BY-TEST-CALL* for details.")
-(defun unary-function-p (fn type)
+(defun unary-function-p (fn)
   (etypecase fn
     (generic-function
      (= 1 (length (c2mop:generic-function-lambda-list fn))))
@@ -353,7 +353,14 @@ but program-error is a strong indication of not being unary.
            (let ((sym (find-symbol
                        (apply #'concatenate 'string args))))
              (when (and (fboundp sym)
-                        (unary-function-p (symbol-function sym) type))
+                        ;; CLHS symbol-function --- If the symbol is globally
+                        ;; defined as a macro or a special operator, an object
+                        ;; of implementation-dependent nature and identity is
+                        ;; returned. http://clhs.lisp.se/Body/f_symb_1.htm Thus
+                        ;; these cases should be explicitly removed.
+                        (not (macro-function sym))
+                        (not (special-operator-p sym))
+                        (unary-function-p (symbol-function sym)))
                sym))))
     (flet ((hyphened () (finder (symbol-name type) "-" (symbol-name slot)))
            (concname () (finder (symbol-name type) (symbol-name slot)))
