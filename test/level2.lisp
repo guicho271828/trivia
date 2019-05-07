@@ -1163,3 +1163,14 @@
     (is (eql :ok (trivia '(1 2))))
     (is (eql :ok (trivia :a)))))
 
+
+
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defstruct slice (start 0) stop (step 1)))
+
+(test (test-call-on-macro-function :compile-at :run-time)
+  ;; STEP is a macro function, thus symbol-function may return something
+  ;; that is not a function
+  (finishes
+    (compile nil '(lambda () (match (make-slice :start 0 :stop 10) ((slice start stop step) (+ start stop step)))))))
