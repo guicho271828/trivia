@@ -306,7 +306,8 @@ However, it is less likely to contain bugs."
 
 
 (defun make-gensyms (list &optional (name "G"))
-  (mapcar (lambda (x) (declare (ignore x)) (gensym name)) list))
+  (make-gensym-list (length list) name))
+
 (defun pad (max clause)
   (ematch0 clause
     ((list* patterns body)
