@@ -4,7 +4,7 @@
   :author "Masataro Asai"
   :mailto "guicho2.71828@gmail.com"
   :license "LLGPL"
-  :depends-on ("trivia.level1" "lisp-namespace" "closer-mop")
+  :depends-on ("trivia.level1" "lisp-namespace" "closer-mop" "trivial-cltl2")
   :pathname "level2/"
   :serial t
   :components ((:file "package")
