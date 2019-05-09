@@ -6,6 +6,5 @@
   :mailto "guicho2.71828@gmail.com"
   :depends-on ("trivia.trivial" "cffi")
   :pathname "cffi/"
-  :components ((:file "cffi"))
-  :in-order-to ((test-op (test-op :trivia.cffi.test))))
+  :components ((:file "cffi")))
 

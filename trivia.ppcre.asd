@@ -7,5 +7,4 @@
   :depends-on ("trivia.trivial" "cl-ppcre")
   :pathname "ppcre/"
   :serial t
-  :components ((:file "package"))
-  :in-order-to ((test-op (test-op "trivia.ppcre.test"))))
+  :components ((:file "package")))

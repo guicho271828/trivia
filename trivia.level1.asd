@@ -8,5 +8,4 @@
   :pathname "level1/"
   :serial t
   :components ((:file "package")
-               (:file "impl"))
-  :in-order-to ((test-op (test-op "trivia.level1.test"))))
+               (:file "impl")))
