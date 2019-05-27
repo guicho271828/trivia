@@ -79,10 +79,22 @@ just like macroexpand"
     (ematch0 (pattern-expand (first p))
       ((list* 'guard1 sym test more-patterns)
        (labels ((rec (generator subpattern &rest more-patterns)
-                  (list* generator
-                         (pattern-expand-all subpattern)
-                         (when more-patterns
-                           (apply #'rec more-patterns)))))
+                  (if-let ((expanded
+                            (handler-case
+                                (pattern-expand-all subpattern)
+                              (wildcard ()
+                                ;; remove unnecessary wildcard pattern.
+                                ;; this is sometimes important ---
+                                ;; symbol-macrolet could be rebind by let,
+                                ;; causing slot-unbound etc.
+                                nil))))
+                    (list* generator
+                           expanded
+                           (when more-patterns
+                             (apply #'rec more-patterns)))
+                    
+                    (when more-patterns
+                      (apply #'rec more-patterns)))))
          `(guard1 ,sym ,test
                   ,@(when more-patterns
                       (apply #'rec more-patterns)))))
