@@ -57,7 +57,9 @@
   (declaim (inline x))
   (defun x (a b c)
     (format t "this function is meaningless ~a ~a ~a" a b c))
-  (declaim (notinline x)))
+  (declaim (notinline x))
+
+  (defun dont-call (x) (error "don't!")))
 
 (test (constant-pattern :compile-at :run-time)
   ;; integer
@@ -121,7 +123,12 @@
     (match z
       ((list (vector (place x)))
        (incf x)))
-    (is (equalp (list (vector 2)) z))))
+    (is (equalp (list (vector 2)) z)))
+
+  (finishes
+    (match (make-point)
+      ((point :dont-call (place x))
+       (print :ok)))))
 
 (test (predicatep :compile-at :run-time)
   (is (null (predicatep 'point)))
