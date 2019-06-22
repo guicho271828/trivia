@@ -364,7 +364,7 @@ or results in a compilation error when this is the outermost matching construct.
 #-(or ecl)
 (trivial-cltl2:define-declaration optimizer (specifier env)
   (declare (ignorable env))
-  (print specifier)
+  ;; (print specifier)
   (values :declare `(optimizer . ,(second specifier))))
 
 (defmacro match2*+ ((&rest whats) (&rest types) &body clauses &environment env)
