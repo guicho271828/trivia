@@ -376,7 +376,8 @@ or results in a compilation error when this is the outermost matching construct.
          (clauses (mapcar #'expand-clause clauses))
          (clauses* (if args
                        (funcall (or #-(or ecl)
-                                    (trivial-cltl2:declaration-information 'optimizer env)
+                                    (when-let ((it (trivial-cltl2:declaration-information 'optimizer env)))
+                                      (symbol-optimizer it))
                                     (symbol-optimizer *optimizer*))
                                 clauses :types types)
                        ;; if the number of argument is zero, there is no use
