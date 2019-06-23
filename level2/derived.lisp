@@ -554,7 +554,7 @@ General Array:
   "Binds the current matching value to a dynamic variable named by NAME.
 NAME is evaluated and should evaluate to a symbol.
 In another word, the variable to bind the value can be altered in runtime."
-  `(guard1 (,place :binder progv) t))
+  `(guard1 (,name :binder progv) t))
 
 
 (defpattern cl:complex (r i)
