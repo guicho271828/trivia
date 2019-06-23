@@ -70,6 +70,15 @@
            ;; for accessor arity check
            :*test-call-argument*
            :*arity-check-by-test-call*
+
+           :bit-vector*
+           :simple-string*
+           :base-string*
+           :simple-bit-vector*
+           :vector*
+           :simple-vector*
+           :string*
+           :simple-base-string*
            )
   (:nicknames :trivia))
 
