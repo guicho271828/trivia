@@ -19,7 +19,7 @@ The flag =*trace-optimization*= controls the debug printing during the fusing/gr
 
 * Optimizer Details
 
-In (Emillie 2006), their optimization rule reduces the number of
+In (Balland 2006), their optimization rule reduces the number of
 assignments (let) and tests (if).  However, since current state-of-the-art
 common lisp implementations (namely, sbcl and ccl) eliminates unnecessary
 assignments by default, so we do not focus on the assignments in our compiler.
