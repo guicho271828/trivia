@@ -45,9 +45,10 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
                   (parse-required argv))))
              (parse-required (argv)
                (multiple-value-bind (argv rest) (take-while argv #'!lambda-list-keyword-p)
-                 (when argv (push `(:atom ,@argv) results))
+                 (when argv (push `(:required ,@argv) results))
                  (ematch rest
                    (nil)                ;do nothing
+                   ;; for (wholevar envvar reqvars envvar optvars envvar . var) case
                    ((type atom) (push (list :rest rest) results))
                    ((type cons) (parse-optional rest)))))
              (parse-optional (argv)
@@ -57,6 +58,7 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
                     (when argv (push `(:optional ,@(mapcar #'ensure-list argv)) results))
                     (ematch rest
                       (nil)                ;do nothing
+                      ;; for (wholevar envvar reqvars envvar optvars envvar . var) case
                       ((type atom) (push (list :rest rest) results))
                       ((type cons) (parse-rest rest)))))
                  (_
@@ -81,12 +83,17 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
 	       (ematch argv
 		 ((list* '&key argv)
 		  (multiple-value-bind (argv rest) (take-while argv #'!lambda-list-keyword-p)
-		    (match rest
-		      ((or (list* '&allow-other-keys (and rest2 (or (list* '&aux _) nil)))
-			   (guard (list* '&allow-other-keys var (and rest2 (or (list* '&aux _) nil))) (not canonicalp)))
-		       (push `((:keyword-allow-other-keys ,var) ,@(mapcar #'compile-keyword-pattern argv)) results)
+		    (match* (canonicalp rest)
+		      ((t   (list* '&allow-other-keys rest2))
+		       (push `((:keyword-allow-other-keys nil) ,@(mapcar #'compile-keyword-pattern argv))
+                             results)
 		       (setf rest rest2))
-		      (_ (when argv (push `(:keyword ,@(mapcar #'compile-keyword-pattern argv)) results))))
+                      ((nil (list* '&allow-other-keys var rest2))
+		       (push `((:keyword-allow-other-keys ,var) ,@(mapcar #'compile-keyword-pattern argv))
+                             results)
+		       (setf rest rest2))
+		      ((_ _)
+                       (when argv (push `(:keyword ,@(mapcar #'compile-keyword-pattern argv)) results))))
 		    (ematch rest
 		      (nil)                ;do nothing
 		      ((type cons) (parse-aux rest)))))
@@ -102,12 +109,12 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
       (parse-whole argv)
       (nreverse results))))
 
-;; (parse-lambda-list '(a . b))         ((:ATOM A) (:REST B))
-;; (parse-lambda-list '(a &optional b)) ((:ATOM A) (:OPTIONAL (B)))
-;; (parse-lambda-list '(a &optional b x))  ((:ATOM A) (:OPTIONAL (B) (X)))
-;; (parse-lambda-list '(a &optional (b 1) x)) ((:ATOM A) (:OPTIONAL (B 1) (X)))
-;; (parse-lambda-list '(a &optional (b 1 supplied) x)) ((:ATOM A) (:OPTIONAL (B 1 SUPPLIED) (X)))
-;; (parse-lambda-list '(&whole whole a &optional (b 1 supplied) x)) ((:WHOLE WHOLE) (:ATOM A) (:OPTIONAL (B 1 SUPPLIED) (X)))
+;; (parse-lambda-list '(a . b))         ((:REQUIRED A) (:REST B))
+;; (parse-lambda-list '(a &optional b)) ((:REQUIRED A) (:OPTIONAL (B)))
+;; (parse-lambda-list '(a &optional b x))  ((:REQUIRED A) (:OPTIONAL (B) (X)))
+;; (parse-lambda-list '(a &optional (b 1) x)) ((:REQUIRED A) (:OPTIONAL (B 1) (X)))
+;; (parse-lambda-list '(a &optional (b 1 supplied) x)) ((:REQUIRED A) (:OPTIONAL (B 1 SUPPLIED) (X)))
+;; (parse-lambda-list '(&whole whole a &optional (b 1 supplied) x)) ((:WHOLE WHOLE) (:REQUIRED A) (:OPTIONAL (B 1 SUPPLIED) (X)))
 
 ;; non-canonical syntax
 ;; (parse-lambda-list '(&key x &allow-other-keys rem) nil) (((:KEYWORD-ALLOW-OTHER-KEYS REM) ((X X))))
@@ -117,7 +124,7 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
     (nil default)
     ((list* (list :whole subpattern) rest)
      `(and ,subpattern ,(compile-destructuring-pattern rest)))
-    ((list* (list* :atom subpatterns) rest)
+    ((list* (list* :required subpatterns) rest)
      `(list* ,@subpatterns ,(compile-destructuring-pattern rest)))
     ((list* (list :optional) rest)
      (compile-destructuring-pattern rest))
@@ -144,7 +151,7 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
 		       ;; match only when there are no invalid keywords.
 		       `((guard1 ,lst (loop :for ,key :in ,lst :by #'cddr :always (member ,key ',valid-keywords))))
 		       ;; In contrast, :keyword-allow-other-keys does not check the invalid keywords
-		       ;; In used in the non-canonical mode, sets rem to the additional keys given
+		       ;; If used in the non-canonical mode, sets rem to the additional keys given
 		       `((guard1 ,lst t (loop :for (,key ,val) :on ,lst :by #'cddr
 					   :unless (member ,key ',valid-keywords)
 					   :collect ,key :and :collect ,val)
