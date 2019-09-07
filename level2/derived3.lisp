@@ -175,12 +175,19 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
 
 ;(compile-destructuring-pattern (parse-lambda-list '(a . b)))
 (defpattern lambda-list (&rest patterns)
-  "Matches to a list conforming to the lambda-list specified by PATTERN. In other words, it supports the same
-   arguments as DESTRUCTURING-BIND. For example,
+  "Matches to a list conforming to the lambda-list specified by PATTERNS.
+It is compatible to destructuring-bind-lambda-list and macro-lambda-list.
+For example,
 
-  (1 2 3)   matches against        (lambda-list a b &optional c)
-  (1 2 3 4) does not match against (lambda-list a b &optional c)
-  (1 2 3 4 5) matches against      (lambda-list a b &rest rest), where rest is bound to '(3 4 5) "
+  (1 2 3)   matches against          (lambda-list A B &optional C)
+  (1 2 3 4) does not match against   (lambda-list A B &optional C)
+  (1 2 3 4 5) matches against        (lambda-list A B &rest REST), where REST is bound to '(3 4 5).
+  (0 :x 1 :y 2 :z 3) matches against (lambda-list A &rest REST &key X Y &allow-other-keys),
+       where REST is bound to '(:x 1 :y 2 :z 3), X is bound to 1, Y is bound to 2, A is bound to 0.
+
+We try to make the patten completely compatible, e.g., for &keys, it accepts the complex syntax as ((:key varname) default).
+It also supports &whole, &aux, &environment.
+ "
   (compile-destructuring-pattern (parse-lambda-list patterns)))
 
 (defpattern λlist (&rest patterns)
@@ -188,9 +195,11 @@ or otherwise it can be anything (e.g. (take-while '(a . b) (constantly t)) retur
   (compile-destructuring-pattern (parse-lambda-list patterns)))
 
 (defpattern lambda-list-nc (&rest patterns)
-  "lambda-list but with additional non-canonical syntax,
-   1. (lambda-list &key a &allow-other-keys rem)
-      REM collects every key that wasn't declared"
+  "lambda-list with an additional noncomforming syntax for &allow-other-keys.
+&allow-other-keys consumes an additional variable REM which collects every key that wasn't declared.
+
+Exmaple:
+  (:x 1 :y 2 :z 3) matches against (lambda-list &key X Y &allow-other-keys REM) with REM = (:z 3)."
   (compile-destructuring-pattern (parse-lambda-list patterns nil)))
 
 (defpattern λlist-nc (&rest patterns)
