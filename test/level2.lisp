@@ -745,7 +745,7 @@
     ((lambda-list &key &allow-other-keys)
      (pass))
     (_
-     (fail "should not match")))
+     (fail "should match")))
   (signals error
     (pattern-expand-1 `(lambda-list &allow-other-keys))))
 
@@ -754,7 +754,7 @@
     ((lambda-list-nc &key x &allow-other-keys (list :y 1))
      (pass))
     (_
-     (fail "should not match")))
+     (fail "should match")))
   (signals error
     (pattern-expand-1 `(lambda-list &key x &allow-other-keys (list :y 1)))))
 
