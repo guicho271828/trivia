@@ -158,7 +158,22 @@
 
 (defun union* (&optional x y) (union x y))
 
+(defparameter *correct-pattern-cache* nil)
+
 (defun correct-pattern (pattern)
+  (let ((cache *correct-pattern-cache*))
+    (if cache
+        (let ((key (cons *lexvars* pattern)))
+          (multiple-value-bind (val present?)
+              (gethash key cache)
+            (if present?
+                val
+                (let ((new-val (correct-pattern* pattern)))
+                  (setf (gethash key cache) new-val)))))
+        (let ((*correct-pattern-cache* (make-hash-table :test #'equal)))
+          (correct-pattern pattern)))))
+
+(defun correct-pattern* (pattern)
   "Recursively check and try to correct the mismatch in the set of variables in or1 patterns"
   (ematch0 pattern
     ((list* 'guard1 symbol? test more-patterns)
