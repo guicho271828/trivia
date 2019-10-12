@@ -326,8 +326,9 @@ See *ARITY-CHECK-BY-TEST-CALL* for details.")
      (= 1 (length (c2mop:generic-function-lambda-list fn))))
     (function
      #+ccl
-     (unless (= 1 (ccl:function-args fn))
-       (return-from unary-function-p nil))
+     (when (= 1 (ccl:function-args fn))
+       ;; "Returns 9 values, as follows: req = number of required arguments ..."
+       (return-from unary-function-p t))
      (when *arity-check-by-test-call*
        (handler-case (funcall fn *test-call-argument*)
          (program-error () (return-from unary-function-p nil))
