@@ -341,6 +341,9 @@ See *ARITY-CHECK-BY-TEST-CALL* for details.")
      (when (= 1 (ccl:function-args fn))
        ;; "Returns 9 values, as follows: req = number of required arguments ..."
        (return-from unary-function-p t))
+     #+lispworks
+     (when (lambda-list-unary-p (lw:function-lambda-list fn))
+       (return-from unary-function-p t))
      (when *arity-check-by-test-call*
        (handler-case (funcall fn *test-call-argument*)
          (program-error () (return-from unary-function-p nil))
