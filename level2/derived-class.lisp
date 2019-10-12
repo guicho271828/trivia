@@ -320,6 +320,7 @@ Other errors, as well as completion of the call without errors, are treated as a
   "An argument used to call the candidate function in UNARY-FUNCTION-P.
 See *ARITY-CHECK-BY-TEST-CALL* for details.")
 (defun unary-function-p (fn)
+  "test if a function is unary."
   (etypecase fn
     (generic-function
      (= 1 (length (c2mop:generic-function-lambda-list fn))))
