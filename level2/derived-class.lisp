@@ -314,6 +314,8 @@ accessor-name :
 
 PROGRAM-ERROR is treated as a reason of rejection; A function of arity != 1.
 Other errors, as well as completion of the call without errors, are treated as a success.")
+(defvar *arity-check-by-test-call-warning-shown* nil
+  "A flag which controls the style-warning produced by using *arity-check-by-test-call*.")
 (defvar *test-call-argument* 42
   "An argument used to call the candidate function in UNARY-FUNCTION-P.
 See *ARITY-CHECK-BY-TEST-CALL* for details.")
@@ -329,14 +331,18 @@ See *ARITY-CHECK-BY-TEST-CALL* for details.")
        (handler-case (funcall fn *test-call-argument*)
          (program-error () (return-from unary-function-p nil))
          (error (c)
-           (simple-style-warning
-            "Calling ~a failed, but not by program-error (~a).
+           (unless *arity-check-by-test-call-warning-shown*
+             (simple-style-warning
+              "Calling ~a failed, but not by program-error (~a).
 Trivia probed candidate function ~a by calling it with 
 a single dummy argument ~a. The call may fail due to various reasons,
 but program-error is a strong indication of not being unary.
- In order to disable this probing, run ~s ."
-            fn (type-of c) fn *test-call-argument*
-            `(setf *arity-check-by-test-call* nil)))))
+ In order to disable this probing, run ~s .
+
+Note: This style warning is shown only once."
+              fn (type-of c) fn *test-call-argument*
+              `(setf *arity-check-by-test-call* nil))
+             (setf *arity-check-by-test-call-warning-shown* t)))))
      (match (function-lambda-expression fn)
        (nil t)
        (#+sbcl
