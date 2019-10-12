@@ -319,6 +319,18 @@ Other errors, as well as completion of the call without errors, are treated as a
 (defvar *test-call-argument* 42
   "An argument used to call the candidate function in UNARY-FUNCTION-P.
 See *ARITY-CHECK-BY-TEST-CALL* for details.")
+
+(defun lambda-list-unary-p (lambda-list)
+  (or (and (= 1 (length lambda-list))
+           ;; to reject cases like (&optional)
+           (not (member (first lambda-list) lambda-list-keywords)))
+      (and (< 1 (length lambda-list))
+           ;; to reject cases like (&optional &key)
+           (not (member (first lambda-list) lambda-list-keywords))
+           ;; accept cases like (arg &optional something)
+           ;; reject cases like (arg1 arg2)
+           (member (second lambda-list) lambda-list-keywords))))
+
 (defun unary-function-p (fn)
   "test if a function is unary."
   (etypecase fn
@@ -346,15 +358,10 @@ Note: This style warning is shown only once."
               `(setf *arity-check-by-test-call* nil))
              (setf *arity-check-by-test-call-warning-shown* t)))))
      (match (function-lambda-expression fn)
+       ;; When there is no information, trusts that the function binding is correct
        (nil t)
-       (#+sbcl
-        (or #.(if (find-symbol "NAMED-LAMBDA" (find-package "SB-INT"))
-                  `(list* ',(read-from-string "sb-int:named-lambda") _ (list _) _)
-                  (warn "failed to find named-lambda in sb-int"))
-            (list* 'lambda (list _) _))
-        #-sbcl
-        (list* 'lambda (list _) _)
-        t)))))
+       ((list* _ lambda-list _)
+        (lambda-list-unary-p lambda-list))))))
 
 (defun find-reader (slot type)
   (flet ((finder (&rest args)
