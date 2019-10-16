@@ -314,39 +314,57 @@ accessor-name :
 
 PROGRAM-ERROR is treated as a reason of rejection; A function of arity != 1.
 Other errors, as well as completion of the call without errors, are treated as a success.")
+(defvar *arity-check-by-test-call-warning-shown* nil
+  "A flag which controls the style-warning produced by using *arity-check-by-test-call*.")
 (defvar *test-call-argument* 42
   "An argument used to call the candidate function in UNARY-FUNCTION-P.
 See *ARITY-CHECK-BY-TEST-CALL* for details.")
+
+(defun lambda-list-unary-p (lambda-list)
+  (or (and (= 1 (length lambda-list))
+           ;; to reject cases like (&optional)
+           (not (member (first lambda-list) lambda-list-keywords)))
+      (and (< 1 (length lambda-list))
+           ;; to reject cases like (&optional &key)
+           (not (member (first lambda-list) lambda-list-keywords))
+           ;; accept cases like (arg &optional something)
+           ;; reject cases like (arg1 arg2)
+           (member (second lambda-list) lambda-list-keywords))))
+
 (defun unary-function-p (fn)
+  "test if a function is unary."
   (etypecase fn
     (generic-function
      (= 1 (length (c2mop:generic-function-lambda-list fn))))
     (function
      #+ccl
-     (unless (= 1 (ccl:function-args fn))
-       (return-from unary-function-p nil))
+     (when (= 1 (ccl:function-args fn))
+       ;; "Returns 9 values, as follows: req = number of required arguments ..."
+       (return-from unary-function-p t))
+     #+lispworks
+     (when (lambda-list-unary-p (lw:function-lambda-list fn))
+       (return-from unary-function-p t))
      (when *arity-check-by-test-call*
        (handler-case (funcall fn *test-call-argument*)
          (program-error () (return-from unary-function-p nil))
          (error (c)
-           (simple-style-warning
-            "Calling ~a failed, but not by program-error (~a).
+           (unless *arity-check-by-test-call-warning-shown*
+             (simple-style-warning
+              "Calling ~a failed, but not by program-error (~a).
 Trivia probed candidate function ~a by calling it with 
 a single dummy argument ~a. The call may fail due to various reasons,
 but program-error is a strong indication of not being unary.
- In order to disable this probing, run ~s ."
-            fn (type-of c) fn *test-call-argument*
-            `(setf *arity-check-by-test-call* nil)))))
+ In order to disable this probing, run ~s .
+
+Note: This style warning is shown only once."
+              fn (type-of c) fn *test-call-argument*
+              `(setf *arity-check-by-test-call* nil))
+             (setf *arity-check-by-test-call-warning-shown* t)))))
      (match (function-lambda-expression fn)
+       ;; When there is no information, trusts that the function binding is correct
        (nil t)
-       (#+sbcl
-        (or #.(if (find-symbol "NAMED-LAMBDA" (find-package "SB-INT"))
-                  `(list* ',(read-from-string "sb-int:named-lambda") _ (list _) _)
-                  (warn "failed to find named-lambda in sb-int"))
-            (list* 'lambda (list _) _))
-        #-sbcl
-        (list* 'lambda (list _) _)
-        t)))))
+       ((list* _ lambda-list _)
+        (lambda-list-unary-p lambda-list))))))
 
 (defun find-reader (slot type)
   (flet ((finder (&rest args)
