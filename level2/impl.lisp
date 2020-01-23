@@ -361,7 +361,7 @@ or results in a compilation error when this is the outermost matching construct.
 ;; the effect should last after the compilation/load
 (proclaim '(declaration optimizer))
 
-#-(or abcl ecl)
+#-(or abcl ecl mezzano)
 (trivial-cltl2:define-declaration optimizer (specifier env)
   (declare (ignorable env))
   ;; (print specifier)
@@ -375,7 +375,7 @@ or results in a compilation error when this is the outermost matching construct.
          (clauses (mapcar (curry #'pad (length whats)) clauses)) ; adjust the length of the clauses
          (clauses (mapcar #'expand-clause clauses))
          (clauses* (if args
-                       (funcall (or #-(or abcl ecl)
+                       (funcall (or #-(or abcl ecl mezzano)
                                     (when-let ((it (trivial-cltl2:declaration-information 'optimizer env)))
                                       (symbol-optimizer it))
                                     (symbol-optimizer *optimizer*))
