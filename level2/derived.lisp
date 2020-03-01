@@ -232,7 +232,7 @@ which returns itself if it takes a single argument."
      `(cons ,(type-of-quoted-form a)
             ,(type-of-quoted-form b)))
     (_
-     (etypecase form
+     (typecase form
        ((or symbol number character)
         `(eql ,form))
        (t
@@ -249,7 +249,7 @@ Note that this is equivalent to the full type-inference mechanism, so we are rei
   ;; file:///usr/share/doc/hyperspec/Body/f_consta.htm
   (match0 form
     ((list 'quote thing)
-     (etypecase thing
+     (typecase thing
        ((or symbol number character)    ;e.g. '42, '#\c, 'a --- if they are equal/equalp, it implies eql
         `(eql ,thing))
        (t
