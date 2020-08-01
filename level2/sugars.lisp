@@ -3,11 +3,47 @@
 ;;;; external apis
 
 (defmacro match (what &body clauses)
+  "Syntax
+    match argument &body {clause}* -> result
+
+argument
+    a form, evaluated.
+clause
+    ( pattern &body {bodyform}* )
+pattern
+    a pattern language.
+bodyform
+    an implicit progn.
+
+Matches argument against the patterns provided in clauses. Evaluate the bodyform
+of the first clause whose pattern matches against argument. bodyform is treated
+as an implicit progn.
+
+If no clauses have matched the given argument, match returns nil.
+"
   `(match2 ,what
      ,@clauses
      (_ nil)))
 
 (defmacro match* (whats &body clauses)
+  "Syntax
+    match* (&rest arguments) &body {multiclause}* -> result
+arguments
+    a list of forms, evaluated.
+multiclause
+    ((&rest patterns) &body {bodyform}* )
+patterns
+    a list of pattern languages.
+bodyform
+    an implicit progn.
+
+arguments are evaluated in left-to-right manner, and the patterns are matched
+against the results of evaluation of arguments in left-to-right manner. Evaluate
+the bodyform of the first clause whose patterns match successfully.
+
+When the number of patterns in a clause is insufficient, it is padded with
+wildcard patterns, i.e., no check is conducted. In contrast, excessive number of
+patterns will signal a compile-time error."
   `(match2* ,whats
      ,@clauses
      (_ nil)))
@@ -23,12 +59,49 @@
                      (match-error-values c)))))
 
 (defmacro ematch (what &body clauses)
+  " ematch argument &body {clause}* -> result
+
+argument
+    a form, evaluated.
+clause
+    ( pattern &body {bodyform}* )
+pattern
+    a pattern language.
+bodyform
+    an implicit progn.
+
+Matches argument against the patterns provided in clauses. Evaluate the bodyform
+of the first clause whose pattern matches against argument. bodyform is treated
+as an implicit progn.
+
+If no clauses have matched the given argument, ematch signals an error MATCH-ERROR.
+"
   (with-gensyms (otherwise)
     `(match2 ,what
        ,@clauses
        (,otherwise (error 'match-error :pattern ',clauses :values (list ,otherwise))))))
 
 (defmacro ematch* (whats &body clauses)
+  "Syntax
+    ematch* (&rest arguments) &body {multiclause}* -> result
+arguments
+    a list of forms, evaluated.
+multiclause
+    ((&rest patterns) &body {bodyform}* )
+patterns
+    a list of pattern languages.
+bodyform
+    an implicit progn.
+
+arguments are evaluated in left-to-right manner, and the patterns are matched
+against the results of evaluation of arguments in left-to-right manner. Evaluate
+the bodyform of the first clause whose patterns match successfully.
+
+When the number of patterns in a clause is insufficient, it is padded with
+wildcard patterns, i.e., no check is conducted. In contrast, excessive number of
+patterns will signal a compile-time error.
+
+If no clauses have matched the given argument, ematch* signals an error MATCH-ERROR."
   (let ((temps (make-gensyms whats "OTHERWISE")))
     `(match2* ,whats
        ,@clauses
@@ -36,12 +109,49 @@
         (error 'match-error :pattern ',clauses :values (list ,@temps))))))
 
 (defmacro cmatch (what &body clauses)
+  " cmatch argument &body {clause}* -> result
+
+argument
+    a form, evaluated.
+clause
+    ( pattern &body {bodyform}* )
+pattern
+    a pattern language.
+bodyform
+    an implicit progn.
+
+Matches argument against the patterns provided in clauses. Evaluate the bodyform
+of the first clause whose pattern matches against argument. bodyform is treated
+as an implicit progn.
+
+If no clauses have matched the given argument, cmatch signals a correctable MATCH-ERROR.
+"
   (with-gensyms (otherwise)
     `(match2 ,what
        ,@clauses
        (,otherwise (cerror "continue" 'match-error :pattern ',clauses :values (list ,otherwise))))))
 
 (defmacro cmatch* (whats &body clauses)
+  "Syntax
+    cmatch* (&rest arguments) &body {multiclause}* -> result
+arguments
+    a list of forms, evaluated.
+multiclause
+    ((&rest patterns) &body {bodyform}* )
+patterns
+    a list of pattern languages.
+bodyform
+    an implicit progn.
+
+arguments are evaluated in left-to-right manner, and the patterns are matched
+against the results of evaluation of arguments in left-to-right manner. Evaluate
+the bodyform of the first clause whose patterns match successfully.
+
+When the number of patterns in a clause is insufficient, it is padded with
+wildcard patterns, i.e., no check is conducted. In contrast, excessive number of
+patterns will signal a compile-time error.
+
+If no clauses have matched the given argument, cmatch* signals a correctable MATCH-ERROR."
   (let ((temps (make-gensyms whats "OTHERWISE")))
     `(match2* ,whats
        ,@clauses
@@ -56,6 +166,20 @@
     (funcall fn clauses temps)))
 
 (defmacro multiple-value-match (values-form &body clauses)
+  "Syntax
+    multiple-value-match values-form &body {multiclause}* -> result
+arguments
+    a list of forms, evaluated.
+multiclause
+    ((&rest patterns) &body {bodyform}* )
+patterns
+    a list of pattern languages.
+bodyform
+    an implicit progn.
+
+Similar to match*, but this is for multiple-value. values-form is evaluated, and
+the each value of returned values are matched against the patterns provided
+in multiclauses."
   (call-with-mvb-temp-vars
    clauses
    (lambda (clauses temps)
@@ -64,6 +188,20 @@
           ,@clauses)))))
 
 (defmacro multiple-value-ematch (values-form &body clauses)
+  "Syntax
+    multiple-value-ematch values-form &body {multiclause}* -> result
+arguments
+    a list of forms, evaluated.
+multiclause
+    ((&rest patterns) &body {bodyform}* )
+patterns
+    a list of pattern languages.
+bodyform
+    an implicit progn.
+
+Similar to ematch*, but this is for multiple-value. values-form is evaluated, and
+the each value of returned values are matched against the patterns provided
+in multiclauses."
   (call-with-mvb-temp-vars
    clauses
    (lambda (clauses temps)
@@ -74,6 +212,20 @@
            (error 'match-error :pattern ',clauses :values (list ,@temps))))))))
 
 (defmacro multiple-value-cmatch (values-form &body clauses)
+  "Syntax
+    multiple-value-cmatch values-form &body {multiclause}* -> result
+arguments
+    a list of forms, evaluated.
+multiclause
+    ((&rest patterns) &body {bodyform}* )
+patterns
+    a list of pattern languages.
+bodyform
+    an implicit progn.
+
+Similar to cmatch*, but this is for multiple-value. values-form is evaluated, and
+the each value of returned values are matched against the patterns provided
+in multiclauses."
   (call-with-mvb-temp-vars
    clauses
    (lambda (clauses temps)
@@ -94,7 +246,9 @@
               ,@declarations)
             clauses)))
 
+;; originally from metabang-bind's lambda-bind, also in fare-matcher, optima etc
 (defmacro lambda-match (&body body)
+  "Equivalent to (lambda (arg) (match arg BODY...))."
   (multiple-value-bind (preamble clauses) (parse-matcher-body body)
     (with-gensyms (clause)
       `(lambda (,clause)
@@ -103,6 +257,7 @@
            ,@clauses)))))
 
 (defmacro lambda-ematch (&body body)
+  "Equivalent to (lambda (arg) (ematch arg BODY...))."
   (multiple-value-bind (preamble clauses) (parse-matcher-body body)
     (with-gensyms (clause)
       `(lambda (,clause)
@@ -111,6 +266,7 @@
            ,@clauses)))))
 
 (defmacro lambda-cmatch (&body body)
+  "Equivalent to (lambda (arg) (cmatch arg BODY...))."
   (multiple-value-bind (preamble clauses) (parse-matcher-body body)
     (with-gensyms (clause)
       `(lambda (,clause)
@@ -119,6 +275,7 @@
            ,@clauses)))))
 
 (defmacro lambda-match* (&body body)
+  "Equivalent to (lambda (args...) (match* (args...) BODY...))."
   (multiple-value-bind (preamble clauses) (parse-matcher-body body)
     (let ((gensyms (make-gensyms (caar clauses))))
       `(lambda ,gensyms
@@ -127,6 +284,7 @@
            ,@clauses)))))
 
 (defmacro lambda-ematch* (&body body)
+  "Equivalent to (lambda (args...) (ematch* (args...) BODY...))."
   (multiple-value-bind (preamble clauses) (parse-matcher-body body)
     (let ((gensyms (make-gensyms (caar clauses))))
       `(lambda ,gensyms
@@ -135,6 +293,7 @@
            ,@clauses)))))
 
 (defmacro lambda-cmatch* (&body body)
+  "Equivalent to (lambda (args...) (cmatch* (args...) BODY...))."
   (multiple-value-bind (preamble clauses) (parse-matcher-body body)
     (let ((gensyms (make-gensyms (caar clauses))))
       `(lambda ,gensyms
@@ -144,6 +303,7 @@
 
 ;;;; defun-match family
 (defmacro defun-match (name (arg) &body body)
+  "Equivalent to (defun (arg) [decl-and-docstring] (match arg (PATTERN BODY...)))."
   (multiple-value-bind (preamble clauses) (parse-matcher-body body)
     `(defun ,name (,arg)
        ,@preamble
@@ -151,6 +311,7 @@
          ,@clauses))))
 
 (defmacro defun-ematch (name (arg) &body body)
+  "Equivalent to (defun (arg) [decl-and-docstring] (ematch arg (PATTERN BODY...)))."
   (multiple-value-bind (preamble clauses) (parse-matcher-body body)
     `(defun ,name (,arg)
        ,@preamble
@@ -158,6 +319,7 @@
          ,@clauses))))
 
 (defmacro defun-cmatch (name (arg) &body body)
+  "Equivalent to (defun (arg) [decl-and-docstring] (cmatch arg (PATTERN BODY...)))."
   (multiple-value-bind (preamble clauses) (parse-matcher-body body)
     `(defun ,name (,arg)
        ,@preamble
@@ -165,6 +327,7 @@
          ,@clauses))))
 
 (defmacro defun-match* (name args &body body)
+  "Equivalent to (defun (arg) [decl-and-docstring] (match arg (PATTERN BODY...)))."
   (multiple-value-bind (preamble clauses) (parse-matcher-body body)
     `(defun ,name ,args
        ,@preamble
@@ -172,6 +335,7 @@
          ,@clauses))))
 
 (defmacro defun-ematch* (name args &body body)
+  "Equivalent to (defun (arg) [decl-and-docstring] (ematch arg (PATTERN BODY...)))."
   (multiple-value-bind (preamble clauses) (parse-matcher-body body)
     `(defun ,name ,args
        ,@preamble
@@ -179,6 +343,7 @@
          ,@clauses))))
 
 (defmacro defun-cmatch* (name args &body body)
+  "Equivalent to (defun (arg) [decl-and-docstring] (cmatch arg (PATTERN BODY...)))."
   (multiple-value-bind (preamble clauses) (parse-matcher-body body)
     `(defun ,name ,args
        ,@preamble
