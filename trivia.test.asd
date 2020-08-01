@@ -2,7 +2,7 @@
   :author "Masataro Asai"
   :mailto "guicho2.71828@gmail.com"
   :description "Test system of trivia"
-  :depends-on ("fiveam" "trivia" "trivia.ppcre" "trivia.quasiquote" "trivia.cffi" "optima")
+  :depends-on ("fiveam" "trivia" "trivia.ppcre" "trivia.quasiquote" "trivia.cffi")
   :pathname "test/"
   :components ((:file "base")
                (:file "level0")
