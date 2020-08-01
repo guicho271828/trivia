@@ -11,12 +11,10 @@
     "cl-iterative"
     "cl-mock"
     "cl-quil"
-    "cl-rrt.rtree"
     "cl-vhdl-tests"
     "clj"
     "datafly"
     
-    "eazy-process"
     "erlang-term-optima"
     "fact-base"
     "fare-quasiquote-optima"
@@ -25,11 +23,8 @@
     "hu.dwim.def.test"
     "inferior-shell"
     
-    "inner-conditional"
     "minilem"
     "mito-core"
-    "optima.ppcre"
-    "optima.test"
     "quux-hunchentoot"
     "spatial-trees.nns"
     
@@ -37,8 +32,6 @@
     "sxql"
     "taglib"
     "transparent-wrap"
-    "trivia.benchmark"
-    "trivia.test"
     "varjo.import"
     "weblocks"
     
