@@ -301,6 +301,19 @@ in multiclauses."
          (cmatch* ,gensyms
            ,@clauses)))))
 
+;; from optima extras
+(defmacro lambda-match1 (pattern &body body)
+  "Equivalent to (lambda (arg) (match arg (PATTERN BODY...)))."
+  `(lambda-match (,pattern ,@body)))
+
+(defmacro lambda-ematch1 (pattern &body body)
+  "Equivalent to (lambda (arg) (ematch arg (PATTERN BODY...)))."
+  `(lambda-ematch (,pattern ,@body)))
+
+(defmacro lambda-cmatch1 (pattern &body body)
+  "Equivalent to (lambda (arg) (cmatch arg (PATTERN BODY...)))."
+  `(lambda-cmatch (,pattern ,@body)))
+
 ;;;; defun-match family
 (defmacro defun-match (name (arg) &body body)
   "Equivalent to (defun (arg) [decl-and-docstring] (match arg (PATTERN BODY...)))."

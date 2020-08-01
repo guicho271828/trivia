@@ -23,6 +23,9 @@
            :lambda-match*
            :lambda-ematch*
            :lambda-cmatch*
+           :lambda-match1
+           :lambda-ematch1
+           :lambda-cmatch1
            :defun-match
            :defun-ematch
            :defun-cmatch
