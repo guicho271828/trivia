@@ -13,6 +13,7 @@
            :cmatch :cmatch*
            :match-error
            :match-error-pattern
+           :match-error-patterns        ; optima compatibility
            :match-error-values
            :multiple-value-cmatch
            :multiple-value-ematch

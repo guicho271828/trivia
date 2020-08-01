@@ -51,7 +51,10 @@ patterns will signal a compile-time error."
 
 
 (define-condition match-error (error)
-  ((pattern :initarg :pattern :reader match-error-pattern)
+  ((pattern :initarg :pattern
+            :reader match-error-pattern
+            ;; optima compatibility
+            :reader match-error-patterns)
    (values :initarg :values :reader match-error-values))
   (:report (lambda (c s)
              (format s "Pattern: ~s ~& Values: ~s ~&"
