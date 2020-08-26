@@ -139,7 +139,7 @@
   ;; cons
   (is-match (cons 1 2) (cons 1 2)))
 
-#-ecl ;; there is a magical error on ECL only on travis.
+#-(or clasp ecl) ;; there is a magical error on ECL only on travis.
 (test (assoc :compile-at :run-time)
   (is-match '((1 . 2)) (assoc 1 2))
   (is-match '((1 . 2) (3 . 4)) (assoc 3 4))
