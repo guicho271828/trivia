@@ -285,7 +285,7 @@ The default value of &optional arguments are '_, instead of nil."
 (defmacro in-optimizer (name &optional verbose)
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      ,@(when verbose
-         `((format *trace-output* "~&Switching to the ~A optimizer~%" ',name)))
+         `((when ,verbose (format *trace-output* "~&Switching to the ~A optimizer~%" ',name))))
      (setf *optimizer* ',name)))
 
 (defmacro defoptimizer (name args &body body)
