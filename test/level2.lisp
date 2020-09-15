@@ -1123,7 +1123,8 @@
         (is-not-match 6 (member '(1 2 3)))))
 
 (test (more-guards :compile-at :run-time)
-  (flet ((optima (x)
+  (flet (#+(or)
+         (optima (x)
            (optima:match x
              ((list (optima:guard x (eql x y)) y)
               :ok)))
@@ -1132,12 +1133,15 @@
              ((list (guard x (eql x y)) y)
               :ok))))
 
+    #+(or)
     (is (eql :ok (optima '(1 1))))
+    #+(or)
     (is (eql nil (optima '(1 2))))
     (is (eql :ok (trivia '(1 1))))
     (is (eql nil (trivia '(1 2)))))
 
-  (flet ((optima (x)
+  (flet (#+(or)
+         (optima (x)
            (optima:match x
              ((not (optima:guard (list x y) (eql x y)))
               :ok)))
@@ -1156,8 +1160,11 @@
     ;; (or (guard (list #:x #:y) (not (eql #:x #:y)))
     ;;     (not (list #:x #:y)))
     ;; --- variables are renamed
+    #+(or)
     (is (eql nil (optima '(1 1))))
+    #+(or)
     (is (eql :ok (optima '(1 2))))
+    #+(or)
     (is (eql :ok (optima :a)))
 
     ;; currently:
