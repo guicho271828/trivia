@@ -43,6 +43,7 @@
            :guard
            :alist
            :plist
+           :hash-table-entries
            :property
            :property!
            :access

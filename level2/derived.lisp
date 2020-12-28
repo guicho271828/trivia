@@ -420,6 +420,33 @@ by an and pattern. Example: (plist :key1 _ :key2 value)"
                      `(property ,key ,pattern)))
                   (plist-alist args))))
 
+
+(define-condition hash-table-odd-number-of-entries-warning (simple-style-warning)
+  ())
+
+(define-condition hash-table-no-entries-warning (simple-style-warning)
+  ())
+
+(defpattern hash-table-entries (&rest keys-and-value-patterns)
+  "(HASH-TABLE-ENTRIES { KEY PATTERN }*)
+
+Matches hash-table which has KEY set to value matching PATTERN. Multiple KEY PATTERN pairs can be provided,
+e.g. (hash-table-entries :key1 _ :key2 value :key3 1)"
+  (cond ((oddp (length keys-and-value-patterns))
+         (warn 'hash-table-odd-number-of-entries-warning
+               :format-control "Odd number of arguments given to HASH-TABLE-ENTRIES pattern. Value for ~S will be interpreted as NIL."
+               :format-arguments (last keys-and-value-patterns)))
+        ((null keys-and-value-patterns)
+         (warn 'hash-table-no-entries-warning
+               :format-control "Empty HASH-TABLE-ENTRIES pattern is equivalent to (TYPE HASH-TABLE).")))
+  (flet ((key-value-pattern (key pattern)
+           (with-gensyms (it)
+             `(guard1 ,it (nth-value 1 (gethash ,key ,it))
+                      (gethash ,key ,it) ,pattern))))
+    `(and (type hash-table)
+          ,@(loop :for (key pattern) :on keys-and-value-patterns :by #'cddr
+                  :collect (key-value-pattern key pattern)))))
+
 ;;; special patterns
 
 ;; 'a -> (quote a) -> (constant a) -> (eq 'a)
