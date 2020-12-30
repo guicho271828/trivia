@@ -440,9 +440,11 @@ e.g. (hash-table-entries :key1 _ :key2 value :key3 1)"
          (warn 'hash-table-no-entries-warning
                :format-control "Empty HASH-TABLE-ENTRIES pattern is equivalent to (TYPE HASH-TABLE).")))
   (flet ((key-value-pattern (key pattern)
-           (with-gensyms (it)
-             `(guard1 ,it (nth-value 1 (gethash ,key ,it))
-                      (gethash ,key ,it) ,pattern))))
+           (with-gensyms (it val-and-found-p)
+             `(guard1 ,it t
+                      (multiple-value-list (gethash ,key ,it))
+                      (guard1 (,val-and-found-p :dynamic-extent t) (second ,val-and-found-p)
+                              (first ,val-and-found-p) ,pattern)))))
     `(and (type hash-table)
           ,@(loop :for (key pattern) :on keys-and-value-patterns :by #'cddr
                   :collect (key-value-pattern key pattern)))))
