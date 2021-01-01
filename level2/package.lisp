@@ -43,9 +43,12 @@
            :guard
            :alist
            :plist
-           :hash-table-entries
            :property
            :property!
+           :hash-table-entry
+           :hash-table-entry!
+           :hash-table-entries
+           :hash-table-entries!
            :access
            :$guard1
            :$or1

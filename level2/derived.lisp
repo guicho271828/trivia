@@ -420,34 +420,42 @@ by an and pattern. Example: (plist :key1 _ :key2 value)"
                      `(property ,key ,pattern)))
                   (plist-alist args))))
 
+(defpattern hash-table-entry (key pattern &optional (default nil) (foundp nil foundp-suppliedp))
+  "Matches HASH-TABLE value at KEY against PATTERN.
+
+Calls GETHASH with KEY on current matched hash table. If KEY is not present, then DEFAULT is used as value. If FOUNDP is supplied, it is match against second value of GETHASH result."
+  (with-gensyms (it value missing-value-indicator)
+    `(guard1 (,it :type hash-table)
+             (hash-table-p ,it)
+             (gethash ,key ,it ',missing-value-indicator)
+             (guard1 ,value t
+                     ,@(when foundp-suppliedp
+                         `((not (eq ,value ',missing-value-indicator)) ,foundp))
+                     ,@(if (eq t foundp)
+                           `(,value ,pattern)
+                           `((if (eq ,value ',missing-value-indicator) ,default ,value) ,pattern))))))
+
+(defpattern hash-table-entry! (key pattern)
+  "Same as HASH-TABLE-ENTRY but requires KEY to be present in hash table."
+  `(hash-table-entry ,key ,pattern nil t))
 
 (define-condition hash-table-odd-number-of-entries-warning (simple-style-warning)
   ())
 
-(define-condition hash-table-no-entries-warning (simple-style-warning)
-  ())
+(defmacro define-hash-table-entries-pattern (name entry-pattern)
+  `(defpattern ,name (key pattern &rest keys-and-patterns)
+    ,(format nil "Matches hash table which has KEY set to value matching PATTERN. Multiple KEY PATTERN pairs can be provided, e.g. (~A :key1 _ :key2 value :key3 1). Expands into list of ~A patterns combined with AND."
+             name entry-pattern)
+    (when (oddp (length keys-and-patterns))
+      (warn 'hash-table-odd-number-of-entries-warning
+            :format-control ,(format nil "Odd number of arguments given to ~A pattern. NIL will be used as ~~S pattern." name)
+            :format-arguments (last keys-and-patterns)))
+    `(and ,(list ',entry-pattern key pattern)
+          ,@(loop :for (key pattern) :on keys-and-patterns :by #'cddr
+                  :collect (list ',entry-pattern key pattern)))))
 
-(defpattern hash-table-entries (&rest keys-and-value-patterns)
-  "(HASH-TABLE-ENTRIES { KEY PATTERN }*)
-
-Matches hash-table which has KEY set to value matching PATTERN. Multiple KEY PATTERN pairs can be provided,
-e.g. (hash-table-entries :key1 _ :key2 value :key3 1)"
-  (cond ((oddp (length keys-and-value-patterns))
-         (warn 'hash-table-odd-number-of-entries-warning
-               :format-control "Odd number of arguments given to HASH-TABLE-ENTRIES pattern. Value for ~S will be interpreted as NIL."
-               :format-arguments (last keys-and-value-patterns)))
-        ((null keys-and-value-patterns)
-         (warn 'hash-table-no-entries-warning
-               :format-control "Empty HASH-TABLE-ENTRIES pattern is equivalent to (TYPE HASH-TABLE).")))
-  (flet ((key-value-pattern (key pattern)
-           (with-gensyms (it val-and-found-p)
-             `(guard1 ,it t
-                      (multiple-value-list (gethash ,key ,it))
-                      (guard1 (,val-and-found-p :dynamic-extent t) (second ,val-and-found-p)
-                              (first ,val-and-found-p) ,pattern)))))
-    `(and (type hash-table)
-          ,@(loop :for (key pattern) :on keys-and-value-patterns :by #'cddr
-                  :collect (key-value-pattern key pattern)))))
+(define-hash-table-entries-pattern hash-table-entries hash-table-entry)
+(define-hash-table-entries-pattern hash-table-entries! hash-table-entry!)
 
 ;;; special patterns
 
