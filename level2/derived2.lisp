@@ -30,7 +30,7 @@ The result of evaluating `value' using `var' is then matched against `pattern'.
 
 
 (defpattern read (pattern)
-  "The current matching object should be a symbol.
+  "The current matching object should be a string.
 The result of reading the string by read-from-string is bound to the subpattern.
 Useful for simple parsing.
 
