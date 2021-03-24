@@ -56,34 +56,44 @@ If TEST-FORM returns true, the entire match succeeds.
 TEST-FORM in guard pattern is able to see the variables in the surrounding patterns. That is,
 the following pattern is valid and should compile successfully:
 
+```
  (list (guard x (eql x y)) y)
+```
 
 The mechanics behind this is that the guard patterns are always `lifted`, i.e.,
 transformed into a form equivalent to
 
+```
  (guard (list x y) (eql x y))
+```
 
 which is further equivalent to
 
+```
  (and (list x y)
       (guard1 _ (eql x y))).      (*)
-
----
+```
 
 When GUARD pattern is used under NOT pattern, the following form
 
+```
  (not (guard <SUBPATTERN> <test-form>)),
+```
 
  is equivalent to:
 
+```
  (or (not <SUBPATTERN>)
      (guard <SUBPATTERN> (not <test-form>)))
+```
 
  then
 
+```
  (or (not <SUBPATTERN>)
      (and <SUBPATTERN>
           (guard1 _ (not <test-form>)))).
+```
 
 That is,
 
@@ -94,12 +104,14 @@ That is,
 
 Notice that this compilation is equivalent to the negation of the form (*).
 
+```
  (not (and (list x y)
            (guard1 _ (eql x y))))
  ==
  (or (not (list x y))
      (and (list x y)
           (guard1 _ (not (eql x y)))))
+```
 
 Also note that the variables bound in the NOT pattern are renamed and are made not
 accessible in the clause. --- see NOT pattern documentation.
