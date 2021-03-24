@@ -2,54 +2,6 @@
 
 ;;;; external apis
 
-(defmacro match (what &body clauses)
-  "Syntax
-    match argument &body {clause}* -> result
-
-argument
-    a form, evaluated.
-clause
-    ( pattern &body {bodyform}* )
-pattern
-    a pattern language.
-bodyform
-    an implicit progn.
-
-Matches argument against the patterns provided in clauses. Evaluate the bodyform
-of the first clause whose pattern matches against argument. bodyform is treated
-as an implicit progn.
-
-If no clauses have matched the given argument, match returns nil.
-"
-  `(match2 ,what
-     ,@clauses
-     (_ nil)))
-
-(defmacro match* (whats &body clauses)
-  "Syntax
-    match* (&rest arguments) &body {multiclause}* -> result
-arguments
-    a list of forms, evaluated.
-multiclause
-    ((&rest patterns) &body {bodyform}* )
-patterns
-    a list of pattern languages.
-bodyform
-    an implicit progn.
-
-arguments are evaluated in left-to-right manner, and the patterns are matched
-against the results of evaluation of arguments in left-to-right manner. Evaluate
-the bodyform of the first clause whose patterns match successfully.
-
-When the number of patterns in a clause is insufficient, it is padded with
-wildcard patterns, i.e., no check is conducted. In contrast, excessive number of
-patterns will signal a compile-time error."
-  `(match2* ,whats
-     ,@clauses
-     (_ nil)))
-
-
-
 (define-condition match-error (error)
   ((pattern :initarg :pattern
             :reader match-error-pattern
@@ -61,42 +13,57 @@ patterns will signal a compile-time error."
                      (match-error-pattern c)
                      (match-error-values c)))))
 
-(defmacro ematch (what &body clauses)
-  " ematch argument &body {clause}* -> result
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defvar +match-doc+ "
+Syntax:
+    [e|c]?match argument &body {clause}* -> result
 
-argument
-    a form, evaluated.
-clause
-    ( pattern &body {bodyform}* )
-pattern
-    a pattern language.
-bodyform
-    an implicit progn.
+- argument : a form, evaluated.
+- clause   : ( pattern &body {bodyform}* )
+- pattern  : a pattern language.
+- bodyform : an implicit progn.
 
 Matches argument against the patterns provided in clauses. Evaluate the bodyform
 of the first clause whose pattern matches against argument. bodyform is treated
 as an implicit progn.
 
-If no clauses have matched the given argument, ematch signals an error MATCH-ERROR.
-"
+- In MATCH, if no clauses have matched the given argument, returns nil.
+- In EMATCH, if no clauses have matched the given argument, ematch signals an error MATCH-ERROR.
+- In CMATCH, if no clauses have matched the given argument, cmatch signals a correctable MATCH-ERROR.
+"))
+
+(defmacro match (what &body clauses)
+  #.+match-doc+
+  `(match2 ,what
+     ,@clauses
+     (_ nil)))
+
+(defmacro ematch (what &body clauses)
+  #.+match-doc+
   (with-gensyms (otherwise)
     `(match2 ,what
        ,@clauses
        (,otherwise (error 'match-error :pattern ',clauses :values (list ,otherwise))))))
 
-(defmacro ematch* (whats &body clauses)
-  "Syntax
-    ematch* (&rest arguments) &body {multiclause}* -> result
-arguments
-    a list of forms, evaluated.
-multiclause
-    ((&rest patterns) &body {bodyform}* )
-patterns
-    a list of pattern languages.
-bodyform
-    an implicit progn.
+(defmacro cmatch (what &body clauses)
+  #.+match-doc+
+  (with-gensyms (otherwise)
+    `(match2 ,what
+       ,@clauses
+       (,otherwise (cerror "continue" 'match-error :pattern ',clauses :values (list ,otherwise))))))
 
-arguments are evaluated in left-to-right manner, and the patterns are matched
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defvar +match*-doc+ "
+Syntax:
+    [e|c]?match* (&rest arguments) &body {multiclause}* -> result
+
+- arguments :  a list of forms, evaluated.
+- multiclause : ((&rest patterns) &body {bodyform}* )
+- patterns :    a list of pattern languages.
+- bodyform :    an implicit progn.
+
+Arguments are evaluated in left-to-right manner, and the patterns are matched
 against the results of evaluation of arguments in left-to-right manner. Evaluate
 the bodyform of the first clause whose patterns match successfully.
 
@@ -104,57 +71,27 @@ When the number of patterns in a clause is insufficient, it is padded with
 wildcard patterns, i.e., no check is conducted. In contrast, excessive number of
 patterns will signal a compile-time error.
 
-If no clauses have matched the given argument, ematch* signals an error MATCH-ERROR."
+- In MATCH*,  if no clauses have matched the given argument, returns nil.
+- In EMATCH*, if no clauses have matched the given argument, ematch signals an error MATCH-ERROR.
+- In CMATCH*, if no clauses have matched the given argument, cmatch signals a correctable MATCH-ERROR.
+"))
+
+(defmacro match* (whats &body clauses)
+  #.+match*-doc+  
+  `(match2* ,whats
+     ,@clauses
+     (_ nil)))
+
+(defmacro ematch* (whats &body clauses)
+  #.+match*-doc+
   (let ((temps (make-gensyms whats "OTHERWISE")))
     `(match2* ,whats
        ,@clauses
        (,temps
         (error 'match-error :pattern ',clauses :values (list ,@temps))))))
 
-(defmacro cmatch (what &body clauses)
-  " cmatch argument &body {clause}* -> result
-
-argument
-    a form, evaluated.
-clause
-    ( pattern &body {bodyform}* )
-pattern
-    a pattern language.
-bodyform
-    an implicit progn.
-
-Matches argument against the patterns provided in clauses. Evaluate the bodyform
-of the first clause whose pattern matches against argument. bodyform is treated
-as an implicit progn.
-
-If no clauses have matched the given argument, cmatch signals a correctable MATCH-ERROR.
-"
-  (with-gensyms (otherwise)
-    `(match2 ,what
-       ,@clauses
-       (,otherwise (cerror "continue" 'match-error :pattern ',clauses :values (list ,otherwise))))))
-
 (defmacro cmatch* (whats &body clauses)
-  "Syntax
-    cmatch* (&rest arguments) &body {multiclause}* -> result
-arguments
-    a list of forms, evaluated.
-multiclause
-    ((&rest patterns) &body {bodyform}* )
-patterns
-    a list of pattern languages.
-bodyform
-    an implicit progn.
-
-arguments are evaluated in left-to-right manner, and the patterns are matched
-against the results of evaluation of arguments in left-to-right manner. Evaluate
-the bodyform of the first clause whose patterns match successfully.
-
-When the number of patterns in a clause is insufficient, it is padded with
-wildcard patterns, i.e., no check is conducted. In contrast, excessive number of
-patterns will signal a compile-time error.
-
-If no clauses have matched the given argument, cmatch* signals a correctable MATCH-ERROR."
+  #.+match*-doc+  
   (let ((temps (make-gensyms whats "OTHERWISE")))
     `(match2* ,whats
        ,@clauses
@@ -168,21 +105,31 @@ If no clauses have matched the given argument, cmatch* signals a correctable MAT
          (temps (mapcar (lambda (x) (declare (ignore x)) (gensym)) (iota max))))
     (funcall fn clauses temps)))
 
-(defmacro multiple-value-match (values-form &body clauses)
-  "Syntax
-    multiple-value-match values-form &body {multiclause}* -> result
-arguments
-    a list of forms, evaluated.
-multiclause
-    ((&rest patterns) &body {bodyform}* )
-patterns
-    a list of pattern languages.
-bodyform
-    an implicit progn.
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defvar +multiple-value-match-doc+ "
+Syntax:
+    multiple-value-[e|c]?match values-form &body {multiclause}* -> result
 
-Similar to match*, but this is for multiple-value. values-form is evaluated, and
-the each value of returned values are matched against the patterns provided
-in multiclauses."
+- values-form : a form producing multiple values, evaluated.
+- multiclause : ((&rest patterns) &body {bodyform}* )
+- patterns :    a list of pattern languages.
+- bodyform :    an implicit progn.
+
+Similar to match*, but this is for multiple values. values-form is evaluated, and
+each of the returned values are matched against the patterns provided
+in multiclauses in left-to-right manner.
+Evaluate the bodyform of the first clause whose patterns match successfully.
+
+When the form returned more values than the number of patterns, excessive values are ignored.
+When the form returned less values than the number of patterns, excessive patterns are matched against nil.
+
+- In multiple-value-match,  if no clauses have matched the given argument, returns nil.
+- In multiple-value-ematch, if no clauses have matched the given argument, ematch signals an error MATCH-ERROR.
+- In multiple-value-cmatch, if no clauses have matched the given argument, cmatch signals a correctable MATCH-ERROR.
+"))
+
+(defmacro multiple-value-match (values-form &body clauses)
+  #.+multiple-value-match-doc+
   (call-with-mvb-temp-vars
    clauses
    (lambda (clauses temps)
@@ -191,20 +138,7 @@ in multiclauses."
           ,@clauses)))))
 
 (defmacro multiple-value-ematch (values-form &body clauses)
-  "Syntax
-    multiple-value-ematch values-form &body {multiclause}* -> result
-arguments
-    a list of forms, evaluated.
-multiclause
-    ((&rest patterns) &body {bodyform}* )
-patterns
-    a list of pattern languages.
-bodyform
-    an implicit progn.
-
-Similar to ematch*, but this is for multiple-value. values-form is evaluated, and
-the each value of returned values are matched against the patterns provided
-in multiclauses."
+  #.+multiple-value-match-doc+
   (call-with-mvb-temp-vars
    clauses
    (lambda (clauses temps)
@@ -215,20 +149,7 @@ in multiclauses."
            (error 'match-error :pattern ',clauses :values (list ,@temps))))))))
 
 (defmacro multiple-value-cmatch (values-form &body clauses)
-  "Syntax
-    multiple-value-cmatch values-form &body {multiclause}* -> result
-arguments
-    a list of forms, evaluated.
-multiclause
-    ((&rest patterns) &body {bodyform}* )
-patterns
-    a list of pattern languages.
-bodyform
-    an implicit progn.
-
-Similar to cmatch*, but this is for multiple-value. values-form is evaluated, and
-the each value of returned values are matched against the patterns provided
-in multiclauses."
+  #.+multiple-value-match-doc+
   (call-with-mvb-temp-vars
    clauses
    (lambda (clauses temps)
