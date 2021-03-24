@@ -454,9 +454,11 @@ Calls GETHASH with KEY on current matched hash table. If KEY is not present, the
 (define-condition hash-table-odd-number-of-entries-warning (simple-style-warning)
   ())
 
-(defmacro define-hash-table-entries-pattern (name entry-pattern)
+(defmacro %define-hash-table-entries-pattern (name entry-pattern)
   `(defpattern ,name (key pattern &rest keys-and-patterns)
-    ,(format nil "Matches hash table which has KEY set to value matching PATTERN. Multiple KEY PATTERN pairs can be provided, e.g. (~A :key1 _ :key2 value :key3 1). Expands into list of ~A patterns combined with AND."
+    ,(format nil "Matches hash table which has KEY set to value matching PATTERN.~
+                  Multiple KEY PATTERN pairs can be provided, e.g. `(~A :key1 _ :key2 value :key3 1)`.~
+                  Expands into list of ~A patterns combined with AND."
              name entry-pattern)
     (when (oddp (length keys-and-patterns))
       (warn 'hash-table-odd-number-of-entries-warning
@@ -466,8 +468,8 @@ Calls GETHASH with KEY on current matched hash table. If KEY is not present, the
           ,@(loop :for (key pattern) :on keys-and-patterns :by #'cddr
                   :collect (list ',entry-pattern key pattern)))))
 
-(define-hash-table-entries-pattern hash-table-entries hash-table-entry)
-(define-hash-table-entries-pattern hash-table-entries! hash-table-entry!)
+(%define-hash-table-entries-pattern hash-table-entries hash-table-entry)
+(%define-hash-table-entries-pattern hash-table-entries! hash-table-entry!)
 
 ;;; special patterns
 
