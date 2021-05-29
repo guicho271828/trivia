@@ -226,6 +226,7 @@
     ((vector* 1 2 a) (is (eq a nil)))))
 (test (simple-vector :compile-at :run-time)
   (is-match (vector 1 2) (simple-vector 1 2)))
+
 (test (class :compile-at :run-time)
   (let ((person (make-instance 'person :name "Bob" :age 31)))
     (is (equal '("Bob" 31)

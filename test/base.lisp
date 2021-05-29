@@ -7,4 +7,5 @@
 (fiveam:def-suite :trivia.ppcre      :in :trivia)
 (fiveam:def-suite :trivia.quasiquote :in :trivia)
 (fiveam:def-suite :trivia.cffi       :in :trivia)
+(fiveam:def-suite :trivia.fset       :in :trivia)
 
