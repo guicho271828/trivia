@@ -1,12 +1,10 @@
 (defpackage :trivia.fset
-  (:use :cl)
-  (:export #:fset-seq*))
+  (:use :cl))
 
 (defpackage :trivia.fset.impl
   (:use :cl :trivia.level0 :trivia.level1 :trivia.level2
         :alexandria
-        :trivia.fset)
-  )
+        :trivia.fset))
 
 (in-package :trivia.fset.impl)
 
@@ -49,17 +47,17 @@
              (fset:contains? ,it ,element))))
 
 (defpattern fset:seq (&rest args)
-  "Matches against the same size of elements in fset:seq."
-  (if args
-      `(fset-cons ,(car args) (fset:seq ,@(cdr args)))
-      `(fset-null)))
-
-(defpattern fset-seq* (&rest args)
   "Matches against fset:seq. The sizes of patterns and fset:seq size does not need to match.
 The last subpattern is destructured against the tail (or a subseq) of fset:seq."
   (if (cdr args)
-      `(fset-cons ,(car args) (fset-seq* ,@(cdr args)))
+      `(fset-cons ,(car args) (fset:seq ,@(cdr args)))
       (car args)))
+
+;; (defpattern fset:seq (&rest args)
+;;   "Matches against the same size of elements in fset:seq."
+;;   (if args
+;;       `(fset-cons ,(car args) (fset:seq ,@(cdr args)))
+;;       `(fset-null)))
 
 (defpattern fset-cons (head tail)
   (with-gensyms (fset-cons)

@@ -62,26 +62,27 @@
 
 (test (fset-seq :compile-at :run-time)
   ;; constant matches
-  (is-match (fset:seq) (fset:seq))
-  (is-match (fset:seq 1 2) (fset:seq 1 2))
+  (is-match (fset:seq) (fset:seq _))
+  (is-match (fset:seq 1 2) (fset:seq 1 2 _))
   (is-not-match (fset:seq 1 2 3) (fset:seq 1 2))
-  ;; capture
-  (is-true (match (fset:seq 1 2)
-             ((fset:seq 1 x) (= x 2))))
-  (is-not-match (fset:seq 1 2 3) (fset:seq _ _)))
-
-(test (fset-seq* :compile-at :run-time)
-  ;; constant matches
-  (is-match (fset:seq) (fset-seq* _))
-  (is-match (fset:seq 1 2) (fset-seq* 1 2 _))
-  (is-not-match (fset:seq 1 2 3) (fset-seq* 1 2))
   ;; captures
   (is-true (match (fset:seq 1 2 3)
-             ((fset-seq* a b)
+             ((fset:seq a b)
               (and (= a 1) (fset:equal? b (fset:seq 2 3))))))
   (is-true (match (fset:seq 1 2 3)
-             ((fset-seq* a b c)
+             ((fset:seq a b c)
               (and (= a 1) (= b 2) (fset:equal? c (fset:seq 3))))))
   (is-true (match (fset:seq 1 2)
-             ((fset-seq* a b c)
+             ((fset:seq a b c)
               (and (= a 1) (= b 2) (fset:empty? c))))))
+
+;; (test (fset-seq :compile-at :run-time)
+;;   ;; constant matches
+;;   (is-match (fset:seq) (fset:seq))
+;;   (is-match (fset:seq 1 2) (fset:seq 1 2))
+;;   (is-not-match (fset:seq 1 2 3) (fset:seq 1 2))
+;;   ;; capture
+;;   (is-true (match (fset:seq 1 2)
+;;              ((fset:seq 1 x) (= x 2))))
+;;   (is-not-match (fset:seq 1 2 3) (fset:seq _ _)))
+
