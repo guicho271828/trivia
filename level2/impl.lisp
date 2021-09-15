@@ -361,7 +361,7 @@ or results in a compilation error when this is the outermost matching construct.
 ;; the effect should last after the compilation/load
 (proclaim '(declaration optimizer))
 
-#-(or abcl clasp ecl mezzano)
+#-(or abcl clasp ecl mezzano clisp)
 (trivial-cltl2:define-declaration optimizer (specifier env)
   (declare (ignorable env))
   ;; (print specifier)
