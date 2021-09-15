@@ -15,10 +15,10 @@
 + news!(09/06/2018) SPLIT symbol was exported from the =trivia.ppcre= package.
 + news!(02/19/2019) Added =MEMBER= pattern. When the argument is a constant, it also adds type declaration.
 + news!(04/24/2019) Improved the compilation of =GUARD= pattern. It no longer uses the internal hackery.
-+ *news!(04/24/2019)* *Balland2006 optimizer is now the default optimizer for the pattern compiler!*
-+ *news!(04/28/2019)* Added a =progv= pattern, which can dynamically alter the dynamic variable the value will be bound to.
-+ *news!(05/08/2019)* Now the optimizer can be specified in the lexical environment via =(declare (trivia:optimizer <name>))= (e.g. =(declare (trivia:optimizer :trivial))=). Implemented through cltl2 API.
-+ *news!(10/11/2019)* The OR1 consistency checking algorithm in Level 1 no longer takes the exponential runtime. Compilation of [[https://github.com/guicho271828/type-r][type-r]] library is now 10x faster! (patch from @pfdietz)
++ news!(04/24/2019) *Balland2006 optimizer is now the default optimizer for the pattern compiler!*
++ news!(04/28/2019) Added a =progv= pattern, which can dynamically alter the dynamic variable the value will be bound to.
++ news!(05/08/2019) Now the optimizer can be specified in the lexical environment via =(declare (trivia:optimizer <name>))= (e.g. =(declare (trivia:optimizer :trivial))=). Implemented through cltl2 API.
++ news!(10/11/2019) The OR1 consistency checking algorithm in Level 1 no longer takes the exponential runtime. Compilation of [[https://github.com/guicho271828/type-r][type-r]] library is now 10x faster! (patch from @pfdietz)
 + *news!(01/01/2021)* Added =HASH-TABLE-ENTRY=, =HASH-TABLE-ENTRIES= patterns, and corresponding =!= suffixed patterns for matching only if key is present in hash table.
 + *news!(05/30/2021* Added support for [[https://github.com/slburson/fset][FSet]]. See [[test/fset.lisp][tests]] for how-to.
 
