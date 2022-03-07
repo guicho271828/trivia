@@ -197,7 +197,7 @@ i.e. the total length of CONTENTS (subpatterns) can be less than the actual size
 
 (defun set-vector-matcher (name &optional (ref 'aref) need-type soft)
   (let* ((level2p (find-package :trivia.level2))
-         (name* (intern (format nil "~a*" name) level2p)))
+         (name* (intern (concatenate 'string (symbol-name name) "*") level2p)))
     (export name* level2p)
     (setf (symbol-pattern (if soft name* name))
           (lambda (&rest patterns)
