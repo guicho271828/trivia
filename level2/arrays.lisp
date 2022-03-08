@@ -197,9 +197,24 @@ i.e. the total length of CONTENTS (subpatterns) can be less than the actual size
 
 (defun set-vector-matcher (name &optional (ref 'aref) need-type soft)
   (let* ((level2p (find-package :trivia.level2))
-         (name* (intern (concatenate 'string (symbol-name name) "*") level2p)))
-    (export name* level2p)
-    (setf (symbol-pattern (if soft name* name))
+         (name2 (if soft
+                    (intern (concatenate 'string (symbol-name name) "*") level2p)
+                    name)))
+    (when soft
+      (export name2 level2p))
+    (setf (documentation name2 'pattern)
+          (if soft
+              (format nil
+                      "Lambda-List: (&REST ELEMENTS)~%  ~
+                       Soft-match variant of ~a pattern.~%  ~
+                       Matches against a ~a by specifying each element, like a LIST pattern.~%  ~
+                       The matched ~a can contain more elements than the number of subpatterns."
+                      name name name)
+              (format nil
+                      "Matches against a ~a by specifying each element, like a LIST pattern."
+                      name)))
+
+    (setf (symbol-pattern name2)
           (lambda (&rest patterns)
             (with-gensyms (it)
               (let* ((len (length patterns))
