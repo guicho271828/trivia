@@ -4,7 +4,7 @@
 ;;; separately from :trivia.fail to avoid the common conflict against fiveam.
 ;;; Also, :trivia.next and :trivia.skip exports `next' (conflicts with
 ;;; `iterate:next') and `skip', respectively. all 3 macros have the same meaning.
-;;; 
+;;;
 ;;; INCOMPATIBILITY NOTE: `match' no longer expanded in 1-pass through
 ;;; `macroexpand': some tests are now replaced with eval
 (defpackage :trivia.level2.test
@@ -81,7 +81,7 @@
   #+(or)
   (is (eql 3 (match '(1 2 3) ('(1 _ a) a))))
   (is-not-match '(1 2 3) '(1 _ a))
-  
+
   (is (eql 3 (match #(1 2 3) (#(1 _ a) a))))
   ;; ensure these are compared by char-wise eql
   (is-match "aaa" "aaa")
@@ -611,8 +611,8 @@
     ((1 2) 3)
     ((4 5) 6)
     ((_ _) nil))
-  (is (= 3 (myfunc 1 2))) 
-  (is (= 6 (myfunc 4 5))) 
+  (is (= 3 (myfunc 1 2)))
+  (is (= 6 (myfunc 4 5)))
   (is-false (myfunc 7 8)))
 
 
@@ -646,7 +646,7 @@
     (ematch 1
       (1 (next))
       (1 (next))))
-  
+
   (signals match-error
     (multiple-value-ematch (values 1 2)
       ((1 2) (next))))
@@ -654,9 +654,9 @@
 
   (signals match-error
     (ematch 1
-      (1 (match2 1 ;; this should be match2, since 
-           (1 (next)) 
-           (1 (next)) ;; <<--- this `next' jumps to the 
+      (1 (match2 1 ;; this should be match2, since
+           (1 (next))
+           (1 (next)) ;; <<--- this `next' jumps to the
            ))
       (1  ;; <<--- next matching clause here
        (next))))
@@ -876,47 +876,47 @@
 (test (extensive-eq-test :compile-at :run-time)
   ;; note: whether eq returns t for read-time literal is implementation-defined
   ;; except symbols
-  
+
   (is-match 'x 'x)
   (is-match 'x (eq 'x))
   (is-match 'x (eql 'x))
   (is-match 'x (equal 'x))
   (is-match 'x (equalp 'x))
   (is-not-match 'y 'x)
-  
+
   (is-match 1 1)
 
   ;; http://clhs.lisp.se/Body/f_eq.htm , see Notes:
-  ;; 
+  ;;
   ;; An implementation is permitted to make ``copies'' of characters and numbers
   ;; at any time. The effect is that Common Lisp makes no guarantee that eq is
   ;; true even when both its arguments are ``the same thing'' if that thing is a
   ;; character or number.
-  ;; 
+  ;;
   #+undefined (is-match 1 (eq 1))
-  
+
   (is-match 1 (eql 1))
   (is-match 1 (equal 1))
   (is-match 1 (equalp 1))
-  
+
   (is-match #\a #\a)
   #+undefined (is-match #\a (eq #\a))
   (is-match #\a (eql #\a))
   (is-match #\a (equal #\a))
   (is-match #\a (equalp #\a))
- 
+
   (is-not-match #\A #\a)
   (is-not-match #\A (eq #\a))
   (is-not-match #\A (eql #\a))
   (is-not-match #\A (equal #\a))
   (is-match #\A (equalp #\a))
- 
+
   (is-match #c(0 1) #c(0 1))
   #+undefined (is-match #c(0 1) (eq #c(0 1)))
   (is-match #c(0 1) (eql #c(0 1)))
   (is-match #c(0 1) (equal #c(0 1)))
   (is-match #c(0 1) (equalp #c(0 1)))
-  
+
   (is-match '(0 1) '(0 1))
   #+undefined (is-match '(0 1) (eq '(0 1)))
   #+undefined (is-match '(0 1) (eql '(0 1)))
@@ -928,7 +928,7 @@
   #+undefined (is-match '(0 . 1) (eql '(0 . 1)))
   (is-match '(0 . 1) (equal '(0 . 1)))
   (is-match '(0 . 1) (equalp '(0 . 1)))
-  
+
   (is-match '(a b) '(a b))
   #+undefined (is-match '(a b) (eq '(a b)))
   #+undefined (is-match '(a b) (eql '(a b)))
@@ -943,26 +943,26 @@
   (is-not-match '(0 1) (eql '(a b)))
   (is-not-match '(0 1) (equal '(a b)))
   (is-not-match '(0 1) (equalp '(a b)))
-  
+
   (is-match #(0 1) #(0 1))
   #+undefined (is-match #(0 1) (eq #(0 1)))
   #+undefined (is-match #(0 1) (eql #(0 1)))
   #+undefined (is-match #(0 1) (equal #(0 1)))
   (is-match #(0 1) (equalp #(0 1)))
   (is-match #(0 1) #(_ _))
-  
+
   (is-match "aaa" "aaa")
   #+undefined (is-match "aaa" (eq "aaa"))
   #+undefined (is-match "aaa" (eql "aaa"))
   (is-match "aaa" (equal "aaa"))
   (is-match "aaa" (equalp "aaa"))
-  
+
   (is-match #*0010 #*0010)
   #+undefined (is-match #*0010 (eq #*0010))
   #+undefined (is-match #*0010 (eql #*0010))
   (is-match #*0010 (equal #*0010))
   (is-match #*0010 (equalp #*0010))
-  
+
   (is-match #2A((0 1) (1 0)) #2A((0 1) (1 0)))
   #+undefined (is-match #2A((0 1) (1 0)) (eq #2A((0 1) (1 0))))
   #+undefined (is-match #2A((0 1) (1 0)) (eql #2A((0 1) (1 0))))
@@ -974,13 +974,13 @@
   #+undefined (is-match #2A((#\a #\a) (#\a #\a)) (eql #2A((#\a #\a) (#\a #\a))))
   #+undefined (is-match #2A((#\a #\a) (#\a #\a)) (equal #2A((#\a #\a) (#\a #\a))))
   (is-match #2A((#\a #\a) (#\a #\a)) (equalp #2A((#\a #\a) (#\a #\a))))
-  
+
   (is-not-match #2A((#\a #\a) (#\a #\a)) #2A((#\A #\A) (#\A #\A)))
   (is-not-match #2A((#\a #\a) (#\a #\a)) (eq #2A((#\A #\A) (#\A #\A))))
   (is-not-match #2A((#\a #\a) (#\a #\a)) (eql #2A((#\A #\A) (#\A #\A))))
   (is-not-match #2A((#\a #\a) (#\a #\a)) (equal #2A((#\A #\A) (#\A #\A))))
   (is-match #2A((#\a #\a) (#\a #\a)) (equalp #2A((#\A #\A) (#\A #\A))))
-  
+
   (is-match #p"/usr/src/" #p"/usr/src/")
   #+undefined (is-match #p"/usr/src/" (eq #p"/usr/src/"))
   #+undefined (is-match #p"/usr/src/" (eql #p"/usr/src/"))
@@ -988,7 +988,7 @@
   (is-match #p"/usr/src/" (equalp #p"/usr/src/"))
   #+implementation-defined (is-match #p"/usr/src/" (equal #p"/USR/SRC/"))
   #+implementation-defined (is-match #p"/usr/src/" (equalp #p"/USR/SRC/"))
-  
+
   (is-match #S(POINT :x "A" :y "B") #S(POINT :x "A" :y "B"))
   (is-not-match #S(POINT :x "A" :y "B") (eq #S(POINT :x "A" :y "B")))
   (is-not-match #S(POINT :x "A" :y "B") (eql #S(POINT :x "A" :y "B")))
@@ -1001,7 +1001,7 @@
     (match `(1)
       ('(a)
         (fail "should not match")))))
-  
+
 (test (issue-89-property! :compile-at :run-time)
   (is (eq nil
           (match '(:y 88)
@@ -1092,7 +1092,7 @@
                (trivia.level2.impl::type-of-form s nil)))
     (is (equal `(eql ,s)
                (trivia.level2.impl::type-of-form `(quote ,s) nil))))
-  
+
   (is (equal 'person
              (trivia.level2.impl::type-of-form (make-instance 'person) t)))
   (is (equal 'person
@@ -1115,7 +1115,7 @@
              (trivia.level2.impl::type-of-form (quote #S(point)) t)))
   (is (equal 'point
              (trivia.level2.impl::type-of-form `(quote #S(point)) t)))
-  
+
   (let ((p #S(point)))
     (is (equal `(eql ,p)
                (trivia.level2.impl::type-of-form p nil)))
@@ -1140,7 +1140,7 @@
 
   (is (equal '(cons point point)
              (trivia.level2.impl::type-of-form `(quote (,(make-point) . ,(make-point))) t)))
-  
+
   (let* ((p #S(point))
          (c `(,p . ,p)))
     (is (equal '(cons point point)
@@ -1220,3 +1220,37 @@
   ;; that is not a function
   (finishes
     (compile nil '(lambda () (match (make-slice :start 0 :stop 10) ((slice start stop step) (+ start stop step)))))))
+
+
+(test (issue-134-optimizer-error :compile-at :run-time)
+  (is (= 1
+         (trivia:match "bar"
+            ("bar" 1)
+            ("foo" 2)
+            (otherwise 3))))
+  (is (= 2
+         (trivia:match "foo"
+            ("bar" 1)
+            ("foo" 2)
+            (otherwise 3))))
+  (is (= 3
+         (trivia:match "baz"
+            ("bar" 1)
+            ("foo" 2)
+            (otherwise 3))))
+  (is (= 1
+         (trivia:match "bar"
+            ((equal "bar") 1)
+            ((equal "foo") 2)
+            (otherwise 3))))
+  (is (= 2
+         (trivia:match "foo"
+            ((equal "bar") 1)
+            ((equal "foo") 2)
+            (otherwise 3))))
+  (is (= 3
+         (trivia:match "baz"
+            ((equal "bar") 1)
+            ((equal "foo") 2)
+            (otherwise 3)))))
+
