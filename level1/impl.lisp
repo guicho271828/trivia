@@ -61,7 +61,7 @@
    (lambda (clause last?)
      (ematch0 clause
        ((list* pattern body)
-        ((lambda (x) (if last? x `(block clause ,x)))
+        ((lambda (x) (if last? x `(with-clause ,x)))
          ;; << (return-from clause) = go to next clause
          ;; the last pattern does not have this block, allowing a direct jump to the upper block
          (match-clause arg
@@ -77,9 +77,14 @@
     ((cons it rest)
      (cons (funcall fn it nil) (mapcar1-with-last fn rest)))))
 
+(defmacro with-clause (&body body)
+  `(block clause
+     (macrolet ((skip () `(next)))
+       ,@body)))
+
 (defmacro next () `(return-from clause nil))
 (defmacro fail () `(next))
-(defmacro skip () `(next))
+(defmacro skip () `())
 
 ;;;; catch-based `next' implementation
 ;; using catch is not appropriate for our purpose, according to CLHS,
