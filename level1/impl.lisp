@@ -79,7 +79,9 @@
 
 (defmacro with-clause (&body body)
   `(block clause
-     (macrolet ((skip () `(next)))
+     (macrolet ((skip () `(next))
+                (with-clause (&body body)
+                  `(block clause ,@body)))
        ,@body)))
 
 (defmacro next () `(return-from clause nil))
