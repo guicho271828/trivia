@@ -321,7 +321,9 @@
 
 (test (satisfies :compile-at :run-time)
   (is-match 1 (satisfies numberp))
-  (is-not-match 1 (satisfies stringp)))
+  (is-not-match 1 (satisfies stringp))
+  (is-match 2 (satisfies (lambda (x) (evenp x))))
+  (is-not-match 1 (satisfies (lambda (x) (evenp x)))))
 (test (eq-family :compile-at :run-time)
   (is-match :foo (eq :foo))
   (is-match 1 (eql 1))
