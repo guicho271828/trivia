@@ -39,9 +39,10 @@ Subpattern is matched against NIL."
   #+nil `(access #'read-from-string ,pattern) ;; slow, untyped
   (with-gensyms (it)
     `(guard1 (,it :type string) (stringp ,it)
-             (handler-case (read-from-string ,it)
-               (end-of-file ())
-               (parse-error ())) ,pattern)))
+             (let ((*read-eval* nil))
+               (handler-case (read-from-string ,it)
+                 (end-of-file ())
+                 (parse-error ()))) ,pattern)))
 
 (defpattern last (subpattern &optional (n 1))
   "Matches against a list, and matches subpatterns against N last elements obtained by CL:LAST."
